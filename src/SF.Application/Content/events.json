@@ -1,0 +1,68 @@
+[
+  {
+    "id": "fire",
+    "name": "Fire",
+    "kind": "fire",
+    "disaster": true,
+    "weight": 3,
+    "minYear": 1,
+    "params": { "burnSeconds": 45, "spreadChance": 0.04, "spreadRadius": 3, "wellBurnSeconds": 10 }
+  },
+  {
+    "id": "boiler-burst",
+    "name": "Boiler Burst",
+    "kind": "fire",
+    "disaster": true,
+    "weight": 2,
+    "minYear": 1,
+    "params": { "component": "boiler", "burnSeconds": 35, "spreadChance": 0.06, "spreadRadius": 3, "wellBurnSeconds": 10 }
+  },
+  {
+    "id": "blight",
+    "name": "Crop Blight",
+    "kind": "blight",
+    "disaster": true,
+    "weight": 2,
+    "minYear": 2,
+    "seasons": ["summer"],
+    "params": { "fields": 1 }
+  },
+  {
+    "id": "fever",
+    "name": "Fever",
+    "kind": "sickness",
+    "disaster": true,
+    "weight": 2,
+    "minYear": 2,
+    "params": { "fraction": 0.12, "months": 3, "healthPerMonth": 0.12 }
+  },
+  {
+    "id": "cold-snap",
+    "name": "Cold Snap",
+    "kind": "coldSnap",
+    "disaster": true,
+    "weight": 2,
+    "minYear": 1,
+    "seasons": ["autumn", "winter"],
+    "params": { "degrees": -9, "months": 2 }
+  },
+  {
+    "id": "nomads",
+    "name": "Travellers",
+    "kind": "nomads",
+    "disaster": false,
+    "weight": 3,
+    "minYear": 2,
+    "params": { "min": 3, "max": 7 }
+  },
+  {
+    "id": "bumper-crop",
+    "name": "Bumper Season",
+    "kind": "bounty",
+    "disaster": false,
+    "weight": 1,
+    "minYear": 1,
+    "seasons": ["summer"],
+    "params": { "growth": 0.25 }
+  }
+]

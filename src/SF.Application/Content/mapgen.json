@@ -1,0 +1,53 @@
+{
+  "defaultSize": "medium",
+  "defaultTerrain": "valley",
+  "sizes": [
+    { "id": "small", "name": "Small", "size": 128 },
+    { "id": "medium", "name": "Medium", "size": 160 },
+    { "id": "large", "name": "Large", "size": 208 }
+  ],
+  "terrains": [
+    {
+      "id": "valley",
+      "name": "Valley",
+      "description": "A river valley ringed by mountains. Balanced timber, stone and ore.",
+      "heightScale": 5,
+      "mountainEdge": 0.75,
+      "mountainLevel": 0.68,
+      "waterLevel": 0.22,
+      "rivers": 1,
+      "forest": 0.5,
+      "rocks": 0.012,
+      "berries": 0.02,
+      "deposits": { "stone": 5, "iron": 3, "coal": 3 }
+    },
+    {
+      "id": "highlands",
+      "name": "Highlands",
+      "description": "Broken uplands with little flat ground but rich seams of ore and coal.",
+      "heightScale": 7,
+      "mountainEdge": 0.55,
+      "mountainLevel": 0.6,
+      "waterLevel": 0.18,
+      "rivers": 1,
+      "forest": 0.4,
+      "rocks": 0.02,
+      "berries": 0.014,
+      "deposits": { "stone": 7, "iron": 5, "coal": 5 }
+    },
+    {
+      "id": "lakeland",
+      "name": "Lakeland",
+      "description": "Gentle land dotted with lakes. Fish and forest are plentiful but ore is scarce.",
+      "heightScale": 4,
+      "mountainEdge": 0.9,
+      "mountainLevel": 0.78,
+      "waterLevel": 0.32,
+      "rivers": 2,
+      "forest": 0.55,
+      "rocks": 0.01,
+      "berries": 0.025,
+      "deposits": { "stone": 4, "iron": 2, "coal": 2 }
+    }
+  ]
+}

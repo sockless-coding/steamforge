@@ -1,0 +1,19 @@
+[
+  { "id": "logs", "name": "Logs", "category": "material", "color": "#8a5a32", "spoilagePerYear": 0, "defaultLimit": 300 },
+  { "id": "stone", "name": "Stone", "category": "material", "color": "#9a958c", "spoilagePerYear": 0, "defaultLimit": 300 },
+  { "id": "ironOre", "name": "Iron Ore", "category": "material", "color": "#7a4e3c", "spoilagePerYear": 0, "defaultLimit": 200 },
+  { "id": "coal", "name": "Coal", "category": "fuel", "color": "#2c2a2a", "spoilagePerYear": 0, "defaultLimit": 200 },
+  { "id": "iron", "name": "Iron", "category": "material", "color": "#a9b2b8", "spoilagePerYear": 0, "defaultLimit": 150 },
+  { "id": "cogs", "name": "Cogs", "category": "material", "color": "#d4a24a", "spoilagePerYear": 0, "defaultLimit": 120 },
+  { "id": "firewood", "name": "Firewood", "category": "fuel", "color": "#b07840", "spoilagePerYear": 0, "defaultLimit": 250 },
+  { "id": "tools", "name": "Tools", "category": "goods", "color": "#8fa0aa", "spoilagePerYear": 0, "defaultLimit": 60 },
+  { "id": "leather", "name": "Leather", "category": "goods", "color": "#9a6a3e", "spoilagePerYear": 0.05, "defaultLimit": 120 },
+  { "id": "coats", "name": "Coats", "category": "goods", "color": "#5a6a8a", "spoilagePerYear": 0, "defaultLimit": 60 },
+  { "id": "berries", "name": "Berries", "category": "food", "color": "#9a2a4a", "spoilagePerYear": 0.3, "defaultLimit": 0 },
+  { "id": "mushrooms", "name": "Mushrooms", "category": "food", "color": "#c8b090", "spoilagePerYear": 0.3, "defaultLimit": 0 },
+  { "id": "venison", "name": "Venison", "category": "food", "color": "#9a3a2a", "spoilagePerYear": 0.25, "defaultLimit": 0 },
+  { "id": "fish", "name": "Fish", "category": "food", "color": "#7a9ab0", "spoilagePerYear": 0.3, "defaultLimit": 0 },
+  { "id": "potatoes", "name": "Potatoes", "category": "food", "color": "#c09a5a", "spoilagePerYear": 0.1, "defaultLimit": 0 },
+  { "id": "cabbage", "name": "Cabbage", "category": "food", "color": "#7aa84a", "spoilagePerYear": 0.15, "defaultLimit": 0 },
+  { "id": "barley", "name": "Barley", "category": "food", "color": "#d8c070", "spoilagePerYear": 0.05, "defaultLimit": 0 }
+]

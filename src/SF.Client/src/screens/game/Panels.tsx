@@ -1,0 +1,262 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { CLOUD_SLOTS, putCloudSave, useCloudSaves } from '../../api/saves'
+import type { ResourceCategory } from '../../api/types'
+import type { GameController } from '../../game/GameController'
+import { listLocalSaves, LOCAL_SLOTS, writeLocalSave } from '../../lib/saves'
+import { useAuth } from '../../state/auth'
+import type { HudState } from '../../state/game'
+import { usePendingGame } from '../../state/pending'
+import { type QualityTier, useSettings } from '../../state/settings'
+import { Button, Modal, Tabs } from '../../ui/components'
+
+export function GuildPanel({ hud, controller, onClose }: { hud: HudState; controller: GameController; onClose: () => void }) {
+  return (
+    <Modal title="Guildhall: Professions" onClose={onClose} wide>
+      <p className="muted small">
+        Everyone without a trade works as a laborer, hauling materials and clearing land. Builders raise construction sites and lay roads. Raising a
+        profession assigns idle laborers to that trade&apos;s workplaces.
+      </p>
+      <table className="prof-table">
+        <thead>
+          <tr>
+            <th>Profession</th>
+            <th>Workers</th>
+            <th>Target</th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Laborers</td>
+            <td>{hud.laborers}</td>
+            <td className="muted">idle pool</td>
+            <td />
+          </tr>
+          <tr>
+            <td>Builders</td>
+            <td>{hud.builders.count}</td>
+            <td>{hud.builders.target}</td>
+            <td className="stepper">
+              <Button size="sm" variant="iron" icon="minus" aria-label="Fewer" onClick={() => controller.perform({ type: 'setBuilders', count: hud.builders.target - 1 })} />
+              <Button size="sm" variant="iron" icon="plus" aria-label="More" onClick={() => controller.perform({ type: 'setBuilders', count: hud.builders.target + 1 })} />
+            </td>
+          </tr>
+          {hud.professions.map((p) => (
+            <tr key={p.id}>
+              <td>
+                <i className="swatch" style={{ background: p.color }} /> {p.name}
+              </td>
+              <td>{p.workers}</td>
+              <td>
+                {p.target} <span className="muted">/ {p.max}</span>
+              </td>
+              <td className="stepper">
+                <Button size="sm" variant="iron" icon="minus" aria-label="Fewer" onClick={() => controller.setProfessionTarget(p.id, p.target - 1)} />
+                <Button size="sm" variant="iron" icon="plus" aria-label="More" onClick={() => controller.setProfessionTarget(p.id, p.target + 1)} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Modal>
+  )
+}
+
+const CATEGORY_NAMES: Record<ResourceCategory, string> = { food: 'Food', fuel: 'Fuel', material: 'Materials', goods: 'Goods' }
+
+export function StoresPanel({ hud, controller, onClose }: { hud: HudState; controller: GameController; onClose: () => void }) {
+  const [category, setCategory] = useState<ResourceCategory>('food')
+  const rows = hud.resources.filter((r) => r.category === category)
+  return (
+    <Modal title="Stores and Production Limits" onClose={onClose} wide>
+      <Tabs tabs={(Object.keys(CATEGORY_NAMES) as ResourceCategory[]).map((c) => ({ id: c, label: CATEGORY_NAMES[c] }))} value={category} onChange={setCategory} />
+      <p className="muted small">Workers stop producing a resource once the stores hold its limit, and turn to labour instead. Clear the limit for no cap.</p>
+      <table className="prof-table">
+        <thead>
+          <tr>
+            <th>Resource</th>
+            <th>In storage</th>
+            <th>Limit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.id}>
+              <td>
+                <i className="swatch" style={{ background: r.color }} /> {r.name}
+              </td>
+              <td>{Math.floor(r.amount)}</td>
+              <td>
+                <input
+                  className="limit-input"
+                  type="number"
+                  min={0}
+                  step={10}
+                  placeholder="none"
+                  defaultValue={r.limit ?? ''}
+                  onBlur={(e) => controller.perform({ type: 'setLimit', res: r.id, limit: Number(e.target.value) || 0 })}
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Modal>
+  )
+}
+
+export function GameMenu({ controller, onClose }: { controller: GameController; onClose: () => void }) {
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const signedIn = useAuth((s) => s.session !== null)
+  const { settings, update } = useSettings()
+  const local = useQuery({ queryKey: ['local-saves'], queryFn: listLocalSaves })
+  const cloud = useCloudSaves()
+  const [status, setStatus] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const setPending = usePendingGame((s) => s.set)
+
+  const save = async (label: string, write: (data: string) => Promise<unknown>) => {
+    setBusy(true)
+    setStatus(`Saving to ${label}…`)
+    try {
+      await write(await controller.encode())
+      setStatus(`Saved to ${label}.`)
+      void queryClient.invalidateQueries({ queryKey: ['local-saves'] })
+      void queryClient.invalidateQueries({ queryKey: ['saves'] })
+    } catch (e) {
+      setStatus(`Save failed: ${(e as Error).message}`)
+    }
+    setBusy(false)
+  }
+
+  return (
+    <Modal title="Colony Ledger" onClose={onClose} wide>
+      <div className="menu-grid">
+        <section>
+          <h4>Save on this device</h4>
+          <ul className="slot-list">
+            {LOCAL_SLOTS.map((id, i) => {
+              const existing = local.data?.find((s) => s.id === id)
+              return (
+                <li key={id}>
+                  <Button size="sm" variant="iron" icon="save" disabled={busy} onClick={() => void save(`device slot ${i + 1}`, (data) => writeLocalSave(id, controller.saveMeta(), data))}>
+                    Slot {i + 1}
+                  </Button>
+                  <span className="muted small">{existing ? `${existing.name}: ${existing.summary}` : 'Empty'}</span>
+                </li>
+              )
+            })}
+          </ul>
+          <h4>Save to the cloud</h4>
+          {signedIn ? (
+            <ul className="slot-list">
+              {Array.from({ length: CLOUD_SLOTS }, (_, i) => i + 1).map((slot) => {
+                const existing = cloud.data?.find((s) => s.slot === slot)
+                return (
+                  <li key={slot}>
+                    <Button size="sm" variant="copper" icon="save" disabled={busy} onClick={() => void save(`cloud slot ${slot}`, (data) => putCloudSave(slot, controller.saveMeta(), data))}>
+                      Cloud {slot}
+                    </Button>
+                    <span className="muted small">{existing ? `${existing.name}: ${existing.summary}` : 'Empty'}</span>
+                  </li>
+                )
+              })}
+            </ul>
+          ) : (
+            <p className="muted small">Sign in from the title screen to use cloud saves.</p>
+          )}
+          {status && <p className="small">{status}</p>}
+        </section>
+        <section>
+          <h4>Graphics</h4>
+          <Tabs<QualityTier>
+            tabs={(['auto', 'low', 'medium', 'high', 'ultra'] as const).map((q) => ({ id: q, label: q }))}
+            value={settings.quality}
+            onChange={(quality) => update({ quality })}
+          />
+          <h4>Volume</h4>
+          <label className="slider-row">
+            <span>Master</span>
+            <input type="range" min={0} max={1} step={0.05} value={settings.masterVolume} onChange={(e) => update({ masterVolume: Number(e.target.value) })} />
+          </label>
+          <label className="slider-row">
+            <span>Music</span>
+            <input type="range" min={0} max={1} step={0.05} value={settings.musicVolume} onChange={(e) => update({ musicVolume: Number(e.target.value) })} />
+          </label>
+          <label className="toggle-row">
+            <input type="checkbox" checked={settings.edgeScroll} onChange={(e) => update({ edgeScroll: e.target.checked })} />
+            <span>Edge scrolling</span>
+          </label>
+          <div className="menu-actions">
+            <Button icon="play" onClick={onClose}>
+              Resume
+            </Button>
+            <Button
+              variant="danger"
+              icon="back"
+              onClick={() => {
+                setPending(null)
+                navigate('/')
+              }}
+            >
+              Exit to title
+            </Button>
+          </div>
+        </section>
+      </div>
+    </Modal>
+  )
+}
+
+export function Outcome({ controller }: { controller: GameController }) {
+  const navigate = useNavigate()
+  const setPending = usePendingGame((s) => s.set)
+  const sim = controller.sim
+  const stats = sim.stats
+  return (
+    <div className="modal-scrim">
+      <div className="modal outcome">
+        <h2 className="engraved">{sim.options.name} has fallen</h2>
+        <p className="muted">The last colonist is gone after {sim.year - 1} years.</p>
+        <ul className="kv">
+          <li>
+            <span>Peak population</span>
+            <b>{stats.peakPopulation}</b>
+          </li>
+          <li>
+            <span>Births</span>
+            <b>{stats.births}</b>
+          </li>
+          <li>
+            <span>Arrivals</span>
+            <b>{stats.arrivals}</b>
+          </li>
+          {Object.entries(stats.deathsBy).map(([cause, n]) => (
+            <li key={cause}>
+              <span>Deaths ({cause})</span>
+              <b>{n}</b>
+            </li>
+          ))}
+        </ul>
+        <div className="menu-actions">
+          <Button icon="play" onClick={() => navigate('/new')}>
+            Found a new colony
+          </Button>
+          <Button
+            variant="iron"
+            icon="back"
+            onClick={() => {
+              setPending(null)
+              navigate('/')
+            }}
+          >
+            Title
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}

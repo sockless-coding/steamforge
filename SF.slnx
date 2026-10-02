@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SF.Application/SF.Application.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SF.Application.Tests/SF.Application.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,166 @@
+@import '@fontsource/cinzel-decorative/700.css';
+@import '@fontsource/cinzel/500.css';
+@import '@fontsource/cinzel/700.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/600.css';
+
+:root {
+  color-scheme: dark;
+
+  /* Metals */
+  --brass-hi: #f6d98a;
+  --brass: #c8923e;
+  --brass-lo: #6a4418;
+  --copper-hi: #f0a070;
+  --copper: #b8643a;
+  --copper-lo: #5a2a12;
+  --steel-hi: #c9ced4;
+  --steel: #6f747a;
+  --iron: #2a2623;
+  --iron-hi: #3a3430;
+  --soot: #0e0b09;
+  --soot-2: #17120e;
+
+  /* Ink and paper */
+  --parchment: #ecdfc3;
+  --parchment-dim: #b9a888;
+  --ink-muted: #8c7c64;
+
+  /* Energy */
+  --tesla: #7fd4ff;
+  --tesla-glow: rgba(127, 212, 255, 0.55);
+  --ember: #ff7a2a;
+  --ember-glow: rgba(255, 122, 42, 0.5);
+  --acid: #a6e05a;
+  --aether: #b690ff;
+  --danger: #e0503a;
+  --ok: #7ac46a;
+
+  /* Category accents */
+  --cat-ballistic: #d8b070;
+  --cat-electrical: var(--tesla);
+  --cat-flame: var(--ember);
+  --cat-chemical: var(--acid);
+  --cat-support: #e8d9a0;
+  --cat-mechanical: #c0a890;
+  --cat-experimental: var(--aether);
+
+  --font-display: 'Cinzel Decorative', 'Cinzel', Georgia, serif;
+  --font-heading: 'Cinzel', Georgia, serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  --radius: 10px;
+  --shadow-deep: 0 18px 40px rgba(0, 0, 0, 0.55), 0 4px 10px rgba(0, 0, 0, 0.4);
+  --bevel: inset 0 1px 0 rgba(255, 240, 200, 0.35), inset 0 -2px 0 rgba(0, 0, 0, 0.45);
+
+  --brass-gradient: linear-gradient(160deg, var(--brass-hi) 0%, var(--brass) 38%, #9a6a2a 62%, var(--brass-lo) 100%);
+  --copper-gradient: linear-gradient(160deg, var(--copper-hi) 0%, var(--copper) 45%, var(--copper-lo) 100%);
+  --iron-gradient: linear-gradient(170deg, #3d3631 0%, #2a2522 55%, #1b1714 100%);
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--soot);
+  color: var(--parchment);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+input,
+select {
+  font: inherit;
+}
+
+a {
+  color: var(--brass-hi);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.35);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--brass-gradient);
+  border-radius: 6px;
+  border: 2px solid rgba(0, 0, 0, 0.5);
+}
+
+.engraved {
+  background: var(--brass-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.8)) drop-shadow(0 0 14px rgba(246, 217, 138, 0.18));
+}
+
+.muted {
+  color: var(--parchment-dim);
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: calc(16px + var(--safe-top)) calc(16px + var(--safe-right)) calc(16px + var(--safe-bottom)) calc(16px + var(--safe-left));
+  overflow: hidden;
+}
+
+.screen-scroll {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding-bottom: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

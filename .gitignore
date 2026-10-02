@@ -55,3 +55,11 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+## SteamForge
+src/SF.Application/wwwroot/
+*.db
+*.db-shm
+*.db-wal
+design.db
+src/SF.Client/dev-dist/

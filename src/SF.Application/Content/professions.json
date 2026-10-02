@@ -1,0 +1,18 @@
+[
+  { "id": "child", "name": "Child", "color": "#e8d8b0" },
+  { "id": "laborer", "name": "Laborer", "color": "#a08060" },
+  { "id": "builder", "name": "Builder", "color": "#d8a040" },
+  { "id": "forester", "name": "Forester", "color": "#4a7a3a" },
+  { "id": "woodcutter", "name": "Woodcutter", "color": "#8a5a32" },
+  { "id": "forager", "name": "Forager", "color": "#9a2a4a" },
+  { "id": "hunter", "name": "Hunter", "color": "#6a4a2a" },
+  { "id": "fisher", "name": "Fisher", "color": "#4a7aa0" },
+  { "id": "farmer", "name": "Farmer", "color": "#b0a040" },
+  { "id": "quarryman", "name": "Quarryman", "color": "#8a8a8a" },
+  { "id": "miner", "name": "Miner", "color": "#4a4040" },
+  { "id": "smelter", "name": "Smelter", "color": "#c05a2a" },
+  { "id": "smith", "name": "Blacksmith", "color": "#5a6a7a" },
+  { "id": "tailor", "name": "Tailor", "color": "#6a5a9a" },
+  { "id": "machinist", "name": "Machinist", "color": "#d4a24a" },
+  { "id": "stoker", "name": "Stoker", "color": "#3a3030" }
+]

@@ -1,0 +1,510 @@
+[
+  {
+    "id": "guildhall",
+    "name": "Guildhall",
+    "category": "civic",
+    "description": "Seat of the colony. Stores supplies, shelters the homeless and coordinates the professions.",
+    "size": [4, 4],
+    "cost": { "resources": { "logs": 60, "stone": 40 }, "work": 200 },
+    "limit": 1,
+    "buildable": false,
+    "components": {
+      "storage": { "capacity": 400, "accepts": ["material", "fuel", "food", "goods"] },
+      "shelter": { "warmUpPerMonth": 1.5 }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [3.8, 0.3, 3.8] },
+        { "shape": "box", "mat": "brick", "pos": [0, 0.3, -0.3], "size": [3.2, 1.9, 2.6] },
+        { "shape": "gable", "mat": "slate", "pos": [0, 2.2, -0.3], "size": [3.5, 1.1, 2.9] },
+        { "shape": "box", "mat": "brick", "pos": [0, 0.3, 1.15], "size": [1.3, 2.9, 1.1] },
+        { "shape": "hip", "mat": "copper", "pos": [0, 3.2, 1.15], "size": [1.5, 1.1, 1.3] },
+        { "shape": "gear", "mat": "brass", "pos": [0, 2.45, 1.72], "size": [0.85, 0.08, 0.85], "axis": "z", "spin": 0.4 },
+        { "shape": "box", "mat": "plank", "pos": [0, 0.3, 1.71], "size": [0.6, 0.9, 0.05] },
+        { "shape": "box", "mat": "glass", "pos": [-1.05, 1.2, 1.01], "size": [0.4, 0.55, 0.04] },
+        { "shape": "box", "mat": "glass", "pos": [1.05, 1.2, 1.01], "size": [0.4, 0.55, 0.04] },
+        { "shape": "chimney", "mat": "brick", "pos": [1.1, 2.4, -1.0], "size": [0.35, 1.3, 0.35] },
+        { "shape": "cylinder", "mat": "brass", "pos": [-1.75, 0.3, 1.75], "size": [0.12, 1.4, 0.12] },
+        { "shape": "sphere", "mat": "glow", "pos": [-1.75, 1.7, 1.75], "size": [0.22, 0.22, 0.22] },
+        { "shape": "cylinder", "mat": "brass", "pos": [1.75, 0.3, 1.75], "size": [0.12, 1.4, 0.12] },
+        { "shape": "sphere", "mat": "glow", "pos": [1.75, 1.7, 1.75], "size": [0.22, 0.22, 0.22] }
+      ]
+    }
+  },
+  {
+    "id": "cottage",
+    "name": "Timber Cottage",
+    "category": "housing",
+    "description": "A snug home for one family. Burns firewood through the winter.",
+    "size": [2, 2],
+    "cost": { "resources": { "logs": 16, "stone": 8 }, "work": 40 },
+    "components": {
+      "housing": { "capacity": 5, "insulation": 1 }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.8, 0.2, 1.8] },
+        { "shape": "box", "mat": "timber", "pos": [0, 0.2, -0.05], "size": [1.6, 1.0, 1.4] },
+        { "shape": "gable", "mat": "thatch", "pos": [0, 1.2, -0.05], "size": [1.85, 0.8, 1.7] },
+        { "shape": "chimney", "mat": "brick", "pos": [0.5, 1.1, -0.35], "size": [0.26, 0.95, 0.26] },
+        { "shape": "box", "mat": "plank", "pos": [0.15, 0.2, 0.66], "size": [0.32, 0.6, 0.05] },
+        { "shape": "box", "mat": "glass", "pos": [-0.42, 0.6, 0.66], "size": [0.32, 0.26, 0.04] }
+      ]
+    }
+  },
+  {
+    "id": "rowhouse",
+    "name": "Brick Rowhouse",
+    "category": "housing",
+    "description": "Solid brick walls hold the heat: a large family burns far less firewood.",
+    "size": [3, 2],
+    "cost": { "resources": { "stone": 24, "logs": 10, "iron": 4 }, "work": 90 },
+    "components": {
+      "housing": { "capacity": 8, "insulation": 1.8 }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [2.85, 0.22, 1.85] },
+        { "shape": "box", "mat": "brick", "pos": [0, 0.22, -0.05], "size": [2.7, 1.6, 1.5] },
+        { "shape": "gable", "mat": "slate", "pos": [0, 1.82, -0.05], "size": [2.95, 0.85, 1.8] },
+        { "shape": "chimney", "mat": "brick", "pos": [-0.9, 1.9, -0.05], "size": [0.3, 1.0, 0.4] },
+        { "shape": "chimney", "mat": "brick", "pos": [0.9, 1.9, -0.05], "size": [0.3, 1.0, 0.4] },
+        { "shape": "box", "mat": "plank", "pos": [-0.55, 0.22, 0.71], "size": [0.3, 0.65, 0.05] },
+        { "shape": "box", "mat": "plank", "pos": [0.55, 0.22, 0.71], "size": [0.3, 0.65, 0.05] },
+        { "shape": "box", "mat": "glass", "pos": [-1.05, 1.2, 0.71], "size": [0.3, 0.32, 0.04] },
+        { "shape": "box", "mat": "glass", "pos": [0, 1.2, 0.71], "size": [0.3, 0.32, 0.04] },
+        { "shape": "box", "mat": "glass", "pos": [1.05, 1.2, 0.71], "size": [0.3, 0.32, 0.04] },
+        { "shape": "cylinder", "mat": "copper", "pos": [1.38, 0.22, 0.7], "size": [0.08, 1.7, 0.08] }
+      ]
+    }
+  },
+  {
+    "id": "stockyard",
+    "name": "Stockyard",
+    "category": "storage",
+    "description": "An open yard for logs, stone, ore and fuel.",
+    "size": [4, 4],
+    "cost": { "resources": {}, "work": 8 },
+    "components": {
+      "storage": { "capacity": 600, "accepts": ["material", "fuel"] }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "soil", "pos": [0, 0, 0], "size": [3.9, 0.05, 3.9] },
+        { "shape": "box", "mat": "timber", "pos": [-1.85, 0, -1.85], "size": [0.14, 0.6, 0.14] },
+        { "shape": "box", "mat": "timber", "pos": [1.85, 0, -1.85], "size": [0.14, 0.6, 0.14] },
+        { "shape": "box", "mat": "timber", "pos": [-1.85, 0, 1.85], "size": [0.14, 0.6, 0.14] },
+        { "shape": "box", "mat": "timber", "pos": [1.85, 0, 1.85], "size": [0.14, 0.6, 0.14] },
+        { "shape": "box", "mat": "plank", "pos": [0, 0.35, -1.85], "size": [3.7, 0.08, 0.06] },
+        { "shape": "box", "mat": "plank", "pos": [-1.85, 0.35, 0], "size": [0.06, 0.08, 3.7] },
+        { "shape": "box", "mat": "plank", "pos": [1.85, 0.35, 0], "size": [0.06, 0.08, 3.7] }
+      ],
+      "piles": true
+    }
+  },
+  {
+    "id": "warehouse",
+    "name": "Warehouse",
+    "category": "storage",
+    "description": "A dry, rat-proof store for food and goods.",
+    "size": [3, 3],
+    "cost": { "resources": { "logs": 30, "stone": 12 }, "work": 60 },
+    "components": {
+      "storage": { "capacity": 700, "accepts": ["food", "goods"] }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [2.8, 0.25, 2.8] },
+        { "shape": "box", "mat": "timber", "pos": [0, 0.25, 0], "size": [2.5, 1.5, 2.5] },
+        { "shape": "gable", "mat": "plank", "pos": [0, 1.75, 0], "size": [2.8, 1.0, 2.8], "rot": 90 },
+        { "shape": "box", "mat": "plank", "pos": [0, 0.25, 1.26], "size": [1.1, 1.1, 0.05] },
+        { "shape": "box", "mat": "iron", "pos": [0, 1.95, 1.3], "size": [0.12, 0.12, 0.6] },
+        { "shape": "cylinder", "mat": "brass", "pos": [0, 1.6, 1.55], "size": [0.05, 0.4, 0.05] },
+        { "shape": "box", "mat": "timber", "pos": [1.0, 0.25, 1.5], "size": [0.45, 0.4, 0.45] }
+      ]
+    }
+  },
+  {
+    "id": "foresters-lodge",
+    "name": "Forester's Lodge",
+    "category": "resources",
+    "description": "Foresters fell mature trees for logs and replant saplings so the woods never run out.",
+    "size": [2, 2],
+    "cost": { "resources": { "logs": 16, "stone": 6 }, "work": 40 },
+    "components": {
+      "workplace": { "workers": 4, "profession": "forester" },
+      "gatherer": { "features": ["tree"], "radius": 14, "replant": { "feature": "tree", "density": 0.4, "seconds": 3 } }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.8, 0.15, 1.6] },
+        { "shape": "box", "mat": "timber", "pos": [0, 0.15, -0.1], "size": [1.5, 0.95, 1.2] },
+        { "shape": "gable", "mat": "thatch", "pos": [0, 1.1, -0.1], "size": [1.75, 0.75, 1.5] },
+        { "shape": "box", "mat": "plank", "pos": [0, 0.15, 0.51], "size": [0.3, 0.55, 0.05] },
+        { "shape": "cylinder", "mat": "timber", "pos": [0.75, 0, 0.7], "size": [0.1, 0.5, 0.1] },
+        { "shape": "cone", "mat": "leaf", "pos": [0.75, 0.3, 0.7], "size": [0.45, 0.9, 0.45] }
+      ]
+    }
+  },
+  {
+    "id": "woodcutters-shed",
+    "name": "Woodcutter's Shed",
+    "category": "industry",
+    "description": "Splits logs into firewood to heat the colony's homes.",
+    "size": [2, 2],
+    "cost": { "resources": { "logs": 18, "stone": 4 }, "work": 30 },
+    "components": {
+      "workplace": { "workers": 2, "profession": "woodcutter" },
+      "producer": { "recipes": ["split-firewood"] }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "soil", "pos": [0, 0, 0], "size": [1.8, 0.05, 1.8] },
+        { "shape": "box", "mat": "timber", "pos": [-0.75, 0, -0.75], "size": [0.12, 1.1, 0.12] },
+        { "shape": "box", "mat": "timber", "pos": [0.75, 0, -0.75], "size": [0.12, 1.1, 0.12] },
+        { "shape": "box", "mat": "timber", "pos": [-0.75, 0, 0.55], "size": [0.12, 1.1, 0.12] },
+        { "shape": "box", "mat": "timber", "pos": [0.75, 0, 0.55], "size": [0.12, 1.1, 0.12] },
+        { "shape": "gable", "mat": "plank", "pos": [0, 1.1, -0.1], "size": [1.8, 0.5, 1.6] },
+        { "shape": "cylinder", "mat": "timber", "pos": [0.2, 0, 0.75], "size": [0.4, 0.35, 0.4] },
+        { "shape": "cylinder", "mat": "timber", "pos": [-0.35, 0.12, -0.4], "size": [0.22, 1.2, 0.22], "axis": "x" },
+        { "shape": "cylinder", "mat": "timber", "pos": [-0.35, 0.34, -0.4], "size": [0.22, 1.2, 0.22], "axis": "x" },
+        { "shape": "cylinder", "mat": "timber", "pos": [-0.35, 0.12, -0.15], "size": [0.22, 1.2, 0.22], "axis": "x" }
+      ]
+    }
+  },
+  {
+    "id": "foragers-hut",
+    "name": "Forager's Hut",
+    "category": "food",
+    "description": "Foragers pick berries and mushrooms from the surrounding woods while they are in season.",
+    "size": [2, 2],
+    "cost": { "resources": { "logs": 14 }, "work": 30 },
+    "components": {
+      "workplace": { "workers": 4, "profession": "forager" },
+      "gatherer": { "features": ["berries", "mushrooms"], "radius": 16 }
+    },
+    "model": {
+      "parts": [
+        { "shape": "cylinder", "mat": "timber", "pos": [0, 0, 0], "size": [1.5, 0.9, 1.5] },
+        { "shape": "cone", "mat": "thatch", "pos": [0, 0.9, 0], "size": [1.9, 1.0, 1.9] },
+        { "shape": "box", "mat": "plank", "pos": [0, 0, 0.74], "size": [0.3, 0.55, 0.05] },
+        { "shape": "cylinder", "mat": "plank", "pos": [0.65, 0, 0.6], "size": [0.35, 0.3, 0.35] },
+        { "shape": "sphere", "mat": "berry", "pos": [0.65, 0.3, 0.6], "size": [0.3, 0.15, 0.3] }
+      ]
+    }
+  },
+  {
+    "id": "hunters-lodge",
+    "name": "Hunter's Lodge",
+    "category": "food",
+    "description": "Hunters bring in venison and leather. Yield depends on the forest around the lodge.",
+    "size": [2, 2],
+    "cost": { "resources": { "logs": 16, "stone": 4 }, "work": 35 },
+    "components": {
+      "workplace": { "workers": 3, "profession": "hunter" },
+      "gatherer": { "yield": { "venison": 4, "leather": 1 }, "seconds": 18, "scale": { "by": "feature", "id": "tree", "radius": 12, "full": 70 } }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.7, 0.15, 1.7] },
+        { "shape": "box", "mat": "timber", "pos": [0, 0.15, -0.15], "size": [1.4, 0.9, 1.1] },
+        { "shape": "gable", "mat": "plank", "pos": [0, 1.05, -0.15], "size": [1.65, 0.7, 1.4] },
+        { "shape": "box", "mat": "plank", "pos": [0, 0.15, 0.41], "size": [0.3, 0.55, 0.05] },
+        { "shape": "box", "mat": "timber", "pos": [0.6, 0, 0.7], "size": [0.06, 0.8, 0.06] },
+        { "shape": "box", "mat": "timber", "pos": [-0.2, 0, 0.7], "size": [0.06, 0.8, 0.06] },
+        { "shape": "box", "mat": "timber", "pos": [0.2, 0.75, 0.7], "size": [0.9, 0.05, 0.05] },
+        { "shape": "box", "mat": "leather", "pos": [0.2, 0.35, 0.7], "size": [0.5, 0.4, 0.03] }
+      ]
+    }
+  },
+  {
+    "id": "fishing-dock",
+    "name": "Fishing Dock",
+    "category": "food",
+    "description": "Must be built on a shore. Fishers haul in fish all year round.",
+    "size": [2, 2],
+    "cost": { "resources": { "logs": 20, "stone": 4 }, "work": 40 },
+    "placement": { "adjacent": { "id": "water", "min": 3 } },
+    "components": {
+      "workplace": { "workers": 3, "profession": "fisher" },
+      "gatherer": { "yield": { "fish": 3 }, "seconds": 18, "scale": { "by": "terrain", "id": "water", "radius": 6, "full": 30 } }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "plank", "pos": [0, 0, 0], "size": [1.9, 0.12, 1.9] },
+        { "shape": "box", "mat": "timber", "pos": [0, 0.12, 0.1], "size": [1.2, 0.8, 1.0] },
+        { "shape": "gable", "mat": "plank", "pos": [0, 0.92, 0.1], "size": [1.4, 0.55, 1.2] },
+        { "shape": "box", "mat": "plank", "pos": [0, 0.12, 0.61], "size": [0.3, 0.55, 0.05] },
+        { "shape": "box", "mat": "plank", "pos": [0, 0.02, -1.4], "size": [0.7, 0.1, 1.6] },
+        { "shape": "cylinder", "mat": "timber", "pos": [-0.3, -0.6, -2.1], "size": [0.12, 0.8, 0.12] },
+        { "shape": "cylinder", "mat": "timber", "pos": [0.3, -0.6, -2.1], "size": [0.12, 0.8, 0.12] },
+        { "shape": "cylinder", "mat": "canvas", "pos": [0.7, 0.12, 0.7], "size": [0.4, 0.15, 0.4] }
+      ]
+    }
+  },
+  {
+    "id": "crop-field",
+    "name": "Crop Field",
+    "category": "food",
+    "description": "Drag to size. Farmers plant in spring and must bring the harvest in before the first frost.",
+    "size": [6, 6],
+    "cost": { "resources": {}, "work": 10 },
+    "walkable": true,
+    "placement": { "variableSize": { "min": [3, 3], "max": [15, 15] } },
+    "components": {
+      "workplace": { "workers": 4, "profession": "farmer" },
+      "field": { "crops": ["potato", "cabbage", "barley"], "tilesPerWorker": 16, "plantSeconds": 2, "harvestSeconds": 2.5 }
+    },
+    "model": { "parts": [] }
+  },
+  {
+    "id": "quarry",
+    "name": "Quarry",
+    "category": "resources",
+    "description": "Must be dug into exposed granite. Cuts an endless supply of stone.",
+    "size": [4, 4],
+    "cost": { "resources": { "logs": 24 }, "work": 60 },
+    "placement": { "terrain": { "id": "stone", "min": 6 } },
+    "components": {
+      "workplace": { "workers": 5, "profession": "quarryman" },
+      "gatherer": { "yield": { "stone": 4 }, "seconds": 18 }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, -0.5, 0], "size": [3.6, 0.55, 3.6] },
+        { "shape": "box", "mat": "soot", "pos": [0, -0.3, -0.3], "size": [2.6, 0.4, 2.4] },
+        { "shape": "box", "mat": "timber", "pos": [-1.5, 0, 1.4], "size": [0.14, 2.2, 0.14] },
+        { "shape": "box", "mat": "timber", "pos": [1.5, 0, 1.4], "size": [0.14, 2.2, 0.14] },
+        { "shape": "box", "mat": "timber", "pos": [0, 2.1, 1.4], "size": [3.2, 0.14, 0.14] },
+        { "shape": "gear", "mat": "brass", "pos": [-1.5, 1.6, 1.52], "size": [0.8, 0.08, 0.8], "axis": "z", "spin": 0.8 },
+        { "shape": "cylinder", "mat": "iron", "pos": [0.4, 1.0, 1.4], "size": [0.03, 1.1, 0.03] },
+        { "shape": "box", "mat": "stone", "pos": [0.4, 0.55, 1.4], "size": [0.5, 0.4, 0.5] },
+        { "shape": "box", "mat": "stone", "pos": [1.2, 0, -1.3], "size": [0.6, 0.5, 0.6] },
+        { "shape": "box", "mat": "stone", "pos": [-1.2, 0, -1.2], "size": [0.5, 0.4, 0.7] }
+      ]
+    }
+  },
+  {
+    "id": "iron-mine",
+    "name": "Iron Mine",
+    "category": "resources",
+    "description": "Must be sunk into an ironstone seam. A steam winch hauls up iron ore.",
+    "size": [3, 3],
+    "cost": { "resources": { "logs": 30, "stone": 20 }, "work": 80 },
+    "placement": { "terrain": { "id": "iron", "min": 4 } },
+    "components": {
+      "workplace": { "workers": 5, "profession": "miner" },
+      "gatherer": { "yield": { "ironOre": 3 }, "seconds": 20 }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [2.8, 0.2, 2.8] },
+        { "shape": "box", "mat": "soot", "pos": [-0.4, 0.2, -0.4], "size": [1.4, 0.05, 1.4] },
+        { "shape": "box", "mat": "timber", "pos": [-1.0, 0.2, -1.0], "size": [0.14, 2.4, 0.14] },
+        { "shape": "box", "mat": "timber", "pos": [0.2, 0.2, -1.0], "size": [0.14, 2.4, 0.14] },
+        { "shape": "box", "mat": "timber", "pos": [-1.0, 0.2, 0.2], "size": [0.14, 2.4, 0.14] },
+        { "shape": "box", "mat": "timber", "pos": [0.2, 0.2, 0.2], "size": [0.14, 2.4, 0.14] },
+        { "shape": "box", "mat": "iron", "pos": [-0.4, 2.55, -0.4], "size": [1.4, 0.12, 1.4] },
+        { "shape": "gear", "mat": "brass", "pos": [-0.4, 2.15, 0.25], "size": [0.9, 0.1, 0.9], "axis": "z", "spin": 1.2 },
+        { "shape": "cylinder", "mat": "copper", "pos": [0.9, 0.2, 0.6], "size": [0.8, 1.0, 0.8] },
+        { "shape": "chimney", "mat": "iron", "pos": [0.9, 1.2, 0.6], "size": [0.2, 1.1, 0.2] },
+        { "shape": "box", "mat": "ore", "pos": [0.9, 0.2, -0.8], "size": [0.6, 0.35, 0.6] }
+      ]
+    }
+  },
+  {
+    "id": "coal-pit",
+    "name": "Coal Pit",
+    "category": "resources",
+    "description": "Must be dug into a coal seam. Coal feeds smelters and boilers.",
+    "size": [3, 3],
+    "cost": { "resources": { "logs": 30, "stone": 16 }, "work": 70 },
+    "placement": { "terrain": { "id": "coal", "min": 4 } },
+    "components": {
+      "workplace": { "workers": 5, "profession": "miner" },
+      "gatherer": { "yield": { "coal": 3 }, "seconds": 20 }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "soot", "pos": [0, 0, 0], "size": [2.8, 0.15, 2.8] },
+        { "shape": "box", "mat": "timber", "pos": [-0.5, 0.15, -0.3], "size": [1.6, 0.9, 1.4] },
+        { "shape": "gable", "mat": "plank", "pos": [-0.5, 1.05, -0.3], "size": [1.8, 0.6, 1.6] },
+        { "shape": "box", "mat": "soot", "pos": [-0.5, 0.15, 0.41], "size": [0.6, 0.65, 0.05] },
+        { "shape": "box", "mat": "iron", "pos": [0.2, 0.15, 1.0], "size": [2.0, 0.06, 0.1] },
+        { "shape": "box", "mat": "iron", "pos": [0.2, 0.15, 1.25], "size": [2.0, 0.06, 0.1] },
+        { "shape": "box", "mat": "iron", "pos": [0.8, 0.22, 1.12], "size": [0.5, 0.35, 0.4] },
+        { "shape": "box", "mat": "coal", "pos": [0.8, 0.57, 1.12], "size": [0.45, 0.1, 0.35] },
+        { "shape": "cone", "mat": "coal", "pos": [0.9, 0.15, -0.6], "size": [1.0, 0.6, 1.0] }
+      ]
+    }
+  },
+  {
+    "id": "smelter",
+    "name": "Smelter",
+    "category": "industry",
+    "description": "A coal-fired furnace that reduces iron ore to iron.",
+    "size": [3, 2],
+    "cost": { "resources": { "stone": 30, "logs": 10 }, "work": 80 },
+    "components": {
+      "workplace": { "workers": 2, "profession": "smelter" },
+      "producer": { "recipes": ["smelt-iron"] }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [2.8, 0.2, 1.8] },
+        { "shape": "box", "mat": "brick", "pos": [-0.5, 0.2, -0.1], "size": [1.6, 1.2, 1.3] },
+        { "shape": "gable", "mat": "slate", "pos": [-0.5, 1.4, -0.1], "size": [1.8, 0.6, 1.5] },
+        { "shape": "cylinder", "mat": "brick", "pos": [0.8, 0.2, 0], "size": [1.0, 1.6, 1.0], "taper": 0.7 },
+        { "shape": "box", "mat": "glow", "pos": [0.8, 0.45, 0.47], "size": [0.35, 0.3, 0.04], "glow": true },
+        { "shape": "chimney", "mat": "brick", "pos": [0.8, 1.8, 0], "size": [0.35, 1.6, 0.35] },
+        { "shape": "box", "mat": "plank", "pos": [-0.5, 0.2, 0.56], "size": [0.4, 0.7, 0.05] },
+        { "shape": "box", "mat": "ore", "pos": [-1.2, 0.2, 0.7], "size": [0.4, 0.25, 0.3] }
+      ]
+    }
+  },
+  {
+    "id": "toolworks",
+    "name": "Toolworks",
+    "category": "industry",
+    "description": "Blacksmiths forge iron and timber into tools. Workers without tools toil at half pace.",
+    "size": [2, 2],
+    "cost": { "resources": { "stone": 20, "logs": 12 }, "work": 60 },
+    "components": {
+      "workplace": { "workers": 2, "profession": "smith" },
+      "producer": { "recipes": ["forge-tools"] }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.8, 0.2, 1.8] },
+        { "shape": "box", "mat": "brick", "pos": [0, 0.2, -0.15], "size": [1.5, 1.1, 1.2] },
+        { "shape": "gable", "mat": "slate", "pos": [0, 1.3, -0.15], "size": [1.7, 0.6, 1.45] },
+        { "shape": "chimney", "mat": "brick", "pos": [-0.45, 1.2, -0.4], "size": [0.3, 1.0, 0.3] },
+        { "shape": "box", "mat": "glow", "pos": [-0.35, 0.3, 0.46], "size": [0.35, 0.3, 0.04], "glow": true },
+        { "shape": "box", "mat": "plank", "pos": [0.3, 0.2, 0.46], "size": [0.3, 0.6, 0.05] },
+        { "shape": "box", "mat": "iron", "pos": [0.5, 0.2, 0.75], "size": [0.3, 0.3, 0.18] },
+        { "shape": "box", "mat": "iron", "pos": [0.5, 0.5, 0.75], "size": [0.42, 0.08, 0.2] }
+      ]
+    }
+  },
+  {
+    "id": "tailor",
+    "name": "Tailor's Shop",
+    "category": "industry",
+    "description": "Sews leather into warm coats. Coated citizens lose heat far more slowly outdoors.",
+    "size": [2, 2],
+    "cost": { "resources": { "logs": 20, "stone": 8 }, "work": 50 },
+    "components": {
+      "workplace": { "workers": 2, "profession": "tailor" },
+      "producer": { "recipes": ["sew-coats"] }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.8, 0.2, 1.8] },
+        { "shape": "box", "mat": "timber", "pos": [0, 0.2, -0.05], "size": [1.5, 1.2, 1.4] },
+        { "shape": "hip", "mat": "slate", "pos": [0, 1.4, -0.05], "size": [1.75, 0.7, 1.65] },
+        { "shape": "box", "mat": "plank", "pos": [-0.3, 0.2, 0.66], "size": [0.3, 0.6, 0.05] },
+        { "shape": "box", "mat": "glass", "pos": [0.35, 0.55, 0.66], "size": [0.45, 0.35, 0.04] },
+        { "shape": "box", "mat": "brass", "pos": [0.7, 1.0, 0.75], "size": [0.04, 0.04, 0.3] },
+        { "shape": "box", "mat": "canvas", "pos": [0.7, 0.8, 0.9], "size": [0.04, 0.3, 0.3] }
+      ]
+    }
+  },
+  {
+    "id": "machine-works",
+    "name": "Machine Works",
+    "category": "industry",
+    "description": "Machinists turn iron into precision cogs, needed for every steam engine.",
+    "size": [3, 2],
+    "cost": { "resources": { "stone": 24, "iron": 10, "logs": 10 }, "work": 100 },
+    "components": {
+      "workplace": { "workers": 2, "profession": "machinist" },
+      "producer": { "recipes": ["machine-cogs"] }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [2.85, 0.2, 1.85] },
+        { "shape": "box", "mat": "brick", "pos": [0, 0.2, -0.05], "size": [2.6, 1.3, 1.5] },
+        { "shape": "gable", "mat": "glassroof", "pos": [-0.65, 1.5, -0.05], "size": [1.3, 0.55, 1.6], "rot": 90 },
+        { "shape": "gable", "mat": "glassroof", "pos": [0.65, 1.5, -0.05], "size": [1.3, 0.55, 1.6], "rot": 90 },
+        { "shape": "gear", "mat": "brass", "pos": [-0.75, 0.95, 0.73], "size": [0.75, 0.08, 0.75], "axis": "z", "spin": 1.0 },
+        { "shape": "gear", "mat": "copper", "pos": [-0.25, 0.75, 0.74], "size": [0.45, 0.08, 0.45], "axis": "z", "spin": -1.6 },
+        { "shape": "box", "mat": "plank", "pos": [0.6, 0.2, 0.71], "size": [0.4, 0.75, 0.05] },
+        { "shape": "chimney", "mat": "brick", "pos": [1.1, 1.4, -0.5], "size": [0.3, 1.4, 0.3] }
+      ]
+    }
+  },
+  {
+    "id": "boiler-house",
+    "name": "Boiler House",
+    "category": "industry",
+    "description": "Burns coal to raise steam. Nearby workplaces work faster and nearby homes need less firewood.",
+    "size": [2, 2],
+    "cost": { "resources": { "stone": 20, "iron": 8, "cogs": 6 }, "work": 90 },
+    "components": {
+      "workplace": { "workers": 1, "profession": "stoker" },
+      "boiler": { "fuel": "coal", "perMonth": 3, "capacity": 24, "radius": 10, "workBonus": 0.5, "heatBonus": 0.5 }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.85, 0.25, 1.85] },
+        { "shape": "box", "mat": "brick", "pos": [0, 0.25, -0.35], "size": [1.6, 0.9, 1.0] },
+        { "shape": "cylinder", "mat": "copper", "pos": [0, 0.75, 0.35], "size": [0.9, 1.6, 0.9], "axis": "x" },
+        { "shape": "cylinder", "mat": "brass", "pos": [-0.82, 0.75, 0.35], "size": [0.95, 0.06, 0.95], "axis": "x" },
+        { "shape": "cylinder", "mat": "brass", "pos": [0.82, 0.75, 0.35], "size": [0.95, 0.06, 0.95], "axis": "x" },
+        { "shape": "cylinder", "mat": "brass", "pos": [0, 1.2, 0.35], "size": [0.22, 0.25, 0.22] },
+        { "shape": "sphere", "mat": "glass", "pos": [0, 1.45, 0.35], "size": [0.2, 0.2, 0.2] },
+        { "shape": "cylinder", "mat": "copper", "pos": [0.55, 0.75, -0.3], "size": [0.12, 1.2, 0.12], "axis": "z" },
+        { "shape": "chimney", "mat": "brick", "pos": [-0.5, 1.15, -0.45], "size": [0.32, 1.9, 0.32] },
+        { "shape": "box", "mat": "glow", "pos": [0.3, 0.35, 0.16], "size": [0.25, 0.2, 0.04], "glow": true }
+      ]
+    }
+  },
+  {
+    "id": "steam-sawmill",
+    "name": "Steam Sawmill",
+    "category": "industry",
+    "description": "A steam-driven saw that makes far more firewood per log. Works only in range of a working boiler house.",
+    "size": [3, 2],
+    "cost": { "resources": { "logs": 20, "stone": 10, "cogs": 8 }, "work": 90 },
+    "components": {
+      "workplace": { "workers": 2, "profession": "woodcutter" },
+      "producer": { "recipes": ["steam-firewood"], "requiresSteam": true }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "plank", "pos": [0, 0, 0], "size": [2.85, 0.15, 1.85] },
+        { "shape": "box", "mat": "timber", "pos": [-1.3, 0.15, -0.8], "size": [0.14, 1.3, 0.14] },
+        { "shape": "box", "mat": "timber", "pos": [1.3, 0.15, -0.8], "size": [0.14, 1.3, 0.14] },
+        { "shape": "box", "mat": "timber", "pos": [-1.3, 0.15, 0.8], "size": [0.14, 1.3, 0.14] },
+        { "shape": "box", "mat": "timber", "pos": [1.3, 0.15, 0.8], "size": [0.14, 1.3, 0.14] },
+        { "shape": "gable", "mat": "slate", "pos": [0, 1.45, 0], "size": [2.95, 0.6, 1.9] },
+        { "shape": "box", "mat": "iron", "pos": [0, 0.15, 0], "size": [1.8, 0.5, 0.5] },
+        { "shape": "gear", "mat": "iron", "pos": [0.2, 0.65, 0], "size": [0.75, 0.04, 0.75], "axis": "z", "spin": 6 },
+        { "shape": "cylinder", "mat": "copper", "pos": [-0.9, 0.15, -0.4], "size": [0.5, 0.8, 0.5] },
+        { "shape": "cylinder", "mat": "copper", "pos": [-0.45, 0.55, -0.4], "size": [0.1, 0.8, 0.1], "axis": "x" },
+        { "shape": "cylinder", "mat": "timber", "pos": [0.9, 0.3, 0.6], "size": [0.25, 1.0, 0.25], "axis": "x" }
+      ]
+    }
+  },
+  {
+    "id": "well",
+    "name": "Well",
+    "category": "civic",
+    "description": "Citizens draw water from the well to put out fires nearby. Fires out of reach of a well burn unchecked.",
+    "size": [1, 1],
+    "cost": { "resources": { "stone": 8, "logs": 2 }, "work": 20 },
+    "components": {
+      "firefighting": { "radius": 14 }
+    },
+    "model": {
+      "parts": [
+        { "shape": "cylinder", "mat": "stone", "pos": [0, 0, 0], "size": [0.75, 0.4, 0.75] },
+        { "shape": "cylinder", "mat": "water", "pos": [0, 0.36, 0], "size": [0.55, 0.05, 0.55] },
+        { "shape": "box", "mat": "timber", "pos": [-0.32, 0.4, 0], "size": [0.07, 0.6, 0.07] },
+        { "shape": "box", "mat": "timber", "pos": [0.32, 0.4, 0], "size": [0.07, 0.6, 0.07] },
+        { "shape": "gable", "mat": "plank", "pos": [0, 1.0, 0], "size": [0.85, 0.3, 0.6] },
+        { "shape": "cylinder", "mat": "iron", "pos": [0, 0.8, 0], "size": [0.06, 0.6, 0.06], "axis": "x" }
+      ]
+    }
+  }
+]

@@ -1,0 +1,70 @@
+{
+  "ticksPerSecond": 10,
+  "secondsPerMonth": 40,
+  "months": [
+    "Early Spring", "Spring", "Late Spring",
+    "Early Summer", "Summer", "Late Summer",
+    "Early Autumn", "Autumn", "Late Autumn",
+    "Early Winter", "Winter", "Late Winter"
+  ],
+  "seasons": [
+    { "id": "spring", "name": "Spring", "months": [0, 1, 2], "growing": true },
+    { "id": "summer", "name": "Summer", "months": [3, 4, 5], "growing": true },
+    { "id": "autumn", "name": "Autumn", "months": [6, 7, 8], "growing": true },
+    { "id": "winter", "name": "Winter", "months": [9, 10, 11], "growing": false }
+  ],
+  "temperature": [6, 10, 14, 18, 22, 23, 19, 14, 8, 1, -5, -2],
+  "temperatureJitter": 3,
+  "citizen": {
+    "walkSpeed": 1.7,
+    "carry": 10,
+    "adultAge": 12,
+    "partnerAge": 16,
+    "fertileAgeMax": 45,
+    "elderAge": 58,
+    "maxAge": 85,
+    "hungerPerMonth": 0.28,
+    "hungerThreshold": 0.4,
+    "mealSize": 4,
+    "childMealSize": 2,
+    "comfortTemperature": 8,
+    "coldPerMonth": 1.4,
+    "coatProtection": 0.55,
+    "warmthThreshold": 0.35,
+    "warmUpPerMonth": 3,
+    "healthRecoveryPerMonth": 0.08,
+    "starvationPerMonth": 0.35,
+    "freezingPerMonth": 0.45,
+    "toolLifeMonths": 30,
+    "coatLifeMonths": 36,
+    "noToolsWorkFactor": 0.55,
+    "elderWorkFactor": 0.75,
+    "birthChancePerMonth": 0.05,
+    "oldAgeDeathPerMonth": 0.04
+  },
+  "housing": {
+    "firewoodPerMonth": 1.2,
+    "pantryMeals": 3,
+    "pantryFirewood": 8
+  },
+  "workplace": {
+    "outputBuffer": 30,
+    "inputBatches": 3
+  },
+  "construction": {
+    "workChunkSeconds": 4,
+    "buildersPerTile": 0.5,
+    "refundOnDemolish": 0.5
+  },
+  "events": {
+    "disastersPerYear": 1.5,
+    "blessingsPerYear": 0.6,
+    "graceYears": 1
+  },
+  "roads": [
+    { "id": "dirt", "name": "Dirt Road", "description": "A packed-earth track. Citizens walk faster on roads.", "cost": {}, "work": 2, "speed": 1.5 },
+    { "id": "cobble", "name": "Cobbled Road", "description": "Granite setts. The fastest way across town.", "cost": { "stone": 1 }, "work": 4, "speed": 1.9 }
+  ],
+  "startingBuilders": 2,
+  "startingArea": 8
+}

@@ -1,0 +1,35 @@
+[
+  {
+    "id": "tree",
+    "name": "Tree",
+    "model": "tree",
+    "clear": { "resource": "logs", "amount": 4, "seconds": 5 },
+    "growth": { "months": 24, "spawnChance": 0.004 }
+  },
+  {
+    "id": "rock",
+    "name": "Boulder",
+    "model": "rock",
+    "clear": { "resource": "stone", "amount": 5, "seconds": 7 }
+  },
+  {
+    "id": "ironstone",
+    "name": "Ironstone",
+    "model": "ironstone",
+    "clear": { "resource": "ironOre", "amount": 3, "seconds": 7 }
+  },
+  {
+    "id": "berries",
+    "name": "Berry Bush",
+    "model": "bush",
+    "clear": { "resource": "berries", "amount": 1, "seconds": 3 },
+    "harvest": { "resource": "berries", "amount": 4, "seconds": 4, "ripens": ["summer", "autumn"] }
+  },
+  {
+    "id": "mushrooms",
+    "name": "Mushroom Ring",
+    "model": "mushroom",
+    "clear": { "resource": "mushrooms", "amount": 1, "seconds": 2 },
+    "harvest": { "resource": "mushrooms", "amount": 3, "seconds": 4, "ripens": ["spring", "autumn"] }
+  }
+]

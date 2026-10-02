@@ -1,0 +1,36 @@
+# Production-like stack: PostgreSQL + the game server (which also serves the PWA).
+# Required environment (e.g. in a .env file next to this one):
+#   POSTGRES_PASSWORD, JWT_SIGNING_KEY (32+ bytes)
+# Put a TLS-terminating reverse proxy in front of port 8080 for real deployments.
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: steamforge
+      POSTGRES_USER: sf
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sf -d steamforge"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    image: ${REGISTRY:-docker-registry.sockless.local}/${IMAGE:-steamforge}:${TAG:-latest}
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      Database__Provider: Postgres
+      Database__ConnectionString: Host=db;Database=steamforge;Username=sf;Password=${POSTGRES_PASSWORD}
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY (32+ bytes)}
+      # OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:
