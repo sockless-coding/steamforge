@@ -5,14 +5,14 @@
     "category": "civic",
     "description": "Steamforge No. 9, the sealed pressure engine the Company sent north. Stores supplies, shelters the homeless and raises steam for workshops built against it or piped to it. Burns coal or firewood from its own stores.",
     "size": [4, 4],
-    "cost": { "resources": { "logs": 60, "stone": 40 }, "work": 200 },
+    "cost": { "resources": { "logs": 60, "stone": 40 }, "work": 400 },
     "limit": 1,
     "buildable": false,
     "headquarters": true,
     "components": {
       "storage": { "capacity": 400, "accepts": ["material", "fuel", "food", "goods"] },
-      "shelter": { "warmUpPerMonth": 1.5 },
-      "generator": { "network": "steam", "output": 12, "fuel": { "coal": 0.8, "firewood": 2 }, "capacity": 12 }
+      "shelter": { "warmUpPerMonth": 2.25 },
+      "generator": { "network": "steam", "output": 12, "fuel": { "coal": 1.2, "firewood": 3 }, "capacity": 12 }
     },
     "model": {
       "parts": [
@@ -84,7 +84,7 @@
     "category": "housing",
     "description": "A snug rendered cottage for one family, with a copper rain butt. Burns firewood through the winter.",
     "size": [2, 2],
-    "cost": { "resources": { "logs": 16, "stone": 8 }, "work": 40 },
+    "cost": { "resources": { "logs": 16, "stone": 8 }, "work": 80 },
     "components": { "housing": { "capacity": 5, "insulation": 1 } },
     "model": {
       "parts": [
@@ -112,7 +112,7 @@
     "category": "housing",
     "description": "Solid brick walls hold the heat: a large family burns far less firewood.",
     "size": [3, 2],
-    "cost": { "resources": { "stone": 24, "logs": 10, "iron": 4 }, "work": 90 },
+    "cost": { "resources": { "stone": 24, "logs": 10, "iron": 4 }, "work": 180 },
     "components": { "housing": { "capacity": 8, "insulation": 1.8 } },
     "model": {
       "parts": [
@@ -147,7 +147,7 @@
     "category": "storage",
     "description": "A fenced yard with a steam crane for logs, stone, ore and fuel.",
     "size": [4, 4],
-    "cost": { "resources": {}, "work": 8 },
+    "cost": { "resources": {}, "work": 16 },
     "components": { "storage": { "capacity": 600, "accepts": ["material", "fuel"] } },
     "model": {
       "parts": [
@@ -178,7 +178,7 @@
     "category": "storage",
     "description": "A dry, rat-proof brick store with a loft hoist, for food and goods.",
     "size": [3, 3],
-    "cost": { "resources": { "logs": 30, "stone": 12 }, "work": 60 },
+    "cost": { "resources": { "logs": 30, "stone": 12 }, "work": 120 },
     "components": { "storage": { "capacity": 700, "accepts": ["food", "goods"] } },
     "model": {
       "parts": [
@@ -211,10 +211,10 @@
     "category": "resources",
     "description": "Foresters fell mature trees for logs and replant saplings from their nursery so the woods never run out.",
     "size": [2, 2],
-    "cost": { "resources": { "logs": 16, "stone": 6 }, "work": 40 },
+    "cost": { "resources": { "logs": 16, "stone": 6 }, "work": 80 },
     "components": {
       "workplace": { "workers": 4, "profession": "forester" },
-      "gatherer": { "features": ["tree"], "radius": 14, "replant": { "feature": "tree", "density": 0.4, "seconds": 3 } }
+      "gatherer": { "features": ["tree"], "radius": 14, "replant": { "feature": "tree", "density": 0.4, "seconds": 6 } }
     },
     "model": {
       "parts": [
@@ -241,7 +241,7 @@
     "category": "industry",
     "description": "A flywheel-driven splitter turns logs into firewood. Splits faster on a steam main.",
     "size": [2, 2],
-    "cost": { "resources": { "logs": 18, "stone": 4 }, "work": 30 },
+    "cost": { "resources": { "logs": 18, "stone": 4 }, "work": 60 },
     "components": {
       "workplace": { "workers": 2, "profession": "woodcutter" },
       "producer": { "recipes": ["split-firewood"] },
@@ -275,7 +275,7 @@
     "category": "food",
     "description": "Foragers pick berries and mushrooms from the surrounding woods while they are in season.",
     "size": [2, 2],
-    "cost": { "resources": { "logs": 14 }, "work": 30 },
+    "cost": { "resources": { "logs": 14 }, "work": 60 },
     "components": {
       "workplace": { "workers": 4, "profession": "forager" },
       "gatherer": { "features": ["berries", "mushrooms"], "radius": 16 }
@@ -303,12 +303,12 @@
     "category": "food",
     "description": "Hunters bring in venison and leather, cured in the smokehouse. Yield depends on the forest around the lodge.",
     "size": [2, 2],
-    "cost": { "resources": { "logs": 16, "stone": 4 }, "work": 35 },
+    "cost": { "resources": { "logs": 16, "stone": 4 }, "work": 70 },
     "components": {
       "workplace": { "workers": 3, "profession": "hunter" },
       "gatherer": {
         "yield": { "venison": 4, "leather": 1 },
-        "seconds": 18,
+        "seconds": 36,
         "scale": { "by": "feature", "id": "tree", "radius": 12, "full": 70 }
       }
     },
@@ -336,13 +336,13 @@
     "category": "food",
     "description": "Must be built on a shore. A brass net-winch lets fishers haul in fish all year round.",
     "size": [2, 2],
-    "cost": { "resources": { "logs": 20, "stone": 4 }, "work": 40 },
+    "cost": { "resources": { "logs": 20, "stone": 4 }, "work": 80 },
     "placement": { "adjacent": { "id": "water", "min": 3 } },
     "components": {
       "workplace": { "workers": 3, "profession": "fisher" },
       "gatherer": {
         "yield": { "fish": 3 },
-        "seconds": 18,
+        "seconds": 36,
         "scale": { "by": "terrain", "id": "water", "radius": 6, "full": 30 }
       }
     },
@@ -379,7 +379,7 @@
     "category": "food",
     "description": "Drag to size. Farmers plant in spring and must bring the harvest in before the first frost.",
     "size": [6, 6],
-    "cost": { "resources": {}, "work": 10 },
+    "cost": { "resources": {}, "work": 20 },
     "walkable": true,
     "placement": { "variableSize": { "min": [3, 3], "max": [15, 15] } },
     "components": {
@@ -387,8 +387,8 @@
       "field": {
         "crops": ["potato", "cabbage", "barley"],
         "tilesPerWorker": 16,
-        "plantSeconds": 2,
-        "harvestSeconds": 2.5
+        "plantSeconds": 4,
+        "harvestSeconds": 5
       }
     },
     "model": { "parts": [] }
@@ -399,11 +399,11 @@
     "category": "resources",
     "description": "Must be dug into exposed granite. A steam derrick lifts out an endless supply of stone, faster on a steam main.",
     "size": [4, 4],
-    "cost": { "resources": { "logs": 24 }, "work": 60 },
+    "cost": { "resources": { "logs": 24 }, "work": 120 },
     "placement": { "terrain": { "id": "stone", "min": 6 } },
     "components": {
       "workplace": { "workers": 5, "profession": "quarryman" },
-      "gatherer": { "yield": { "stone": 4 }, "seconds": 18 },
+      "gatherer": { "yield": { "stone": 4 }, "seconds": 36 },
       "consumer": { "uses": { "steam": 4 }, "workBonus": 0.4 }
     },
     "model": {
@@ -439,11 +439,11 @@
     "category": "resources",
     "description": "Must be sunk into an ironstone seam. A winding engine hauls up iron ore; faster on a steam main.",
     "size": [3, 3],
-    "cost": { "resources": { "logs": 30, "stone": 20 }, "work": 80 },
+    "cost": { "resources": { "logs": 30, "stone": 20 }, "work": 160 },
     "placement": { "terrain": { "id": "iron", "min": 4 } },
     "components": {
       "workplace": { "workers": 5, "profession": "miner" },
-      "gatherer": { "yield": { "ironOre": 3 }, "seconds": 20 },
+      "gatherer": { "yield": { "ironOre": 3 }, "seconds": 40 },
       "consumer": { "uses": { "steam": 4 }, "workBonus": 0.4 }
     },
     "model": {
@@ -482,11 +482,11 @@
     "category": "resources",
     "description": "Must be dug into a coal seam. Coal feeds smelters, boilers and the Steamforge.",
     "size": [3, 3],
-    "cost": { "resources": { "logs": 30, "stone": 16 }, "work": 70 },
+    "cost": { "resources": { "logs": 30, "stone": 16 }, "work": 140 },
     "placement": { "terrain": { "id": "coal", "min": 4 } },
     "components": {
       "workplace": { "workers": 5, "profession": "miner" },
-      "gatherer": { "yield": { "coal": 3 }, "seconds": 20 },
+      "gatherer": { "yield": { "coal": 3 }, "seconds": 40 },
       "consumer": { "uses": { "steam": 4 }, "workBonus": 0.4 }
     },
     "model": {
@@ -532,11 +532,11 @@
     "category": "resources",
     "description": "Must be sunk into a green copper seam. Stamps crush the ore as it comes up; faster on a steam main.",
     "size": [3, 3],
-    "cost": { "resources": { "logs": 30, "stone": 20, "iron": 4 }, "work": 80 },
+    "cost": { "resources": { "logs": 30, "stone": 20, "iron": 4 }, "work": 160 },
     "placement": { "terrain": { "id": "copper", "min": 4 } },
     "components": {
       "workplace": { "workers": 5, "profession": "miner" },
-      "gatherer": { "yield": { "copperOre": 3 }, "seconds": 20 },
+      "gatherer": { "yield": { "copperOre": 3 }, "seconds": 40 },
       "consumer": { "uses": { "steam": 4 }, "workBonus": 0.4 }
     },
     "model": {
@@ -622,7 +622,7 @@
     "category": "industry",
     "description": "A coal-fired blast furnace that reduces ore to metal. A steam blower on the main makes it work faster.",
     "size": [3, 2],
-    "cost": { "resources": { "stone": 30, "logs": 10 }, "work": 80 },
+    "cost": { "resources": { "stone": 30, "logs": 10 }, "work": 160 },
     "components": {
       "workplace": { "workers": 2, "profession": "smelter" },
       "producer": { "recipes": ["smelt-iron", "smelt-copper"] },
@@ -655,7 +655,7 @@
     "category": "industry",
     "description": "Smiths forge iron and timber into tools under a steam hammer. Workers without tools toil at half pace.",
     "size": [2, 2],
-    "cost": { "resources": { "stone": 20, "logs": 12 }, "work": 60 },
+    "cost": { "resources": { "stone": 20, "logs": 12 }, "work": 120 },
     "components": {
       "workplace": { "workers": 2, "profession": "smith" },
       "producer": { "recipes": ["forge-tools"] },
@@ -694,7 +694,7 @@
     "category": "industry",
     "description": "A treadle sewing machine stitches leather into warm greatcoats. Coated citizens lose heat far more slowly outdoors.",
     "size": [2, 2],
-    "cost": { "resources": { "logs": 20, "stone": 8 }, "work": 50 },
+    "cost": { "resources": { "logs": 20, "stone": 8 }, "work": 100 },
     "components": { "workplace": { "workers": 2, "profession": "tailor" }, "producer": { "recipes": ["sew-coats"] } },
     "model": {
       "parts": [
@@ -725,7 +725,7 @@
     "category": "industry",
     "description": "Steam-driven lathes turn iron into precision cogs, needed for every engine. Runs only on steam.",
     "size": [3, 2],
-    "cost": { "resources": { "stone": 24, "iron": 10, "logs": 10 }, "work": 100 },
+    "cost": { "resources": { "stone": 24, "iron": 10, "logs": 10 }, "work": 200 },
     "components": {
       "workplace": { "workers": 2, "profession": "machinist" },
       "producer": { "recipes": ["machine-cogs"] },
@@ -771,10 +771,10 @@
     "category": "power",
     "description": "A riveted coal boiler that raises steam in quantity for every building on its pipes. Needs a stoker and coal.",
     "size": [2, 2],
-    "cost": { "resources": { "stone": 20, "iron": 8, "cogs": 6 }, "work": 90 },
+    "cost": { "resources": { "stone": 20, "iron": 8, "cogs": 6 }, "work": 180 },
     "components": {
       "workplace": { "workers": 1, "profession": "stoker" },
-      "generator": { "network": "steam", "output": 40, "fuel": { "coal": 3 }, "capacity": 24 }
+      "generator": { "network": "steam", "output": 40, "fuel": { "coal": 4.5 }, "capacity": 24 }
     },
     "model": {
       "parts": [
@@ -800,7 +800,7 @@
     "category": "industry",
     "description": "A steam engine drives a great circular saw that makes far more firewood per log. Runs only on steam.",
     "size": [3, 2],
-    "cost": { "resources": { "logs": 20, "stone": 10, "cogs": 8 }, "work": 90 },
+    "cost": { "resources": { "logs": 20, "stone": 10, "cogs": 8 }, "work": 180 },
     "components": {
       "workplace": { "workers": 2, "profession": "woodcutter" },
       "producer": { "recipes": ["steam-firewood"] },
@@ -846,7 +846,7 @@
     "category": "civic",
     "description": "A brass hand pump under a copper canopy. Fires within reach are put out quickly; fires out of reach of a well burn unchecked.",
     "size": [1, 1],
-    "cost": { "resources": { "stone": 8, "logs": 2 }, "work": 20 },
+    "cost": { "resources": { "stone": 8, "logs": 2 }, "work": 40 },
     "components": { "firefighting": { "radius": 14 } },
     "model": {
       "parts": [
@@ -870,10 +870,10 @@
     "category": "science",
     "description": "Engineers at drafting tables work through the Company's patterns, earning research points. Galvanic lamps let them work faster.",
     "size": [3, 2],
-    "cost": { "resources": { "logs": 24, "stone": 16 }, "work": 60 },
+    "cost": { "resources": { "logs": 24, "stone": 16 }, "work": 120 },
     "components": {
       "workplace": { "workers": 2, "profession": "engineer" },
-      "research": { "points": 1, "seconds": 18 },
+      "research": { "points": 1, "seconds": 36 },
       "consumer": { "uses": { "power": 4 }, "workBonus": 0.5 }
     },
     "model": {
@@ -921,7 +921,7 @@
     "category": "food",
     "description": "A glass hall warmed by steam pipes grows hothouse tomatoes all year round, even in the depths of winter. Runs only on steam.",
     "size": [4, 3],
-    "cost": { "resources": { "stone": 20, "logs": 16, "iron": 8 }, "work": 90 },
+    "cost": { "resources": { "stone": 20, "logs": 16, "iron": 8 }, "work": 180 },
     "components": {
       "workplace": { "workers": 3, "profession": "gardener" },
       "producer": { "recipes": ["grow-tomatoes"] },
@@ -965,7 +965,7 @@
     "category": "housing",
     "description": "A three-storey brick tenement for a large family, with cast-iron radiators on the steam main. Needs no firewood while steam flows.",
     "size": [3, 3],
-    "cost": { "resources": { "stone": 40, "logs": 12, "iron": 10, "cogs": 4 }, "work": 140 },
+    "cost": { "resources": { "stone": 40, "logs": 12, "iron": 10, "cogs": 4 }, "work": 280 },
     "components": {
       "housing": { "capacity": 12, "insulation": 2.2 },
       "consumer": { "uses": { "steam": 3 }, "heatBonus": 1 }
@@ -1015,7 +1015,7 @@
     "category": "civic",
     "description": "A steam pump engine reaches fires far beyond any well and puts them out in seconds. Works only on steam.",
     "size": [3, 2],
-    "cost": { "resources": { "stone": 24, "logs": 12, "iron": 8, "cogs": 2 }, "work": 80 },
+    "cost": { "resources": { "stone": 24, "logs": 12, "iron": 8, "cogs": 2 }, "work": 160 },
     "components": {
       "firefighting": { "radius": 24, "burnSeconds": 5 },
       "consumer": { "uses": { "steam": 4 }, "required": true }
@@ -1060,7 +1060,7 @@
     "category": "power",
     "description": "Turns steam into galvanic power for the copper conduits. Feeds on a strong steam main and needs a galvanist.",
     "size": [3, 3],
-    "cost": { "resources": { "stone": 30, "iron": 12, "copper": 16, "cogs": 8 }, "work": 140 },
+    "cost": { "resources": { "stone": 30, "iron": 12, "copper": 16, "cogs": 8 }, "work": 280 },
     "components": {
       "workplace": { "workers": 1, "profession": "galvanist" },
       "generator": { "network": "power", "output": 30 },
@@ -1110,7 +1110,7 @@
     "category": "industry",
     "description": "A galvanic arc melts ore without coal and yields twice the metal. Runs only on galvanic power.",
     "size": [3, 2],
-    "cost": { "resources": { "stone": 24, "iron": 12, "copper": 10 }, "work": 120 },
+    "cost": { "resources": { "stone": 24, "iron": 12, "copper": 10 }, "work": 240 },
     "components": {
       "workplace": { "workers": 2, "profession": "smelter" },
       "producer": { "recipes": ["arc-iron", "arc-copper"] },
@@ -1144,10 +1144,10 @@
     "category": "science",
     "description": "Columns of brass gears calculate day and night, pouring research points into the colony's projects. Runs only on galvanic power.",
     "size": [4, 3],
-    "cost": { "resources": { "stone": 60, "iron": 20, "copper": 20, "cogs": 24 }, "work": 260 },
+    "cost": { "resources": { "stone": 60, "iron": 20, "copper": 20, "cogs": 24 }, "work": 520 },
     "components": {
       "workplace": { "workers": 3, "profession": "engineer" },
-      "research": { "points": 4, "seconds": 18 },
+      "research": { "points": 4, "seconds": 36 },
       "consumer": { "uses": { "power": 20 }, "required": true }
     },
     "model": {
@@ -1197,10 +1197,10 @@
     "id": "gas-lamp",
     "name": "Gas Lamp",
     "category": "civic",
-    "description": "A cast-iron gas lamp. Homes within its glow are happier, and it lights the streets at dusk.",
+    "description": "A cast-iron gas lamp. Homes within its glow are happier, and workplaces and building sites in its light keep working through the night.",
     "size": [1, 1],
-    "cost": { "resources": { "stone": 2, "iron": 1 }, "work": 8 },
-    "components": { "amenity": { "radius": 7, "happiness": 0.06 } },
+    "cost": { "resources": { "stone": 2, "iron": 1 }, "work": 16 },
+    "components": { "amenity": { "radius": 7, "happiness": 0.06 }, "lighting": { "radius": 7 } },
     "model": {
       "parts": [
         { "shape": "cylinder", "mat": "stone", "pos": [0, 0, 0], "size": [0.34, 0.18, 0.34] },
@@ -1218,12 +1218,48 @@
     }
   },
   {
+    "id": "arc-lamp",
+    "name": "Galvanic Arc Lamp",
+    "category": "civic",
+    "description": "A tall iron mast carrying two carbon-arc globes. Floods a wide district with hard white light so its workshops and building sites work through the night. Needs galvanic power.",
+    "size": [1, 1],
+    "cost": { "resources": { "stone": 4, "iron": 3, "copper": 3 }, "work": 32 },
+    "components": {
+      "lighting": { "radius": 12 },
+      "amenity": { "radius": 9, "happiness": 0.05 },
+      "consumer": { "uses": { "power": 1 }, "required": true }
+    },
+    "model": {
+      "parts": [
+        { "shape": "cylinder", "mat": "stone", "pos": [0, 0, 0], "size": [0.46, 0.2, 0.46] },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [0, 0.2, 0], "size": [0.26, 0.4, 0.26], "taper": 0.6 },
+        { "shape": "torus", "mat": "copper", "pos": [0, 0.5, 0], "size": [0.15, 0.03, 0] },
+        { "shape": "torus", "mat": "copper", "pos": [0, 0.56, 0], "size": [0.15, 0.03, 0] },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [0, 0.6, 0], "size": [0.09, 1.95, 0.09] },
+        { "shape": "torus", "mat": "brass", "pos": [0, 1.1, 0], "size": [0.07, 0.025, 0] },
+        { "shape": "box", "mat": "darkiron", "pos": [0, 2.5, 0], "size": [0.92, 0.05, 0.05] },
+        { "shape": "box", "mat": "darkiron", "pos": [0.4, 2.42, 0], "size": [0.02, 0.08, 0.02] },
+        { "shape": "box", "mat": "darkiron", "pos": [-0.4, 2.42, 0], "size": [0.02, 0.08, 0.02] },
+        { "shape": "cylinder", "mat": "brass", "pos": [0.4, 2.38, 0], "size": [0.16, 0.05, 0.16] },
+        { "shape": "cylinder", "mat": "brass", "pos": [-0.4, 2.38, 0], "size": [0.16, 0.05, 0.16] },
+        { "shape": "sphere", "mat": "glass", "pos": [0.4, 2.12, 0], "size": [0.24, 0.28, 0.24] },
+        { "shape": "sphere", "mat": "glass", "pos": [-0.4, 2.12, 0], "size": [0.24, 0.28, 0.24] },
+        { "shape": "sphere", "mat": "arc", "pos": [0.4, 2.22, 0], "size": [0.09, 0.09, 0.09] },
+        { "shape": "sphere", "mat": "arc", "pos": [-0.4, 2.22, 0], "size": [0.09, 0.09, 0.09] },
+        { "shape": "sphere", "mat": "lamp", "pos": [0, 2.42, 0], "size": [0.05, 0.05, 0.05] },
+        { "shape": "sphere", "mat": "glass", "pos": [0.22, 2.55, 0], "size": [0.05, 0.05, 0.05] },
+        { "shape": "sphere", "mat": "glass", "pos": [-0.22, 2.55, 0], "size": [0.05, 0.05, 0.05] },
+        { "shape": "cone", "mat": "brass", "pos": [0, 2.55, 0], "size": [0.1, 0.22, 0.1] }
+      ]
+    }
+  },
+  {
     "id": "clock-tower",
     "name": "Clock Tower",
     "category": "civic",
     "description": "A steam-wound clock tower with four brass faces. The whole neighbourhood takes heart from its chimes. Needs steam.",
     "size": [2, 2],
-    "cost": { "resources": { "stone": 30, "logs": 10, "iron": 6, "cogs": 4 }, "work": 110 },
+    "cost": { "resources": { "stone": 30, "logs": 10, "iron": 6, "cogs": 4 }, "work": 220 },
     "components": {
       "amenity": { "radius": 18, "happiness": 0.12 },
       "consumer": { "uses": { "steam": 2 }, "required": true }
@@ -1272,7 +1308,7 @@
     "category": "power",
     "description": "A weighted brass valve on the steam main. Bleeds a little steam, but no overloaded boiler on its grid will ever burst.",
     "size": [1, 1],
-    "cost": { "resources": { "stone": 4, "iron": 4, "cogs": 1 }, "work": 25 },
+    "cost": { "resources": { "stone": 4, "iron": 4, "cogs": 1 }, "work": 50 },
     "components": { "valve": {}, "consumer": { "uses": { "steam": 2 } } },
     "model": {
       "parts": [
@@ -1293,9 +1329,9 @@
     "category": "civic",
     "description": "A lattice mooring mast for the Company's airships. Laborers carry export goods here for credit, and every few months an airship moors with your import orders. The winches need steam.",
     "size": [3, 3],
-    "cost": { "resources": { "logs": 30, "stone": 20, "iron": 16, "cogs": 8 }, "work": 140 },
+    "cost": { "resources": { "logs": 30, "stone": 20, "iron": 16, "cogs": 8 }, "work": 280 },
     "components": {
-      "airship": { "visitMonths": 3, "cargo": 80, "approachSeconds": 12, "staySeconds": 25, "capacity": 120 },
+      "airship": { "visitMonths": 3, "cargo": 120, "approachSeconds": 12, "staySeconds": 25, "capacity": 120 },
       "consumer": { "uses": { "steam": 4 }, "required": true }
     },
     "model": {
@@ -1337,7 +1373,7 @@
     "category": "civic",
     "description": "Keeps the steam trams running. While the depot has steam, citizens ride every tramway at three times walking pace.",
     "size": [3, 2],
-    "cost": { "resources": { "stone": 24, "logs": 10, "iron": 12, "cogs": 6 }, "work": 100 },
+    "cost": { "resources": { "stone": 24, "logs": 10, "iron": 12, "cogs": 6 }, "work": 200 },
     "components": { "tramDepot": {}, "consumer": { "uses": { "steam": 6 }, "required": true } },
     "model": {
       "parts": [
@@ -1366,7 +1402,7 @@
     "category": "storage",
     "description": "A small store on the pneumatic post. Depots on the same steam grid share their goods by tube, so whatever reaches one can be collected at any. Needs steam.",
     "size": [2, 2],
-    "cost": { "resources": { "stone": 16, "iron": 8, "copper": 6 }, "work": 70 },
+    "cost": { "resources": { "stone": 16, "iron": 8, "copper": 6 }, "work": 140 },
     "components": {
       "storage": { "capacity": 150, "accepts": ["material", "fuel", "food", "goods"] },
       "pneumatic": { "network": "steam" },
@@ -1396,10 +1432,10 @@
     "category": "industry",
     "description": "Engineers assemble clockwork automatons from cogs, copper and iron. Automatons work without food or warmth but must be wound with coal. Needs steam.",
     "size": [3, 2],
-    "cost": { "resources": { "stone": 30, "iron": 16, "copper": 10, "cogs": 10 }, "work": 150 },
+    "cost": { "resources": { "stone": 30, "iron": 16, "copper": 10, "cogs": 10 }, "work": 300 },
     "components": {
       "workplace": { "workers": 2, "profession": "engineer" },
-      "assembler": { "inputs": { "cogs": 6, "copper": 4, "iron": 2 }, "seconds": 40 },
+      "assembler": { "inputs": { "cogs": 6, "copper": 4, "iron": 2 }, "seconds": 80 },
       "consumer": { "uses": { "steam": 6 }, "required": true }
     },
     "model": {

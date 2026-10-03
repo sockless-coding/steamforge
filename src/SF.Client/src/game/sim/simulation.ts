@@ -24,6 +24,7 @@ import {
 import { abortTask, rebuildClaims } from './tasks'
 import { encodeArray } from './codec'
 import { EnergyState } from './energy'
+import { answerPetition } from './events'
 import { createFounders, fireWorker } from './population'
 import { canResearch, isUnlocked, lockedBy, researchPlan } from './research'
 import { Rng } from './rng'
@@ -38,6 +39,7 @@ import type {
   ConduitJob,
   NewColonyOptions,
   Notice,
+  Petition,
   ResearchState,
   RoadJob,
   TradeOrder,
@@ -46,7 +48,7 @@ import type {
 } from './types'
 import { MARK_CLEAR, World, type WorldSnapshot } from './world'
 
-export const SAVE_VERSION = 3
+export const SAVE_VERSION = 4
 
 export interface ColonySnapshot {
   v: number
@@ -71,6 +73,8 @@ export interface ColonySnapshot {
   stats: ColonyStats
   weather: Simulation['weather']
   outcome: Simulation['outcome']
+  petition: Petition | null
+  lastDisaster: number
 }
 
 const MAX_NOTICES = 60
@@ -118,6 +122,10 @@ export class Simulation {
   notices: Notice[] = []
   stats: ColonyStats = { births: 0, deaths: 0, arrivals: 0, peakPopulation: 0, deathsBy: {}, produced: {}, consumed: {} }
   weather = { offset: 0, snapDegrees: 0, snapMonths: 0 }
+  /** Travellers waiting at the gate for the player's answer. */
+  petition: Petition | null = null
+  /** Month index of the last disaster (spacing between disasters). */
+  lastDisaster = -1000
   outcome: 'playing' | 'lost' = 'playing'
   /** Storage totals, refreshed every second. */
   totals: Stock = {}
@@ -245,6 +253,43 @@ export class Simulation {
   /** Fraction of the current month elapsed. */
   get monthProgress(): number {
     return (this.tick % this.tpm) / this.tpm
+  }
+
+  /** Game seconds in one day. */
+  get dayLength(): number {
+    return this.rules.secondsPerMonth / this.rules.day.daysPerMonth
+  }
+
+  /** Fraction of the current day elapsed, 0 at midnight. Months begin at noon, so a colony is founded in daylight. */
+  get dayProgress(): number {
+    return (this.monthProgress * this.rules.day.daysPerMonth + 0.5) % 1
+  }
+
+  /** Share of today between sunrise and sunset. */
+  get daylight(): number {
+    return this.rules.day.daylight[this.month]
+  }
+
+  /** Height of the sun: 1 at noon, 0 at sunrise and sunset, -1 at midnight. */
+  get sun(): number {
+    const p = this.dayProgress
+    const d = this.daylight
+    const rise = 0.5 - d / 2
+    if (p >= rise && p <= 1 - rise) return Math.sin((Math.PI * (p - rise)) / d)
+    const sinceSunset = (p - (1 - rise) + 1) % 1
+    return -Math.sin((Math.PI * sinceSunset) / (1 - d))
+  }
+
+  /** Between sunset and sunrise: citizens sleep unless their work is lit. */
+  get isNight(): boolean {
+    return this.sun < 0
+  }
+
+  /** Game seconds until the next sunrise (0 by day). */
+  secondsUntilDawn(): number {
+    if (!this.isNight) return 0
+    const rise = 0.5 - this.daylight / 2
+    return ((rise - this.dayProgress + 1) % 1) * this.dayLength
   }
 
   get season(): SeasonDef {
@@ -445,6 +490,11 @@ export class Simulation {
         else this.limits[action.res] = Math.min(99999, Math.round(action.limit))
         return { ok: true }
       }
+      case 'answerPetition': {
+        if (!this.petition) return { ok: false, reason: 'Nobody is waiting at the gate.' }
+        answerPetition(this, action.accept)
+        return { ok: true }
+      }
       case 'setOption': {
         const b = this.buildings.get(action.building)
         if (!b) return { ok: false, reason: 'No such building.' }
@@ -531,6 +581,8 @@ export class Simulation {
       stats: this.stats,
       weather: this.weather,
       outcome: this.outcome,
+      petition: this.petition,
+      lastDisaster: this.lastDisaster,
     }
   }
 
@@ -560,6 +612,8 @@ export class Simulation {
     sim.stats = s.stats
     sim.weather = s.weather
     sim.outcome = s.outcome
+    sim.petition = s.petition
+    sim.lastDisaster = s.lastDisaster
     rebuildClaims(sim)
     // Rebuild derived caches only; advancing anything here would make a loaded colony diverge.
     for (const system of systems) system.restore?.(sim)
@@ -593,7 +647,8 @@ export class Simulation {
 /**
  * Upgrades older snapshots one version at a time. Version 1 predates research, energy networks and the story: its
  * Guildhall becomes the headquarters, every research counts as done (a legacy colony keeps what it had built) and
- * every dispatch as already received. Version 2 predates airship trade.
+ * every dispatch as already received. Version 2 predates airship trade. Version 3 predates day and night (40-second
+ * months), petitions and disaster spacing.
  */
 function migrate(content: Content, s: ColonySnapshot): ColonySnapshot {
   if (s.v === SAVE_VERSION) return s
@@ -604,8 +659,21 @@ function migrate(content: Content, s: ColonySnapshot): ColonySnapshot {
     s.trade = {}
     s.v = 3
   }
+  if (s.v === 3) migrateV3(content, s)
   if (s.v !== SAVE_VERSION) throw new Error(`Unsupported save version ${s.v}.`)
   return s
+}
+
+function migrateV3(content: Content, s: ColonySnapshot): void {
+  // Rescale the clock so the colony keeps its date and its place within the month.
+  const rules = content.bundle.rules
+  const scale = (rules.secondsPerMonth * rules.ticksPerSecond) / 400
+  s.tick = Math.round(s.tick * scale)
+  for (const n of s.notices) n.tick = Math.round(n.tick * scale)
+  for (const b of s.buildings) b.activeAt = Math.round(b.activeAt * scale)
+  s.petition = null
+  s.lastDisaster = -1000
+  s.v = 4
 }
 
 function migrateV1(content: Content, s: ColonySnapshot): void {

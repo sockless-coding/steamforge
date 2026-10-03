@@ -7,7 +7,7 @@ import { assignHousing, createCitizen, spawnFamily } from './population'
 import { firstName, surname } from './names'
 import { removeBuilding } from './placement'
 import type { Simulation } from './simulation'
-import type { Building } from './types'
+import type { Building, Citizen, Petition } from './types'
 
 /** Handler for one event kind (events.json `kind`). Returns false when it could not fire (no valid target). */
 export interface EventHandler {
@@ -104,13 +104,16 @@ registerEvent({
   kind: 'fire',
   run: (sim, def) => {
     const component = def.params.component as string | undefined
+    // A boiler burst needs a lit firebox.
     const candidates = [...sim.buildings.values()].filter(
-      (b) => !b.site && burnable(sim, b) && !sim.def(b).headquarters && (!component || sim.def(b).components[component]),
+      (b) =>
+        !b.site &&
+        burnable(sim, b) &&
+        !sim.def(b).headquarters &&
+        (!component || (sim.def(b).components[component] && (component !== 'generator' || b.data.lit === true))),
     )
     const target = sim.rng.pick(candidates)
     if (!target) return false
-    // A boiler burst needs a lit firebox.
-    if (component === 'generator' && target.data.lit !== true) return false
     ignite(sim, target, def)
     sim.notify('bad', `${def.name}! The ${sim.def(target).name} is ablaze.`, target.door)
     return true
@@ -118,6 +121,14 @@ registerEvent({
 })
 
 // ---------------------------------------------------------------- others
+
+/** Children and elders take fever harder: enough to kill them if they were already weak. */
+function infect(sim: Simulation, c: Citizen, months: number, healthPerMonth: number, vulnerableFactor: number): void {
+  const r = sim.rules.citizen
+  const vulnerable = c.age < r.adultAge * 12 || c.age >= r.elderAge * 12
+  c.sick = months
+  c.sickRate = healthPerMonth * (vulnerable ? vulnerableFactor : 1)
+}
 
 registerEvent({
   kind: 'blight',
@@ -146,9 +157,7 @@ registerEvent({
     const count = Math.max(1, Math.round(people.length * num(def, 'fraction', 0.1)))
     if (people.length === 0) return false
     for (let n = 0; n < count && people.length; n++) {
-      const c = people.splice(sim.rng.int(people.length), 1)[0]
-      c.sick = num(def, 'months', 3)
-      c.sickRate = num(def, 'healthPerMonth', 0.12)
+      infect(sim, people.splice(sim.rng.int(people.length), 1)[0], num(def, 'months', 3), num(def, 'healthPerMonth', 0.12), num(def, 'vulnerableFactor', 1))
     }
     sim.notify('bad', `${def.name} is spreading: ${count} citizens have fallen ill.`)
     return true
@@ -165,41 +174,99 @@ registerEvent({
   },
 })
 
+/**
+ * Travellers ask to join rather than simply arriving: they wait at the headquarters until the player welcomes or
+ * turns them away (answerPetition), and move on if nobody answers.
+ */
 registerEvent({
   kind: 'nomads',
   run: (sim, def) => {
-    const hall = [...sim.buildings.values()].find((b) => !b.site && sim.def(b).components.shelter)
-    if (!hall) return false
+    const hq = sim.headquarters()
+    if (sim.petition || !hq) return false
     const min = num(def, 'min', 3)
     const total = min + sim.rng.int(Math.max(1, num(def, 'max', 7) - min + 1))
-    let arrived = 0
-    while (arrived + 2 <= total) {
-      const kids = Math.min(total - arrived - 2, sim.rng.int(3))
-      const family = spawnFamily(sim, hall.door, kids, 16)
-      for (const c of family) {
-        c.tools = 0
-        sim.emit({ type: 'citizen', id: c.id, change: 'arrived' })
-      }
-      arrived += family.length
+    const households: number[] = []
+    let people = 0
+    while (people + 2 <= total) {
+      const kids = Math.min(total - people - 2, sim.rng.int(3))
+      households.push(kids)
+      people += 2 + kids
     }
-    if (arrived < total) {
-      const female = sim.rng.chance(0.5)
-      const c = createCitizen(sim, {
-        name: `${firstName(sim.rng, female)} ${surname(sim.rng)}`,
-        female,
-        ageMonths: (17 + sim.rng.int(15)) * 12,
-        x: sim.world.xOf(hall.door) + 0.5,
-        y: sim.world.yOf(hall.door) + 0.5,
-      })
-      sim.emit({ type: 'citizen', id: c.id, change: 'arrived' })
-      arrived++
+    if (people < total) households.push(-1)
+    const adults = households.reduce((n, h) => n + (h < 0 ? 1 : 2), 0)
+    const petition: Petition = {
+      households,
+      adults,
+      children: total - adults,
+      feverish: sim.rng.chance(num(def, 'feverChance', 0)),
+      event: def.id,
+      arrived: sim.tick,
+      expires: sim.tick + Math.round(num(def, 'waitMonths', 1) * sim.tpm),
     }
-    sim.stats.arrivals += arrived
-    assignHousing(sim)
-    sim.notify('good', `${def.name}: ${arrived} travellers have asked to join the colony.`, hall.door)
+    sim.petition = petition
+    const fever = petition.feverish ? ' Some of them are coughing.' : ''
+    sim.notify('petition', `${def.name}: ${total} travellers ask to join the colony.${fever}`, hq.door)
     return true
   },
 })
+
+/** Welcomes the waiting travellers (they settle in, bringing fever if they carry it) or sends them on their way. */
+export function answerPetition(sim: Simulation, accept: boolean): void {
+  const p = sim.petition
+  if (!p) return
+  sim.petition = null
+  const hq = sim.headquarters()
+  if (!accept || !hq) {
+    sim.notify('info', 'The travellers shoulder their packs and move on.')
+    return
+  }
+  const arrivals: Citizen[] = []
+  for (const kids of p.households) {
+    if (kids >= 0) {
+      arrivals.push(...spawnFamily(sim, hq.door, kids, 16))
+      continue
+    }
+    const female = sim.rng.chance(0.5)
+    arrivals.push(
+      createCitizen(sim, {
+        name: `${firstName(sim.rng, female)} ${surname(sim.rng)}`,
+        female,
+        ageMonths: (17 + sim.rng.int(15)) * 12,
+        x: sim.world.xOf(hq.door) + 0.5,
+        y: sim.world.yOf(hq.door) + 0.5,
+      }),
+    )
+  }
+  // Travellers own the clothes on their backs but no tools.
+  for (const c of arrivals) {
+    c.tools = 0
+    sim.emit({ type: 'citizen', id: c.id, change: 'arrived' })
+  }
+  const def = sim.content.events.get(p.event)
+  if (p.feverish && def) {
+    const months = num(def, 'feverMonths', 2)
+    const fever = sim.content.bundle.events.find((e) => e.kind === 'sickness')
+    const rate = fever ? num(fever, 'healthPerMonth', 0.12) : 0.12
+    const factor = fever ? num(fever, 'vulnerableFactor', 1) : 1
+    for (const c of arrivals) if (sim.rng.chance(0.5)) infect(sim, c, months, rate, factor)
+    // ...and they pass it on to a few colonists.
+    const locals = [...sim.citizens.values()].filter((c) => c.sick === 0 && !c.automaton)
+    for (let n = 1 + sim.rng.int(3); n > 0 && locals.length > 0; n--) {
+      infect(sim, locals.splice(sim.rng.int(locals.length), 1)[0], months, rate, factor)
+    }
+  }
+  sim.stats.arrivals += arrivals.length
+  assignHousing(sim)
+  sim.notify('good', `${arrivals.length} travellers have joined the colony${p.feverish ? ', and brought fever with them' : ''}.`, hq.door)
+}
+
+/** Travellers who wait too long give up. */
+export function updatePetition(sim: Simulation): void {
+  if (sim.petition && sim.tick >= sim.petition.expires) {
+    sim.petition = null
+    sim.notify('info', 'Nobody answered the travellers at the gate, so they moved on.')
+  }
+}
 
 registerEvent({
   kind: 'bounty',
@@ -264,17 +331,28 @@ registerEvent({
   },
 })
 
-/** Monthly roll for disasters and blessings, weighted by events.json and scaled by difficulty. */
+/**
+ * Monthly roll for disasters and blessings, weighted by events.json and scaled by difficulty. An event that cannot
+ * happen right now (no lit boiler, no fields) is set aside and another is drawn, so the configured rates hold.
+ * Disasters keep a minimum spacing so misfortune does not strike in back-to-back streaks.
+ */
 export function rollEvents(sim: Simulation): void {
   const e = sim.rules.events
-  const pick = (disaster: boolean) => {
+  const pick = (disaster: boolean): boolean => {
     const eligible = sim.content.bundle.events.filter(
       (d) => d.disaster === disaster && sim.year >= d.minYear && (!d.seasons || d.seasons.includes(sim.season.id)) && handlers.has(d.kind),
     )
-    const index = sim.rng.weighted(eligible.map((d) => d.weight))
-    if (index >= 0) handlers.get(eligible[index].kind)!.run(sim, eligible[index])
+    while (eligible.length > 0) {
+      const index = sim.rng.weighted(eligible.map((d) => d.weight))
+      if (index < 0) return false
+      if (handlers.get(eligible[index].kind)!.run(sim, eligible[index])) return true
+      eligible.splice(index, 1)
+    }
+    return false
   }
-  if (sim.monthIndex >= e.graceYears * sim.rules.months.length && sim.rng.chance((e.disastersPerYear / 12) * sim.mods.disasterRate)) pick(true)
+  const month = sim.monthIndex
+  const graceOver = month >= e.graceYears * sim.rules.months.length
+  const spaced = month - sim.lastDisaster >= e.minMonthsBetweenDisasters
+  if (graceOver && spaced && sim.rng.chance((e.disastersPerYear / 12) * sim.mods.disasterRate) && pick(true)) sim.lastDisaster = month
   if (sim.rng.chance(e.blessingsPerYear / 12)) pick(false)
 }
-

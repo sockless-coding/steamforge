@@ -2,7 +2,7 @@ import { chooseTask } from './ai'
 import { amenityByHome } from './components/amenity'
 import type { ShelterConfig } from './components/basic'
 import { solveEnergy } from './energy'
-import { rollEvents, updateFires } from './events'
+import { rollEvents, updateFires, updatePetition } from './events'
 import { computeTotals, foodIds } from './inventory'
 import { assignHousing, assignJobs, births, killCitizen } from './population'
 import type { Simulation } from './simulation'
@@ -68,7 +68,8 @@ registerSystem({
 
       const inside = c.inside ? sim.buildings.get(c.inside) : undefined
       if (cold <= 0) {
-        c.warmth = Math.min(1, c.warmth + 1 / spm)
+        // Mild weather warms people up at a third of a heated home's pace.
+        c.warmth = Math.min(1, c.warmth + r.warmUpPerMonth / 3 / spm)
       } else if (inside && inside.id === c.home && inside.data.heated) {
         c.warmth = Math.min(1, c.warmth + r.warmUpPerMonth / spm)
       } else if (inside && sim.def(inside).components.shelter) {
@@ -292,7 +293,7 @@ registerSystem({
 // ---------------------------------------------------------------- fire and events
 
 registerSystem({ id: 'fire', second: updateFires })
-registerSystem({ id: 'events', month: rollEvents })
+registerSystem({ id: 'events', second: updatePetition, month: rollEvents })
 registerSystem({ id: 'story', month: (sim) => checkDispatches(sim, {}) })
 
 // ---------------------------------------------------------------- outcome and warnings
@@ -307,14 +308,20 @@ registerSystem({
       sim.emit({ type: 'outcome', outcome: 'lost' })
     }
   },
+  // Warnings come at the turn of each season, or every month once they are urgent, so they do not drown other news.
   month: (sim) => {
+    const r = sim.rules.citizen
     const pop = sim.population().total
     sim.stats.peakPopulation = Math.max(sim.stats.peakPopulation, pop)
+    const seasonStart = sim.season.months[0] === sim.month
     let food = 0
     for (const f of foodIds(sim)) food += sim.totals[f] ?? 0
-    if (pop > 0 && food < pop * sim.rules.citizen.mealSize * 2) sim.notify('warn', 'Food stores are running low.')
+    const monthsOfFood = pop > 0 ? food / (pop * r.mealSize * r.hungerPerMonth * sim.mods.hungerRate) : Infinity
+    if (monthsOfFood < 1) sim.notify('warn', 'Food stores will run out within the month.')
+    else if (monthsOfFood < 3 && seasonStart) sim.notify('warn', 'Food stores are running low.')
     const homeless = sim.population().homeless
-    if (homeless > 0 && (sim.coldness > 0 || sim.season.id === 'autumn')) sim.notify('warn', `${homeless} citizens have no home for the cold months.`)
-    if (sim.season.id === 'autumn' && (sim.totals.firewood ?? 0) < pop * 2) sim.notify('warn', 'Firewood is short and winter is coming.')
+    const coldAhead = sim.season.id === 'autumn' || sim.season.id === 'winter'
+    if (homeless > 0 && coldAhead && seasonStart) sim.notify('warn', `${homeless} citizens have no home for the cold months.`)
+    if (sim.season.id === 'autumn' && seasonStart && (sim.totals.firewood ?? 0) < pop * 2) sim.notify('warn', 'Firewood is short and winter is coming.')
   },
 })

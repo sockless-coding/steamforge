@@ -7,7 +7,7 @@
       "description": "A gentle start: six families, well-stocked stores, a few homes already standing and mild winters.",
       "order": 0,
       "startingFamilies": 6,
-      "startingResources": { "logs": 120, "stone": 60, "iron": 20, "firewood": 120, "tools": 40, "coats": 30, "potatoes": 200, "berries": 100, "barley": 100 },
+      "startingResources": { "logs": 120, "stone": 60, "iron": 20, "firewood": 180, "tools": 40, "coats": 30, "potatoes": 300, "berries": 150, "barley": 150 },
       "startingBuildings": [
         { "id": "cottage", "count": 4 },
         { "id": "stockyard", "count": 1 },
@@ -30,7 +30,7 @@
       "description": "The intended experience. Five families with modest supplies and honest winters.",
       "order": 1,
       "startingFamilies": 5,
-      "startingResources": { "logs": 80, "stone": 40, "iron": 10, "firewood": 60, "tools": 25, "coats": 15, "potatoes": 120, "berries": 60 },
+      "startingResources": { "logs": 80, "stone": 40, "iron": 10, "firewood": 90, "tools": 25, "coats": 15, "potatoes": 180, "berries": 90 },
       "startingBuildings": [
         { "id": "stockyard", "count": 1 }
       ],
@@ -50,7 +50,7 @@
       "description": "Four families, thin supplies, bitter winters and frequent misfortune.",
       "order": 2,
       "startingFamilies": 4,
-      "startingResources": { "logs": 50, "stone": 20, "firewood": 30, "tools": 15, "coats": 6, "potatoes": 80 },
+      "startingResources": { "logs": 50, "stone": 20, "firewood": 45, "tools": 15, "coats": 6, "potatoes": 120 },
       "startingBuildings": [],
       "modifiers": {
         "winterSeverity": 1.35,
@@ -68,7 +68,7 @@
       "description": "Three families and a cart of scraps. Savage winters, fires and fevers. Few colonies survive their first year.",
       "order": 3,
       "startingFamilies": 3,
-      "startingResources": { "logs": 30, "stone": 10, "firewood": 15, "tools": 8, "potatoes": 50 },
+      "startingResources": { "logs": 30, "stone": 10, "firewood": 23, "tools": 8, "potatoes": 75 },
       "startingBuildings": [],
       "modifiers": {
         "winterSeverity": 1.7,

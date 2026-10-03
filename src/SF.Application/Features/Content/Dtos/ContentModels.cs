@@ -26,9 +26,13 @@ public sealed record ConduitDef(string Name, Dictionary<string, double> Cost, do
 /// <summary>An energy network (steam, galvanic power): generators and consumers joined by conduit tiles.</summary>
 public sealed record NetworkDef(string Id, string Name, string Color, ConduitDef Conduit);
 
+/// <summary>Day and night: the lit share of each month's day, and how fast lamplit night work goes.</summary>
+public sealed record DayRules(int DaysPerMonth, IReadOnlyList<double> Daylight, double NightWorkFactor);
+
 public sealed record RulesDef(
     int TicksPerSecond,
     int SecondsPerMonth,
+    DayRules Day,
     IReadOnlyList<string> Months,
     IReadOnlyList<SeasonDef> Seasons,
     IReadOnlyList<double> Temperature,

@@ -17,7 +17,7 @@ Victorian-steampunk survival city builder in the spirit of Banished, rendered in
 - **New building**: add it to `buildings.json` (size, cost, components, model parts). No code needed if it uses existing component kinds. Lock it behind research by listing it in a `research.json` item's `unlocks`; make it need energy with a `consumer` component (`required`, `workBonus` or `heatBonus`).
 - **New research / dispatch**: data only (`research.json`, `story.json`); the validator checks references and requirement cycles.
 - **New energy network**: add it to `rules.json` → `networks` (max 8; a converter's input network must come first), then use it in `generator`/`consumer` components.
-- **Other data-driven mechanics**: happiness auras (`amenity`), airship trade (`airship` component plus resource `value`s and `rules.trade`), automatons (`assembler`, `rules.automaton`), tramways (a road with `needsDepot` plus a `tramDepot` building), pneumatic depots (`pneumatic`) and safety valves (`valve`).
+- **Other data-driven mechanics**: happiness auras (`amenity`), night-work lighting (`lighting`; day length is `rules.day`), airship trade (`airship` component plus resource `value`s and `rules.trade`), automatons (`assembler`, `rules.automaton`), tramways (a road with `needsDepot` plus a `tramDepot` building), pneumatic depots (`pneumatic`) and safety valves (`valve`).
 - **New mechanic**: write a component handler in `game/sim/components/` (`registerComponent`), import it in `components/index.ts`, add the kind to `ContentValidator.ComponentKinds`, then use it in content. Handlers can add named effects (`registerEffect`) for task steps.
 - **New global system**: `registerSystem` in `game/sim/systems.ts` (tick / second / month / restore hooks).
 - **New event/disaster**: `registerEvent` in `game/sim/events.ts`, add the kind to `ContentValidator.EventKinds`, then add an entry to `events.json`.
@@ -46,5 +46,6 @@ docs/GAME_DESIGN.md          specification
 - Backend build/test: `dotnet build SF.slnx`, `dotnet test SF.slnx`
 - Backend run (SQLite, http://localhost:5220): `dotnet run --project src/SF.Application --launch-profile http`
 - Client (in `src/SF.Client`): `npm install`, `npm run dev` (http://localhost:5173, proxies `/api` to 5220), `npm run typecheck`, `npm run lint`, `npm run test`, `npm run build`
+- Balance report: `BALANCE=1 npm run test -- balance` (in `src/SF.Client`) plays a scripted colony on several seeds; run it before and after any tuning change.
 - Visual review: `npm run dev`, then `/dev/sandbox?difficulty=engineer&seed=42&size=small&terrain=valley`. In dev builds the controller is exposed as `window.steamforge`, and `await window.steamforgeShowcase()` fills the map with one of every building. `/dev/models` shows every building model (`?id=<building>` for one, `&still=1` to stop turning).
 - One-step local build: `build-and-run.bat`. Docker: `docker compose up` (needs `POSTGRES_PASSWORD`, `JWT_SIGNING_KEY`).

@@ -11,7 +11,7 @@ public static class ContentValidator
 {
     public static readonly HashSet<string> ComponentKinds =
         ["storage", "housing", "shelter", "workplace", "firefighting", "gatherer", "producer", "field", "generator", "consumer", "research",
-         "amenity", "airship", "assembler", "tramDepot", "pneumatic", "valve"];
+         "amenity", "lighting", "airship", "assembler", "tramDepot", "pneumatic", "valve"];
 
     /// <summary>Components that are worked by a building's staff; they need a workplace component.</summary>
     public static readonly HashSet<string> StaffedComponents = ["gatherer", "producer", "field", "research", "assembler"];
@@ -80,6 +80,15 @@ public static class ContentValidator
         Check(r.TicksPerSecond is >= 1 and <= 60, "Rules: ticksPerSecond must be 1-60.");
         Check(r.SecondsPerMonth > 0, "Rules: secondsPerMonth must be positive.");
         Check(r.Months.Count == r.Temperature.Count, "Rules: there must be one temperature per month.");
+        Check(r.Day is not null, "Rules: day settings are required.");
+        if (r.Day is { } day)
+        {
+            Check(day.DaysPerMonth >= 1, "Rules: day.daysPerMonth must be at least 1.");
+            Check(day.Daylight.Count == r.Months.Count, "Rules: there must be one day.daylight value per month.");
+            Check(day.Daylight.All(d => d is > 0.05 and < 0.95), "Rules: day.daylight values must be between 0.05 and 0.95.");
+            Check(day.NightWorkFactor is > 0 and <= 1, "Rules: day.nightWorkFactor must be in (0, 1].");
+        }
+
         var covered = r.Seasons.SelectMany(s => s.Months).OrderBy(m => m).ToList();
         Check(covered.SequenceEqual(Enumerable.Range(0, r.Months.Count)), "Rules: seasons must cover every month exactly once.");
         Check(r.Roads.Count > 0, "Rules: at least one road type is required.");
@@ -235,6 +244,9 @@ public static class ContentValidator
                     break;
                 case "amenity":
                     Check(cfg.TryGetProperty("radius", out var ar) && ar.GetDouble() > 0, $"{where} amenity needs a positive radius.");
+                    break;
+                case "lighting":
+                    Check(cfg.TryGetProperty("radius", out var lr) && lr.GetDouble() > 0, $"{where} lighting needs a positive radius.");
                     break;
                 case "research":
                     Check(cfg.TryGetProperty("points", out var points) && points.GetDouble() > 0, $"{where} research needs positive points.");

@@ -131,7 +131,7 @@ describe('energy networks', () => {
     runSeconds(sim, 1)
     expect(sim.perform({ type: 'conduit', network: 'steam', tiles }).ok).toBe(true)
     expect(sim.conduitJobs.size).toBe(4)
-    runMonths(sim, 1)
+    runMonths(sim, 2)
     for (const t of tiles) expect(sim.world.conduit[t] & 1).toBe(1)
     expect(sim.conduitJobs.size).toBe(0)
     expect(sim.totals.iron ?? 0).toBeLessThanOrEqual(iron - 4 + 1e-6)

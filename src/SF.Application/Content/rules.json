@@ -1,6 +1,11 @@
 {
   "ticksPerSecond": 10,
-  "secondsPerMonth": 40,
+  "secondsPerMonth": 180,
+  "day": {
+    "daysPerMonth": 2,
+    "daylight": [0.56, 0.6, 0.64, 0.68, 0.7, 0.68, 0.64, 0.6, 0.56, 0.52, 0.5, 0.52],
+    "nightWorkFactor": 0.6
+  },
   "months": [
     "Early Spring", "Spring", "Late Spring",
     "Early Summer", "Summer", "Late Summer",
@@ -23,27 +28,27 @@
     "fertileAgeMax": 45,
     "elderAge": 58,
     "maxAge": 85,
-    "hungerPerMonth": 0.28,
+    "hungerPerMonth": 0.42,
     "hungerThreshold": 0.4,
     "mealSize": 4,
     "childMealSize": 2,
     "comfortTemperature": 8,
-    "coldPerMonth": 1.4,
+    "coldPerMonth": 2.1,
     "coatProtection": 0.55,
     "warmthThreshold": 0.35,
-    "warmUpPerMonth": 3,
-    "healthRecoveryPerMonth": 0.08,
-    "starvationPerMonth": 0.35,
-    "freezingPerMonth": 0.45,
-    "toolLifeMonths": 30,
-    "coatLifeMonths": 36,
+    "warmUpPerMonth": 4.5,
+    "healthRecoveryPerMonth": 0.12,
+    "starvationPerMonth": 0.525,
+    "freezingPerMonth": 0.675,
+    "toolLifeMonths": 20,
+    "coatLifeMonths": 24,
     "noToolsWorkFactor": 0.55,
     "elderWorkFactor": 0.75,
     "birthChancePerMonth": 0.05,
     "oldAgeDeathPerMonth": 0.04
   },
   "housing": {
-    "firewoodPerMonth": 1.2,
+    "firewoodPerMonth": 1.8,
     "pantryMeals": 3,
     "pantryFirewood": 8
   },
@@ -59,23 +64,24 @@
   "events": {
     "disastersPerYear": 1.5,
     "blessingsPerYear": 0.6,
-    "graceYears": 1
+    "graceYears": 1,
+    "minMonthsBetweenDisasters": 3
   },
   "roads": [
-    { "id": "dirt", "name": "Dirt Road", "description": "A packed-earth track. Citizens walk faster on roads.", "cost": {}, "work": 2, "speed": 1.5 },
-    { "id": "cobble", "name": "Cobbled Road", "description": "Granite setts. The fastest way on foot.", "cost": { "stone": 1 }, "work": 4, "speed": 1.9 },
+    { "id": "dirt", "name": "Dirt Road", "description": "A packed-earth track. Citizens walk faster on roads.", "cost": {}, "work": 4, "speed": 1.5 },
+    { "id": "cobble", "name": "Cobbled Road", "description": "Granite setts. The fastest way on foot.", "cost": { "stone": 1 }, "work": 8, "speed": 1.9 },
     {
       "id": "tramway",
       "name": "Steam Tramway",
       "description": "Iron rails set in setts. Citizens ride the steam trams across town at speed, but only while a tram depot has steam.",
       "cost": { "stone": 1, "iron": 1 },
-      "work": 6,
+      "work": 12,
       "speed": 3,
       "needsDepot": true,
       "unpoweredSpeed": 1.6
     }
   ],
-  "automaton": { "windMonths": 6, "windCoal": "coal", "windAmount": 2, "lifeYears": 12, "workFactor": 0.9 },
+  "automaton": { "windMonths": 4, "windCoal": "coal", "windAmount": 2, "lifeYears": 12, "workFactor": 0.9 },
   "trade": { "sellFactor": 1, "buyFactor": 1.6 },
   "networks": [
     {
@@ -87,7 +93,7 @@
         "name": "Steam Pipe",
         "description": "Riveted iron main on trestles. Carries steam from boilers to every building it touches. Runs over roads.",
         "cost": { "iron": 1 },
-        "work": 3
+        "work": 6
       }
     },
     {
@@ -99,7 +105,7 @@
         "name": "Copper Conduit",
         "description": "Copper cable strung on insulated poles. Carries galvanic power from dynamos.",
         "cost": { "copper": 1 },
-        "work": 3
+        "work": 6
       }
     }
   ],

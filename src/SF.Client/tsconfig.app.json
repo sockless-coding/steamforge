@@ -25,5 +25,5 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src"],
-  "exclude": ["src/**/*.test.ts", "src/game/sim/testing.ts"]
+  "exclude": ["src/**/*.test.ts", "src/game/sim/testing.ts", "src/game/sim/autoplay.ts"]
 }

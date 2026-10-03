@@ -80,6 +80,8 @@ export type Step =
   | { op: 'goto'; tile: number; enter?: number }
   | { op: 'work'; seconds: number; effect: string; args?: number[]; at?: number }
   | { op: 'wait'; seconds: number }
+  /** Waits until sunrise. */
+  | { op: 'sleep' }
   | { op: 'take'; from: number; res: string; qty: number }
   | { op: 'give'; to: number }
   | { op: 'do'; effect: string; args?: number[] }
@@ -149,6 +151,8 @@ export interface Citizen {
   automaton?: boolean
   /** Automatons: months of winding left; at 0 it has run down. */
   wind?: number
+  /** Work put down at nightfall, resumed when the same job is taken up again. */
+  shelved?: { effect: string; args: number[]; t: number }
 }
 
 export interface RoadJob {
@@ -180,7 +184,7 @@ export interface ResearchState {
 export interface Notice {
   id: number
   tick: number
-  level: 'info' | 'good' | 'warn' | 'bad' | 'story'
+  level: 'info' | 'good' | 'warn' | 'bad' | 'story' | 'petition'
   text: string
   /** Story dispatch id for 'story' notices. */
   dispatch?: string
@@ -200,6 +204,21 @@ export interface ColonyStats {
 }
 
 /** Every player command. All are accepted while paused; none take effect until time runs. */
+/** Travellers asking to join. They wait at the headquarters until the player answers or they give up. */
+export interface Petition {
+  /** One entry per household: the number of children travelling with a couple, or -1 for a lone adult. */
+  households: number[]
+  adults: number
+  children: number
+  /** Some of them carry fever, and would bring it into the colony. */
+  feverish: boolean
+  /** Event that sent them (events.json id), for its parameters. */
+  event: string
+  /** Tick they arrived at, and the tick at which they give up and move on. */
+  arrived: number
+  expires: number
+}
+
 export type Action =
   | { type: 'place'; def: string; x: number; y: number; rot: Rotation; w?: number; h?: number }
   | { type: 'road'; road: string; tiles: number[] }
@@ -217,6 +236,7 @@ export type Action =
   | { type: 'setBuilders'; count: number }
   | { type: 'setLimit'; res: string; limit: number }
   | { type: 'setOption'; building: number; key: string; value: string }
+  | { type: 'answerPetition'; accept: boolean }
 
 export type ActionResult = { ok: true; building?: number } | { ok: false; reason: string }
 

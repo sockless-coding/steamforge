@@ -1,5 +1,5 @@
 [
-  { "id": "potato", "name": "Potatoes", "resource": "potatoes", "yieldPerTile": 4, "growthMonths": 4, "color": "#5a8a3a" },
-  { "id": "cabbage", "name": "Cabbage", "resource": "cabbage", "yieldPerTile": 3.5, "growthMonths": 3, "color": "#8ac05a" },
-  { "id": "barley", "name": "Barley", "resource": "barley", "yieldPerTile": 4.5, "growthMonths": 5, "color": "#d8c070" }
+  { "id": "potato", "name": "Potatoes", "resource": "potatoes", "yieldPerTile": 6, "growthMonths": 4, "color": "#5a8a3a" },
+  { "id": "cabbage", "name": "Cabbage", "resource": "cabbage", "yieldPerTile": 5.25, "growthMonths": 3, "color": "#8ac05a" },
+  { "id": "barley", "name": "Barley", "resource": "barley", "yieldPerTile": 6.75, "growthMonths": 5, "color": "#d8c070" }
 ]

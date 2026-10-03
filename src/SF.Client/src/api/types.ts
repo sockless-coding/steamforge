@@ -87,6 +87,14 @@ export interface NetworkDef {
   conduit: ConduitDef
 }
 
+export interface DayRules {
+  daysPerMonth: number
+  /** One fraction per month (0-1): the share of each day between sunrise and sunset. */
+  daylight: number[]
+  /** Work speed at night in lamplight (citizens who are not lit sleep instead). */
+  nightWorkFactor: number
+}
+
 export interface RulesDef {
   ticksPerSecond: number
   secondsPerMonth: number
@@ -98,7 +106,9 @@ export interface RulesDef {
   housing: { firewoodPerMonth: number; pantryMeals: number; pantryFirewood: number }
   workplace: { outputBuffer: number; inputBatches: number }
   construction: { workChunkSeconds: number; buildersPerTile: number; refundOnDemolish: number }
-  events: { disastersPerYear: number; blessingsPerYear: number; graceYears: number }
+  /** Day and night: daylight is the lit fraction of each month's day; outside it citizens go home to sleep. */
+  day: DayRules
+  events: { disastersPerYear: number; blessingsPerYear: number; graceYears: number; minMonthsBetweenDisasters: number }
   roads: RoadDef[]
   networks: NetworkDef[]
   automaton: AutomatonRules

@@ -23,7 +23,7 @@ ledger. The charter counts as fulfilled when an Analytical Engine stands in the 
 3. Staff: assign professions in the Guild panel. Anyone without a job is a laborer.
 4. Research: engineers at a Drafting Office unlock new buildings, roads, conduits and recipes.
 5. Survive the seasons: crops grow from spring to autumn, and winter drains warmth and food.
-6. Grow: couples need empty homes to marry and have children, and travellers sometimes arrive.
+6. Grow: couples need empty homes to marry and have children, and travellers sometimes ask to join.
 7. Industrialise:
    - smelt iron and copper
    - forge tools and machine cogs
@@ -32,12 +32,34 @@ ledger. The charter counts as fulfilled when an Analytical Engine stands in the 
 
 ## Time
 
-- 10 simulation ticks per game-second and 40 game-seconds per month, so one year is 8 minutes at ×1 and about
-  48 seconds at ×10.
+- 10 simulation ticks per game-second and 180 game-seconds per month, so one year is 36 minutes at ×1 and 108 seconds
+  at ×20.
 - Twelve months: Early, mid and Late Spring, then Summer, Autumn and Winter in the same pattern.
+- **Day and night** (`rules.json` → `day`): each month has two 90-second days (`daysPerMonth`), 24 a year. Months
+  turn over at noon, so a colony is founded in daylight. `daylight` gives each month's share between sunrise and sunset: 70% at midsummer,
+  50% at midwinter (60% on average). The HUD shows the clock and a sun or moon.
+  - At night citizens go home to sleep (the homeless bed down in the Steamforge). Unlit work stops at nightfall, and
+    the job in hand is picked up again the next morning if the worker returns to the same job. Children always sleep.
+  - Work is set in seconds, while needs, fuel and wear are set per month. Changing `secondsPerMonth` changes how
+    much work fits into a month, so keep the balance in one of two ways:
+    - Scale the work durations (`seconds`, `work`, `plantSeconds`, `harvestSeconds`) with it. People then do less
+      per day.
+    - Or keep the work durations and scale every per-second rate written per month by the same factor:
+      - multiply the citizen needs (`hungerPerMonth`, `coldPerMonth`, `warmUpPerMonth`, health rates),
+        `firewoodPerMonth`, shelter warmth and generator `fuel`
+      - divide the use-based lifetimes (`toolLifeMonths`, `coatLifeMonths`, `windMonths`)
+      - multiply output tied to the calendar: crop `yieldPerTile`, forage harvest amounts, forest regrowth,
+        `spoilagePerYear`, airship cargo, and starting food and firewood
+
+      Ages, births, events, seasons and crop growth months stay as they are. The 90-second day was made this way
+      (×1.5 from 60 seconds).
+  - Workplaces and construction sites lit by a **Gas Lamp** (radius 7) or a **Galvanic Arc Lamp** (radius 12, needs
+    power) keep working through the night at `nightWorkFactor` (60%) speed.
+  - Automatons work through the night at full speed.
+  - Eating and warming up still happen at night. Sleeping in a heated home keeps people warm.
 - Monthly base temperatures come from `rules.json`, with random jitter and cold snaps on top. Below the comfort
   temperature (8 °C), difficulty's `winterSeverity` multiplies the cold.
-- Speeds are Pause, ×1, ×2, ×5 and ×10. Keys: Space toggles pause, 1–4 set speed. The game auto-pauses when the tab
+- Speeds are Pause, ×1, ×2, ×5, ×10 and ×20. Keys: Space toggles pause, 1–5 set speed. The game auto-pauses when the tab
   is hidden.
 
 ## Pause and build
@@ -78,11 +100,12 @@ Prioritised sites are served first. Cancelling refunds the delivered materials. 
   grows likely towards 85.
 - **Task AI**, in priority order:
   1. urgent needs
-  2. collecting tools or coats
-  3. stocking the home pantry and firewood
-  4. the job (workplace or builder)
-  5. labour: supply sites, service buildings (keep the Steamforge fuelled), clear land, haul goods
-  6. idle
+  2. after dark: lamplit work, otherwise sleep
+  3. collecting tools or coats
+  4. stocking the home pantry and firewood
+  5. the job (workplace or builder)
+  6. labour: supply sites, service buildings (keep the Steamforge fuelled), clear land, haul goods
+  7. idle
 
   Tasks are plain data (steps plus reservations), so they serialize.
 
@@ -102,7 +125,8 @@ All values live in content JSON.
 | Storage | Steamforge (all goods), Stockyard (materials, fuel), Warehouse (food, goods) |
 | Housing | Settler's Cottage, Brick Rowhouse, Steam Tenement (steam radiators replace firewood) |
 | Safety | Pump Well (radius 14) and Steam Fire Station (radius 24, puts fires out in seconds; needs steam). Otherwise a burning building is lost and the fire spreads |
-| Amenities | Gas Lamp (+6% happiness within 7 tiles), Clock Tower (+12% within 18; needs steam). Homes take at most +25% from amenities |
+| Amenities | Gas Lamp (+6% happiness within 7 tiles), Galvanic Arc Lamp (+5% within 9; needs power), Clock Tower (+12% within 18; needs steam). Homes take at most +25% from amenities |
+| Lighting | Gas Lamp (radius 7), Galvanic Arc Lamp (radius 12; needs power): night work goes on in their light |
 | Trade | Airship Mast (see below) |
 | Logistics | Steam Tram Depot, Pneumatic Depot, Safety Valve (see below) |
 | Automatons | Automaton Works (see below) |
@@ -191,15 +215,22 @@ Presets also scale `birthRate`, `spoilageRate`, `wearRate` and `hungerRate`.
 
 ## Events (`events.json`)
 
-Disasters (scaled by `disasterRate`, with none in the first year) and blessings are rolled monthly:
+Disasters (scaled by `disasterRate`, with none in the first year) and blessings are rolled monthly
+(`rules.json` → `events`). An event that cannot happen right now (a boiler burst with no lit boiler, blight with no
+crop in the ground) is set aside and another is drawn, so the configured rates hold. Disasters are at least
+`minMonthsBetweenDisasters` (3) months apart.
 
 - **Fire**: spreads between nearby buildings; a nearby well stops it.
 - **Boiler burst**: a fire at a lit generator (never the Steamforge).
 - **Burst steam main**: a short run of live pipe is torn out; builders re-lay it.
 - **Blight**: wipes out a field's crop.
-- **Fever**: a share of citizens fall ill and lose health.
+- **Fever**: a share of citizens fall ill and lose health. Children and elders lose health `vulnerableFactor` (2.2)
+  times faster, which can kill them if they were already weak.
 - **Cold snap**: −9 °C for two months.
-- **Travellers** (blessing): new families arrive.
+- **Travellers** (blessing): a group of 3–7 asks to join and waits at the Steamforge for the player to welcome or turn
+  them away (`answerPetition`). Only one group waits at a time, and it moves on after `waitMonths` if nobody answers.
+  They bring no tools. Some groups (`feverChance`) carry fever, which the petition card warns about. Welcoming them
+  makes about half of them and a few colonists ill.
 - **Bumper season** (blessing): crops grow faster.
 - **Supply airship** (blessing): Company crates of iron, tools, coats and cogs land at the Steamforge.
 
@@ -228,8 +259,8 @@ builds the land in layers:
 - Conduits: copper steam mains on iron trestles with brass flanges and valve wheels, and copper power lines on
   insulated poles.
 - Particles: chimney smoke, steam vents and valve hiss, fire and snowfall.
-- Atmosphere: a five-minute real-time day/night cycle (a setting) with dusk tints and moonlight. Windows and gas lamps
-  brighten at night, and lamps cast pools of light. A coal-smoke haze browns the sky and draws the fog in as more
+- Atmosphere: the light follows the simulation's sun, with dusk tints and moonlight (the "Night darkness" setting
+  hides the dark but night still passes). Windows and lamps brighten at night, and lamps cast pools of light. A coal-smoke haze browns the sky and draws the fog in as more
   industry works. The canvas has a light sepia grade.
 - Airships: Company dirigibles approach, moor at and leave each airship mast, and cosmetic dirigibles drift over the
   valley. Automatons are brass-barrel figures with a glowing eye. Steam trams run on iron rails.
@@ -239,9 +270,11 @@ builds the land in layers:
 
 ## Persistence and backend
 
-- Saves are full snapshots (gzip + base64), currently version 3, migrated one version at a time:
+- Saves are full snapshots (gzip + base64), currently version 4, migrated one version at a time:
   - Version 1: the Guildhall becomes the Steamforge, all research counts as done and all dispatches as received.
-  - Version 2: gains empty trade orders and no credit. Local slots and an autosave (every 3 minutes, on pause and on exit) live in
+  - Version 2: gains empty trade orders and no credit.
+  - Version 3: the clock is rescaled from 40- to 120-second months so the colony keeps its date. It gains no waiting
+    travellers and no recent disaster. Local slots and an autosave (every 3 minutes, on pause and on exit) live in
   IndexedDB. Six cloud slots are available per account (`/api/saves`).
 - Accounts: a silent guest account is created on first founding and can be upgraded to a registered one. JWT access
   tokens with rotating refresh tokens.
@@ -251,6 +284,14 @@ builds the land in layers:
 ## Future work
 
 - Schools and education, a market and trade airships to order, pastures and orchards.
-- Galvanic street lamps and other power consumers, smog that affects health, and dispatches that set charter goals.
+- More power consumers, smog that affects health, and dispatches that set charter goals.
 - Taverns and chapels for happiness, an apothecary and herbs for health.
-- Production graphs and a nomad policy setting.
+- Production graphs.
+- Traveller arrivals that depend on how attractive the colony is (free homes, food, happiness).
+
+## Balance testing
+
+`BALANCE=1 npm run test -- balance` plays a scripted build order (`game/sim/autoplay.ts`, shared with the soak test)
+on eight seeds for twelve years. It prints average population per year, colonies lost, and births, arrivals and
+deaths per colony-year. `BALANCE_DIFFICULTY`, `BALANCE_SEEDS` and `BALANCE_YEARS` adjust the run. Compare the report
+before and after any tuning change, because a single seed is too noisy to judge balance by.

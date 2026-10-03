@@ -100,7 +100,8 @@ describe('pause and build', () => {
     }
     expect(tiles.length).toBe(4)
     expect(sim.perform({ type: 'road', road: 'dirt', tiles }).ok).toBe(true)
-    runMonths(sim, 1)
+    // A month is one day: builders down tools at night.
+    runMonths(sim, 2)
     for (const t of tiles) expect(sim.world.road[t]).toBeGreaterThan(0)
 
     const tree = sim.world.feature.findIndex((f, i) => f === sim.featureCode('tree') && sim.world.distance(i, hall.door) < 30)

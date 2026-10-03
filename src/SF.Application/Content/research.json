@@ -114,7 +114,7 @@
     "tier": 5,
     "points": 90,
     "requires": ["engines", "copper"],
-    "unlocks": { "buildings": ["galvanic-dynamo"], "networks": ["power"] }
+    "unlocks": { "buildings": ["galvanic-dynamo", "arc-lamp"], "networks": ["power"] }
   },
   {
     "id": "arc-smelting",

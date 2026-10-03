@@ -115,6 +115,16 @@ export interface NetworkRow {
   active: boolean
 }
 
+export interface PetitionInfo {
+  adults: number
+  children: number
+  /** Households: couples (with their children) and lone adults. */
+  families: number
+  feverish: boolean
+  /** Share of their patience left (1 on arrival, 0 when they move on). */
+  patience: number
+}
+
 export interface HudState {
   ready: boolean
   colonyName: string
@@ -127,6 +137,12 @@ export interface HudState {
   monthName: string
   season: string
   monthProgress: number
+  /** Clock time, "HH:MM". */
+  timeOfDay: string
+  /** Between sunset and sunrise: only lamplit work goes on. */
+  night: boolean
+  /** Travellers waiting at the gate for an answer. */
+  petition: PetitionInfo | null
   temperature: number
   population: { total: number; adults: number; children: number; elders: number; homeless: number; automatons: number }
   peakPopulation: number
@@ -163,12 +179,15 @@ export const initialHud: HudState = {
   difficulty: '',
   paused: false,
   speed: 0,
-  speeds: [1, 2, 5, 10],
+  speeds: [1, 2, 5, 10, 20],
   year: 1,
   month: 0,
   monthName: '',
   season: 'spring',
   monthProgress: 0,
+  timeOfDay: '12:00',
+  night: false,
+  petition: null,
   temperature: 0,
   population: { total: 0, adults: 0, children: 0, elders: 0, homeless: 0, automatons: 0 },
   peakPopulation: 0,

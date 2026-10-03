@@ -1,12 +1,12 @@
 [
-  { "id": "split-firewood", "name": "Split firewood", "inputs": { "logs": 1 }, "outputs": { "firewood": 3 }, "seconds": 8 },
-  { "id": "steam-firewood", "name": "Steam-saw firewood", "inputs": { "logs": 2 }, "outputs": { "firewood": 7 }, "seconds": 8 },
-  { "id": "smelt-iron", "name": "Smelt iron", "inputs": { "ironOre": 2, "coal": 1 }, "outputs": { "iron": 1 }, "seconds": 12 },
-  { "id": "smelt-copper", "name": "Smelt copper", "inputs": { "copperOre": 2, "coal": 1 }, "outputs": { "copper": 1 }, "seconds": 12 },
-  { "id": "forge-tools", "name": "Forge tools", "inputs": { "iron": 1, "logs": 1 }, "outputs": { "tools": 1 }, "seconds": 16 },
-  { "id": "sew-coats", "name": "Sew coats", "inputs": { "leather": 2 }, "outputs": { "coats": 1 }, "seconds": 14 },
-  { "id": "machine-cogs", "name": "Machine cogs", "inputs": { "iron": 1 }, "outputs": { "cogs": 2 }, "seconds": 12 },
-  { "id": "grow-tomatoes", "name": "Grow tomatoes", "inputs": {}, "outputs": { "tomatoes": 3 }, "seconds": 16 },
-  { "id": "arc-iron", "name": "Arc-smelt iron", "inputs": { "ironOre": 2 }, "outputs": { "iron": 2 }, "seconds": 10 },
-  { "id": "arc-copper", "name": "Arc-smelt copper", "inputs": { "copperOre": 2 }, "outputs": { "copper": 2 }, "seconds": 10 }
+  { "id": "split-firewood", "name": "Split firewood", "inputs": { "logs": 1 }, "outputs": { "firewood": 3 }, "seconds": 16 },
+  { "id": "steam-firewood", "name": "Steam-saw firewood", "inputs": { "logs": 2 }, "outputs": { "firewood": 7 }, "seconds": 16 },
+  { "id": "smelt-iron", "name": "Smelt iron", "inputs": { "ironOre": 2, "coal": 1 }, "outputs": { "iron": 1 }, "seconds": 24 },
+  { "id": "smelt-copper", "name": "Smelt copper", "inputs": { "copperOre": 2, "coal": 1 }, "outputs": { "copper": 1 }, "seconds": 24 },
+  { "id": "forge-tools", "name": "Forge tools", "inputs": { "iron": 1, "logs": 1 }, "outputs": { "tools": 1 }, "seconds": 32 },
+  { "id": "sew-coats", "name": "Sew coats", "inputs": { "leather": 2 }, "outputs": { "coats": 1 }, "seconds": 28 },
+  { "id": "machine-cogs", "name": "Machine cogs", "inputs": { "iron": 1 }, "outputs": { "cogs": 2 }, "seconds": 24 },
+  { "id": "grow-tomatoes", "name": "Grow tomatoes", "inputs": {}, "outputs": { "tomatoes": 3 }, "seconds": 32 },
+  { "id": "arc-iron", "name": "Arc-smelt iron", "inputs": { "ironOre": 2 }, "outputs": { "iron": 2 }, "seconds": 20 },
+  { "id": "arc-copper", "name": "Arc-smelt copper", "inputs": { "copperOre": 2 }, "outputs": { "copper": 2 }, "seconds": 20 }
 ]

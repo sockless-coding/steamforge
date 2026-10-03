@@ -38,18 +38,15 @@ const LOOKS: Record<string, SeasonLook> = {
 
 const SUN_DIRECTION = new THREE.Vector3(-0.55, 0.75, 0.35).normalize()
 
-/** Real seconds per day/night cycle (independent of game speed; purely atmospheric). */
-const DAY_SECONDS = 300
 const NIGHT_SKY = new THREE.Color('#121a2e')
 const DUSK_SKY = new THREE.Color('#d0784a')
 const MOONLIGHT = new THREE.Color('#8ea8e0')
 const NIGHT_HEMI = new THREE.Color('#33405e')
 const SMOG = new THREE.Color('#8a7a62')
 
-/** 0 in daylight, 1 at full night, with dusk and dawn in between. `t` is the fraction of a day (0.25 = noon). */
-function nightFactor(t: number): number {
-  const sun = Math.sin(t * Math.PI * 2)
-  return THREE.MathUtils.clamp((0.18 - sun) / 0.5, 0, 1)
+/** 0 in daylight, 1 at full night, with dusk and dawn in between. `sun` is the simulation's sun height (-1..1). */
+function nightFactor(sun: number): number {
+  return THREE.MathUtils.clamp((0.18 - sun) / 0.45, 0, 1)
 }
 
 /**
@@ -80,7 +77,6 @@ export class WorldRenderer {
   private readonly tint = new THREE.Color(1, 1, 1)
   private readonly skyColor = new THREE.Color()
   private snowAcc = 0
-  private dayTime = 0.12
   private dayNight = true
   private night = 0
   private smog = 0
@@ -144,7 +140,7 @@ export class WorldRenderer {
     this.resize()
   }
 
-  /** Turns the day/night cycle on or off (off holds a bright afternoon). */
+  /** Shows or hides the dark of night (off holds a bright afternoon; night still passes in the simulation). */
   setDayNight(enabled: boolean): void {
     this.dayNight = enabled
   }
@@ -225,8 +221,7 @@ export class WorldRenderer {
     this.terrain.setSeason(this.snow, this.tint)
     this.nature.setSeason(this.snow > 0.4 ? 'winter' : sim.season.id === 'winter' ? 'autumn' : sim.season.id)
     // Day and night, dusk glow, and coal-smoke haze that thickens as the colony's industry works.
-    if (this.dayNight) this.dayTime = (this.dayTime + dt / DAY_SECONDS) % 1
-    const nightGoal = this.dayNight ? nightFactor(this.dayTime) * 0.88 : 0
+    const nightGoal = this.dayNight ? nightFactor(sim.sun) * 0.88 : 0
     this.night += (nightGoal - this.night) * Math.min(1, dt * 2)
     this.smogTimer -= dt
     if (this.smogTimer <= 0) {

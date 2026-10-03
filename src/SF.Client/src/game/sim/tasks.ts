@@ -1,3 +1,4 @@
+import { isLit } from './components/lighting'
 import { runEffect } from './effects'
 import { energyFactor } from './energy'
 import { addStock, addToStorage, amount } from './inventory'
@@ -136,12 +137,19 @@ export function workSpeed(sim: Simulation, c: Citizen, at?: number): number {
     if (c.age >= r.elderAge * 12) s *= r.elderWorkFactor
     if (c.health < 0.4) s *= 0.7
     if (c.sick > 0) s *= 0.6
+    // Only lamplit work goes on after dark, and it goes slower (automatons do not need light).
+    if (sim.isNight) s *= sim.rules.day.nightWorkFactor
   }
   if (at) {
     const b = sim.buildings.get(at)
     if (b) s *= energyFactor(sim, b)
   }
   return s
+}
+
+function workLit(sim: Simulation, id: number): boolean {
+  const b = id ? sim.buildings.get(id) : undefined
+  return b !== undefined && isLit(sim, b)
 }
 
 /** Advances one citizen by one tick: picks a task when idle, then runs the current step. */
@@ -178,6 +186,18 @@ function runStep(sim: Simulation, c: Citizen, t: Task, step: Step): boolean {
     case 'goto':
       return walk(sim, c, step.tile, step.enter)
     case 'work': {
+      if (sim.isNight && !c.automaton && t.kind !== 'need' && !workLit(sim, step.at ?? t.about)) {
+        // Tools down at nightfall unless the work is in lamplight; the job is picked up again in the morning.
+        if (t.t > 0) c.shelved = { effect: step.effect, args: step.args ?? [], t: t.t }
+        abortTask(sim, c)
+        return false
+      }
+      if (t.t === 0 && c.shelved) {
+        const s = c.shelved
+        const args = step.args ?? []
+        if (s.effect === step.effect && s.args.length === args.length && s.args.every((a, i) => a === args[i])) t.t = s.t
+        delete c.shelved
+      }
       if (step.at) {
         const b = sim.buildings.get(step.at)
         if (!b || b.fire > 0) {
@@ -197,6 +217,8 @@ function runStep(sim: Simulation, c: Citizen, t: Task, step: Step): boolean {
     case 'wait':
       t.t += sim.dt
       return t.t >= step.seconds
+    case 'sleep':
+      return !sim.isNight
     case 'take': {
       const b = sim.buildings.get(step.from)
       releaseWhere(sim, t, (r) => r.kind === 'stock' && r.b === step.from && r.res === step.res)

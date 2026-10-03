@@ -119,6 +119,19 @@
   color: #9fd4ff;
 }
 
+.clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--brass-hi);
+}
+
+.clock.night {
+  color: #b8c8f0;
+}
+
 .resource-strip {
   flex: 1;
   display: flex;
@@ -265,6 +278,51 @@
   background: linear-gradient(180deg, rgba(74, 56, 30, 0.92), rgba(40, 28, 16, 0.92));
   color: var(--brass-hi);
   font-family: var(--font-heading);
+}
+
+.petition-card {
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--parchment);
+  background: linear-gradient(180deg, rgba(58, 44, 26, 0.94), rgba(30, 22, 14, 0.94));
+  box-shadow: inset 3px 0 0 var(--ok), 0 0 14px rgba(246, 217, 138, 0.18);
+  font: 13px var(--font-body);
+}
+
+.petition-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--brass-hi);
+  font-family: var(--font-heading);
+}
+
+.petition-card p {
+  margin: 4px 0 6px;
+}
+
+.petition-fever {
+  color: var(--ember);
+}
+
+.petition-patience {
+  height: 3px;
+  margin-bottom: 8px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.petition-patience span {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--brass);
+}
+
+.petition-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .notice:nth-child(n + 4) {

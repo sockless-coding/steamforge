@@ -34,7 +34,7 @@
     "disaster": true,
     "weight": 2,
     "minYear": 2,
-    "params": { "fraction": 0.12, "months": 3, "healthPerMonth": 0.12 }
+    "params": { "fraction": 0.12, "months": 3, "healthPerMonth": 0.12, "vulnerableFactor": 2.2 }
   },
   {
     "id": "cold-snap",
@@ -53,7 +53,7 @@
     "disaster": false,
     "weight": 3,
     "minYear": 2,
-    "params": { "min": 3, "max": 7 }
+    "params": { "min": 3, "max": 7, "waitMonths": 1, "feverChance": 0.2, "feverMonths": 2 }
   },
   {
     "id": "bumper-crop",

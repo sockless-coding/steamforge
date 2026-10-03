@@ -41,7 +41,13 @@ export interface GameControllerOptions {
   onMenu?: () => void
 }
 
-const SPEEDS = [1, 2, 5, 10]
+const SPEEDS = [1, 2, 5, 10, 20]
+
+/** "HH:MM" for a fraction of a day (0 = midnight), to the quarter hour. */
+function clockTime(dayProgress: number): string {
+  const quarters = Math.floor(dayProgress * 96) % 96
+  return `${String(Math.floor(quarters / 4)).padStart(2, '0')}:${String((quarters % 4) * 15).padStart(2, '0')}`
+}
 const HUD_INTERVAL = 0.15
 const AUTOSAVE_SECONDS = 180
 const MAX_STEPS_PER_FRAME = 60
@@ -362,6 +368,7 @@ export class GameController {
       case 'Digit2':
       case 'Digit3':
       case 'Digit4':
+      case 'Digit5':
         this.setSpeed(Number(e.code.slice(5)) - 1)
         return
       case 'KeyR':
@@ -619,6 +626,7 @@ export class GameController {
         sim.component<{ radius?: number }>(def.id, 'gatherer')?.radius ??
         sim.component<{ radius: number }>(def.id, 'boiler')?.radius ??
         sim.component<{ radius: number }>(def.id, 'firefighting')?.radius ??
+        sim.component<{ radius: number }>(def.id, 'lighting')?.radius ??
         sim.component<{ radius: number }>(def.id, 'amenity')?.radius ??
         0
       overlays.setRing(f.x + f.w / 2, f.y + f.h / 2, radius)
@@ -740,6 +748,17 @@ export class GameController {
       monthName: sim.rules.months[sim.month],
       season: sim.season.name,
       monthProgress: sim.monthProgress,
+      timeOfDay: clockTime(sim.dayProgress),
+      night: sim.isNight,
+      petition: sim.petition
+        ? {
+            adults: sim.petition.adults,
+            children: sim.petition.children,
+            families: sim.petition.households.length,
+            feverish: sim.petition.feverish,
+            patience: (sim.petition.expires - sim.tick) / Math.max(1, sim.petition.expires - sim.petition.arrived),
+          }
+        : null,
       temperature: sim.temperature,
       population: sim.population(),
       peakPopulation: sim.stats.peakPopulation,

@@ -14,7 +14,7 @@ const volumes: [keyof Settings, string][] = [
 
 const toggles: [keyof Settings, string][] = [
   ['edgeScroll', 'Scroll the map at the screen edge'],
-  ['dayNight', 'Day and night cycle (gaslit evenings)'],
+  ['dayNight', 'Darken the map at night (gaslit evenings)'],
   ['showHints', 'Show control hints'],
 ]
 

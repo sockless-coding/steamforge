@@ -1,3 +1,4 @@
+import { isLit } from './components/lighting'
 import { amount, available, foodIds, foodIn, nearestStorageFor, nearestStorageWith } from './inventory'
 import { deliveredFraction, totalWork } from './placement'
 import type { Simulation } from './simulation'
@@ -18,9 +19,9 @@ import type { Building, Citizen, Reservation, Step, Task } from './types'
 import { distanceTo, haulOutputTask, outputHeld, outputsOf } from './work'
 
 /**
- * Decides what an idle citizen does next. Order: urgent needs, personal supplies, household provisioning,
- * their job (workplace or builder), general labour, then idling. Banished-style: everyone without a
- * job is a laborer, and workers with nothing to do pitch in as laborers too.
+ * Decides what an idle citizen does next. Order: urgent needs, sleep after dark (unless their work is lamplit),
+ * personal supplies, household provisioning, their job (workplace or builder), general labour, then idling.
+ * Banished-style: everyone without a job is a laborer, and workers with nothing to do pitch in as laborers too.
  */
 export function chooseTask(sim: Simulation, c: Citizen): Task | null {
   if (c.automaton) return automatonTask(sim, c)
@@ -34,6 +35,7 @@ export function chooseTask(sim: Simulation, c: Citizen): Task | null {
     if (t) return t
   }
   if (c.sick > 0 && c.home && sim.rng.chance(0.5)) return restTask(sim, c, 15)
+  if (sim.isNight) return nightWorkTask(sim, c) ?? sleepTask(sim, c)
   if (c.age < r.adultAge * 12) return childTask(sim, c)
 
   const supplies = suppliesTask(sim, c)
@@ -91,10 +93,7 @@ function eatTask(sim: Simulation, c: Citizen): Task | null {
   return task('need', 'Eating from the stores', best.id, [gotoBuilding(best), { op: 'work', seconds: 1.5, effect: 'eat', args: [best.id] }])
 }
 
-/** Where a citizen can get warm: a heated home, else a shelter (the Steamforge). */
-function warmPlace(sim: Simulation, c: Citizen): Building | null {
-  const home = c.home ? sim.buildings.get(c.home) : undefined
-  if (home && (home.data.heated || amount(home.stock, 'firewood') > 0)) return home
+function nearestShelter(sim: Simulation, c: Citizen): Building | null {
   let best: Building | null = null
   let bestD = Infinity
   for (const b of sim.buildings.values()) {
@@ -105,7 +104,35 @@ function warmPlace(sim: Simulation, c: Citizen): Building | null {
       best = b
     }
   }
-  return best ?? home ?? null
+  return best
+}
+
+/** Where a citizen can get warm: a heated home, else a shelter (the Steamforge). */
+function warmPlace(sim: Simulation, c: Citizen): Building | null {
+  const home = c.home ? sim.buildings.get(c.home) : undefined
+  if (home && (home.data.heated || amount(home.stock, 'firewood') > 0)) return home
+  return nearestShelter(sim, c) ?? home ?? null
+}
+
+// ---------------------------------------------------------------- night
+
+/** After dark, workers at a lamplit workplace and builders with a lamplit site carry on. Children always sleep. */
+function nightWorkTask(sim: Simulation, c: Citizen): Task | null {
+  if (c.age < sim.rules.citizen.adultAge * 12) return null
+  if (c.workplace) {
+    const b = sim.buildings.get(c.workplace)
+    return b && isLit(sim, b) ? workplaceTask(sim, c) : null
+  }
+  return c.profession === 'builder' ? builderTask(sim, c, true) : null
+}
+
+/** Home to bed until sunrise (the homeless bed down in the Steamforge), waking a moment apart. */
+function sleepTask(sim: Simulation, c: Citizen): Task {
+  const home = c.home ? sim.buildings.get(c.home) : undefined
+  const bed = home && !home.site && home.fire === 0 ? home : nearestShelter(sim, c)
+  const steps: Step[] = [{ op: 'sleep' }, { op: 'wait', seconds: sim.rng.int(4) }]
+  if (bed) steps.unshift(gotoBuilding(bed, true))
+  return task('need', 'Sleeping', bed?.id ?? 0, steps)
 }
 
 function warmTask(sim: Simulation, c: Citizen): Task | null {
@@ -261,8 +288,8 @@ function workplaceTask(sim: Simulation, c: Citizen): Task | null {
   return haulOutputTask(sim, c, b, 1)
 }
 
-/** Builders raise construction sites and lay roads; with nothing to build they labour. */
-function builderTask(sim: Simulation, c: Citizen): Task | null {
+/** Builders raise construction sites and lay roads; with nothing to build they labour. After dark only lit sites. */
+function builderTask(sim: Simulation, c: Citizen, litOnly = false): Task | null {
   const chunk = sim.rules.construction.workChunkSeconds
   let best: Building | null = null
   let bestScore = Infinity
@@ -272,6 +299,7 @@ function builderTask(sim: Simulation, c: Citizen): Task | null {
     if (allowed - b.site.work < 0.25) continue
     const slots = Math.max(1, Math.ceil(b.w * b.h * sim.rules.construction.buildersPerTile))
     if (slotCount(b, 'builders') >= slots) continue
+    if (litOnly && !isLit(sim, b)) continue
     const score = distanceTo(sim, c, b.door) - (b.site.priority ? 10000 : 0)
     if (score < bestScore) {
       bestScore = score
@@ -285,7 +313,7 @@ function builderTask(sim: Simulation, c: Citizen): Task | null {
       { op: 'work', seconds: chunk, effect: 'build', args: [best.id, chunk] },
     ], [takeSlot(best, 'builders')])
   }
-  return roadTask(sim, c)
+  return litOnly ? null : roadTask(sim, c)
 }
 
 interface LayJob {

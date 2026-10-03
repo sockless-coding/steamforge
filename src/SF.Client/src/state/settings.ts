@@ -13,7 +13,7 @@ export interface Settings {
   edgeScroll: boolean
   /** Show the controls cheat sheet in game. */
   showHints: boolean
-  /** Run the gaslit day/night cycle (purely visual). */
+  /** Darken the map at night. Night always passes in the simulation; this only hides the darkness. */
   dayNight: boolean
 }
 

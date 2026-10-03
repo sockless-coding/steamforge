@@ -230,7 +230,7 @@ export function GameMenu({ controller, onClose }: { controller: GameController; 
           </label>
           <label className="toggle-row">
             <input type="checkbox" checked={settings.dayNight} onChange={(e) => update({ dayNight: e.target.checked })} />
-            <span>Day and night</span>
+            <span>Night darkness</span>
           </label>
           <div className="menu-actions">
             <Button icon="play" onClick={onClose}>

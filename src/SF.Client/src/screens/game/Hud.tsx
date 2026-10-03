@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLoadedContent } from '../../api/content'
 import type { BuildingCategory, BuildingDef } from '../../api/types'
 import type { GameController } from '../../game/GameController'
-import { useHud, type HudState, type Tool } from '../../state/game'
+import { useHud, type HudState, type PetitionInfo, type Tool } from '../../state/game'
 import { useSettings } from '../../state/settings'
 import { Button } from '../../ui/components'
 import { Icon, type IconName } from '../../ui/Icon'
@@ -81,7 +81,7 @@ export function Hud({ controller, menu, setMenu }: HudProps) {
       {hud.hint && hud.tool.kind !== 'select' && <div className="hint-chip">{hud.hint}</div>}
       {showHints && !hud.paused && hud.tool.kind === 'select' && !hud.selection && (
         <div className="controls-hint muted small">
-          WASD pan · Q/E rotate · wheel zoom · right-drag pan · Space pause · 1–4 speed · R rotate building · Esc cancel
+          WASD pan · Q/E rotate · wheel zoom · right-drag pan · Space pause · 1–5 speed · R rotate building · Esc cancel
         </div>
       )}
       {panel?.kind === 'guild' && <GuildPanel hud={hud} controller={controller} onClose={close} />}
@@ -126,6 +126,13 @@ function TopBar({ hud, controller, onMenu, open }: { hud: HudState; controller: 
               <span style={{ width: `${hud.monthProgress * 100}%` }} />
             </div>
           </div>
+          <span
+            className={`clock ${hud.night ? 'night' : ''}`}
+            title={hud.night ? 'Night: citizens sleep, except at workplaces and building sites in lamplight' : 'Daytime'}
+          >
+            <Icon name={hud.night ? 'moon' : 'sun'} size={15} />
+            {hud.timeOfDay}
+          </span>
           <span className={`temp ${hud.temperature < 2 ? 'cold' : ''}`}>
             <Icon name="thermometer" size={16} />
             {Math.round(hud.temperature)}°
@@ -217,9 +224,11 @@ function TopBar({ hud, controller, onMenu, open }: { hud: HudState; controller: 
 }
 
 function Notices({ hud, controller, openLetter }: { hud: HudState; controller: GameController; openLetter: (id: string) => void }) {
-  const recent = hud.notices.slice(-6).reverse()
+  // A petition's notice is answered on its card while the travellers wait; the answer gets a notice of its own.
+  const recent = hud.notices.filter((n) => n.level !== 'petition').slice(-6).reverse()
   return (
     <ul className="notices">
+      {hud.petition && <PetitionCard petition={hud.petition} controller={controller} />}
       {recent.map((n) => (
         <li key={n.id} className={`notice notice-${n.level}`}>
           {n.dispatch ? (
@@ -234,6 +243,34 @@ function Notices({ hud, controller, openLetter }: { hud: HudState; controller: G
         </li>
       ))}
     </ul>
+  )
+}
+
+function PetitionCard({ petition: p, controller }: { petition: PetitionInfo; controller: GameController }) {
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+  const who = [plural(p.adults, 'adult', 'adults'), p.children > 0 ? plural(p.children, 'child', 'children') : null].filter(Boolean).join(' and ')
+  return (
+    <li className="petition-card">
+      <div className="petition-head">
+        <Icon name="people" size={16} />
+        <b>Travellers at the gate</b>
+      </div>
+      <p>
+        {who} ({plural(p.families, 'household', 'households')}) ask to join the colony. They bring no tools.
+        {p.feverish && <em className="petition-fever"> Some of them are coughing: they would bring fever.</em>}
+      </p>
+      <div className="petition-patience" title="How long they will wait for an answer">
+        <span style={{ width: `${Math.max(0, Math.min(1, p.patience)) * 100}%` }} />
+      </div>
+      <div className="petition-actions">
+        <Button size="sm" icon="check" onClick={() => controller.perform({ type: 'answerPetition', accept: true })}>
+          Welcome them
+        </Button>
+        <Button size="sm" variant="iron" icon="close" onClick={() => controller.perform({ type: 'answerPetition', accept: false })}>
+          Turn away
+        </Button>
+      </div>
+    </li>
   )
 }
 
