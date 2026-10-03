@@ -69,16 +69,24 @@ const CATEGORY_NAMES: Record<ResourceCategory, string> = { food: 'Food', fuel: '
 export function StoresPanel({ hud, controller, onClose }: { hud: HudState; controller: GameController; onClose: () => void }) {
   const [category, setCategory] = useState<ResourceCategory>('food')
   const rows = hud.resources.filter((r) => r.category === category)
+  const setTrade = (res: string, mode: 'export' | 'import' | 'none', amount: number) => controller.perform({ type: 'setTrade', res, mode, amount })
   return (
-    <Modal title="Stores and Production Limits" onClose={onClose} wide>
+    <Modal title={hud.hasMast ? 'Stores, Limits and Airship Trade' : 'Stores and Production Limits'} onClose={onClose} wide>
       <Tabs tabs={(Object.keys(CATEGORY_NAMES) as ResourceCategory[]).map((c) => ({ id: c, label: CATEGORY_NAMES[c] }))} value={category} onChange={setCategory} />
       <p className="muted small">Workers stop producing a resource once the stores hold its limit, and turn to labour instead. Clear the limit for no cap.</p>
+      {hud.hasMast && (
+        <p className="muted small">
+          Airship trade: goods above an export amount are carried to the mast and credited at once. Imports are bought with Company credit (
+          <b className="brass-text">{Math.floor(hud.credit)}</b>) when the next airship moors, up to the amount in storage, and cost more than exports earn.
+        </p>
+      )}
       <table className="prof-table">
         <thead>
           <tr>
             <th>Resource</th>
             <th>In storage</th>
             <th>Limit</th>
+            {hud.hasMast && <th>Airship trade</th>}
           </tr>
         </thead>
         <tbody>
@@ -99,6 +107,36 @@ export function StoresPanel({ hud, controller, onClose }: { hud: HudState; contr
                   onBlur={(e) => controller.perform({ type: 'setLimit', res: r.id, limit: Number(e.target.value) || 0 })}
                 />
               </td>
+              {hud.hasMast && (
+                <td className="trade-cell">
+                  {r.value > 0 ? (
+                    <>
+                      <select
+                        value={hud.trade[r.id]?.mode ?? 'none'}
+                        onChange={(e) => setTrade(r.id, e.target.value as 'export' | 'import' | 'none', hud.trade[r.id]?.amount ?? Math.floor(r.amount))}
+                      >
+                        <option value="none">No trade</option>
+                        <option value="export">Export above</option>
+                        <option value="import">Import up to</option>
+                      </select>
+                      {hud.trade[r.id] && (
+                        <input
+                          className="limit-input"
+                          type="number"
+                          min={0}
+                          step={10}
+                          defaultValue={hud.trade[r.id].amount}
+                          key={`${r.id}-${hud.trade[r.id].mode}`}
+                          onBlur={(e) => setTrade(r.id, hud.trade[r.id].mode, Number(e.target.value) || 0)}
+                        />
+                      )}
+                      <span className="muted small">{r.value} credit</span>
+                    </>
+                  ) : (
+                    <span className="muted small">Not traded</span>
+                  )}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -189,6 +227,10 @@ export function GameMenu({ controller, onClose }: { controller: GameController; 
           <label className="toggle-row">
             <input type="checkbox" checked={settings.edgeScroll} onChange={(e) => update({ edgeScroll: e.target.checked })} />
             <span>Edge scrolling</span>
+          </label>
+          <label className="toggle-row">
+            <input type="checkbox" checked={settings.dayNight} onChange={(e) => update({ dayNight: e.target.checked })} />
+            <span>Day and night</span>
           </label>
           <div className="menu-actions">
             <Button icon="play" onClick={onClose}>

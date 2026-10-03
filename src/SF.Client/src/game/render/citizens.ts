@@ -130,7 +130,36 @@ function geometries() {
   )
   const load = new THREE.BoxGeometry(0.18, 0.13, 0.13).translate(0, 0.46, 0.17)
 
-  return { legWithBoot, arm, hand, coat, buttons, dress, apron, head, eyes, topHat, bowler, bonnet, cap, load }
+  // Automatons: a riveted brass barrel with iron bands, a copper dome head with a glowing eye and a winding key.
+  const botBody = banded(
+    merge([
+      new THREE.CylinderGeometry(0.095, 0.1, 0.3, 12).translate(0, 0.44, 0),
+      new THREE.SphereGeometry(0.096, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.4, 1).translate(0, 0.59, 0),
+      new THREE.CylinderGeometry(0.06, 0.06, 0.05, 10).translate(0, 0.27, 0),
+      new THREE.BoxGeometry(0.02, 0.02, 0.09).translate(0, 0.5, -0.13),
+      new THREE.BoxGeometry(0.1, 0.05, 0.015).translate(0, 0.5, -0.18),
+    ]),
+    [
+      [0.3, '#2e2b28'],
+      [0.34, '#c89a48'],
+      [0.37, '#3a3430'],
+      [0.53, '#d0a24c'],
+      [0.56, '#3a3430'],
+      [1, '#d0a24c'],
+    ],
+  )
+  const botHead = banded(
+    merge([
+      new THREE.CylinderGeometry(0.025, 0.03, 0.05, 8).translate(0, 0.62, 0),
+      new THREE.SphereGeometry(0.07, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 1.1, 1).translate(0, 0.645, 0),
+      new THREE.CylinderGeometry(0.072, 0.072, 0.03, 12).translate(0, 0.655, 0),
+      new THREE.CylinderGeometry(0.006, 0.006, 0.06, 5).translate(0, 0.75, 0),
+    ]),
+    [[1, '#c0703e']],
+  )
+  const botEye = banded(new THREE.SphereGeometry(0.022, 8, 6).scale(1.4, 1, 0.6).translate(0, 0.68, 0.06), [[1, '#9ff0ff']])
+
+  return { legWithBoot, arm, hand, coat, buttons, dress, apron, head, eyes, topHat, bowler, bonnet, cap, load, botBody, botHead, botEye }
 }
 
 type Part = keyof ReturnType<typeof geometries>
@@ -151,7 +180,12 @@ const PARTS: { part: Part; tint: 'profession' | 'skin' | 'load' | 'none'; vertex
   { part: 'bonnet', tint: 'none', vertexColors: true, shadow: true },
   { part: 'cap', tint: 'none', vertexColors: true, shadow: true },
   { part: 'load', tint: 'load', vertexColors: false, shadow: true },
+  { part: 'botBody', tint: 'none', vertexColors: true, shadow: true },
+  { part: 'botHead', tint: 'none', vertexColors: true, shadow: true },
+  { part: 'botEye', tint: 'none', vertexColors: true, shadow: false },
 ]
+
+const BRASS = new THREE.Color('#c8964a')
 
 interface Pose {
   legSwing: number
@@ -192,7 +226,11 @@ export class CitizenLayer {
     for (const p of professions) this.profColors.set(p.id, new THREE.Color(p.color))
     for (const r of resources) this.resColors.set(r.id, new THREE.Color(r.color))
     for (const { part, vertexColors } of PARTS) {
-      this.mats.set(part, new THREE.MeshStandardMaterial({ roughness: part === 'buttons' ? 0.3 : 0.82, metalness: part === 'buttons' ? 0.8 : 0, vertexColors }))
+      const metal = part === 'buttons' || part === 'botBody' || part === 'botHead'
+      const mat = new THREE.MeshStandardMaterial({ roughness: metal ? 0.35 : 0.82, metalness: metal ? 0.8 : 0, vertexColors })
+      // The automaton's eye glows like a galvanic lamp.
+      if (part === 'botEye') Object.assign(mat, { emissive: new THREE.Color('#7fdcff'), emissiveIntensity: 1.4 })
+      this.mats.set(part, mat)
     }
     this.allocate(64)
   }
@@ -284,6 +322,21 @@ export class CitizenLayer {
       this.s.set(scale, scale, scale)
       this.base.compose(this.p, this.q, this.s)
 
+      if (c.automaton) {
+        // Run-down automatons stand still and slump.
+        const limp = (c.wind ?? 1) <= 0 ? 0.5 : 1
+        this.put('legWithBootL', this.limbMatrix(-HIP_X, HIP_Y, pose.legSwing * 0.7))
+        this.put('legWithBootR', this.limbMatrix(HIP_X, HIP_Y, -pose.legSwing * 0.7))
+        this.put('armL', this.limbMatrix(-SHOULDER_X - 0.01, SHOULDER_Y, pose.armL * limp), BRASS)
+        this.put('armR', this.limbMatrix(SHOULDER_X + 0.01, SHOULDER_Y, pose.armR * limp), BRASS)
+        this.put('handL', this.limbMatrix(-SHOULDER_X - 0.01, SHOULDER_Y, pose.armL * limp), BRASS)
+        this.put('handR', this.limbMatrix(SHOULDER_X + 0.01, SHOULDER_Y, pose.armR * limp), BRASS)
+        this.put('botBody', this.base)
+        this.put('botHead', this.base)
+        if (limp === 1) this.put('botEye', this.base)
+        if (c.carry) this.put('load', this.base, this.resColors.get(Object.keys(c.carry)[0]) ?? WHITE)
+        continue
+      }
       const coat = this.profColors.get(c.profession) ?? this.profColors.get('laborer')!
       const skin = SKIN[c.id % SKIN.length]
 

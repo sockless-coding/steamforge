@@ -6,16 +6,18 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import type { Simulation } from '../sim/simulation'
 import type { SimEvent } from '../sim/types'
+import { AirshipLayer } from './airships'
 import { BuildingLayer } from './buildings'
 import { CameraRig } from './camera'
 import { CitizenLayer } from './citizens'
 import { ConduitLayer } from './conduits'
 import { NatureLayer } from './nature'
 import { OverlayLayer } from './overlays'
-import { setBuildingEnvironment } from './materials'
+import { material, setBuildingEnvironment, setBuildingEnvironmentIntensity } from './materials'
 import { Particles } from './particles'
 import type { QualityProfile } from './quality'
 import { TerrainLayer } from './terrain'
+import { TramLayer } from './tramways'
 
 interface SeasonLook {
   sky: string
@@ -36,6 +38,20 @@ const LOOKS: Record<string, SeasonLook> = {
 
 const SUN_DIRECTION = new THREE.Vector3(-0.55, 0.75, 0.35).normalize()
 
+/** Real seconds per day/night cycle (independent of game speed; purely atmospheric). */
+const DAY_SECONDS = 300
+const NIGHT_SKY = new THREE.Color('#121a2e')
+const DUSK_SKY = new THREE.Color('#d0784a')
+const MOONLIGHT = new THREE.Color('#8ea8e0')
+const NIGHT_HEMI = new THREE.Color('#33405e')
+const SMOG = new THREE.Color('#8a7a62')
+
+/** 0 in daylight, 1 at full night, with dusk and dawn in between. `t` is the fraction of a day (0.25 = noon). */
+function nightFactor(t: number): number {
+  const sun = Math.sin(t * Math.PI * 2)
+  return THREE.MathUtils.clamp((0.18 - sun) / 0.5, 0, 1)
+}
+
 /**
  * Three.js view of the colony. Reads the simulation each frame and never mutates it. Owned by the GameController,
  * which forwards input and simulation events.
@@ -49,6 +65,8 @@ export class WorldRenderer {
   readonly buildings: BuildingLayer
   readonly citizens: CitizenLayer
   readonly conduits: ConduitLayer
+  readonly airships: AirshipLayer
+  readonly trams: TramLayer
   readonly overlays: OverlayLayer
   readonly particles: Particles
   private readonly parent: HTMLElement
@@ -62,6 +80,12 @@ export class WorldRenderer {
   private readonly tint = new THREE.Color(1, 1, 1)
   private readonly skyColor = new THREE.Color()
   private snowAcc = 0
+  private dayTime = 0.12
+  private dayNight = true
+  private night = 0
+  private smog = 0
+  private smogTimer = 0
+  private readonly displaySky = new THREE.Color()
   private readonly raycaster = new THREE.Raycaster()
   private readonly resizeObserver: ResizeObserver
 
@@ -100,12 +124,29 @@ export class WorldRenderer {
     this.citizens = new CitizenLayer(this.terrain, sim.content.bundle.professions, sim.content.bundle.resources)
     this.overlays = new OverlayLayer(this.terrain)
     this.conduits = new ConduitLayer(this.terrain, this.particles)
-    this.scene.add(this.terrain.group, this.nature.group, this.buildings.group, this.conduits.group, this.citizens.group, this.overlays.group, this.particles.points)
+    this.airships = new AirshipLayer(this.terrain, this.particles, world.width, world.height)
+    this.trams = new TramLayer(this.terrain, this.particles)
+    this.scene.add(
+      this.terrain.group,
+      this.nature.group,
+      this.buildings.group,
+      this.conduits.group,
+      this.trams.group,
+      this.airships.group,
+      this.citizens.group,
+      this.overlays.group,
+      this.particles.points,
+    )
 
     this.applyQuality()
     this.resizeObserver = new ResizeObserver(() => this.resize())
     this.resizeObserver.observe(parent)
     this.resize()
+  }
+
+  /** Turns the day/night cycle on or off (off holds a bright afternoon). */
+  setDayNight(enabled: boolean): void {
+    this.dayNight = enabled
   }
 
   setQuality(quality: QualityProfile): void {
@@ -153,6 +194,7 @@ export class WorldRenderer {
           break
         case 'road':
           this.terrain.repaint(e.tile)
+          this.trams.markDirty()
           break
         case 'terrain':
           this.terrain.reshape(e.x, e.y, e.w, e.h)
@@ -182,15 +224,33 @@ export class WorldRenderer {
     this.skyColor.lerp(new THREE.Color(look.sky), Math.min(1, dt * 0.5))
     this.terrain.setSeason(this.snow, this.tint)
     this.nature.setSeason(this.snow > 0.4 ? 'winter' : sim.season.id === 'winter' ? 'autumn' : sim.season.id)
-    this.scene.background = this.skyColor
+    // Day and night, dusk glow, and coal-smoke haze that thickens as the colony's industry works.
+    if (this.dayNight) this.dayTime = (this.dayTime + dt / DAY_SECONDS) % 1
+    const nightGoal = this.dayNight ? nightFactor(this.dayTime) * 0.88 : 0
+    this.night += (nightGoal - this.night) * Math.min(1, dt * 2)
+    this.smogTimer -= dt
+    if (this.smogTimer <= 0) {
+      this.smogTimer = 1
+      this.smog += (this.smogGoal(sim) - this.smog) * 0.2
+    }
+    const dusk = 4 * this.night * (1 - this.night)
+    this.displaySky.copy(this.skyColor).lerp(SMOG, this.smog * 0.45).lerp(DUSK_SKY, dusk * 0.35).lerp(NIGHT_SKY, this.night)
+    this.scene.background = this.displaySky
     const fog = this.scene.fog as THREE.Fog
-    fog.color.copy(this.skyColor)
-    fog.near = this.rig.distance * 1.6
-    fog.far = this.rig.distance * 5 + 120
-    this.sun.color.lerp(new THREE.Color(look.sun), Math.min(1, dt))
-    this.sun.intensity += (look.sunIntensity - this.sun.intensity) * Math.min(1, dt)
-    this.hemi.color.set(look.hemiSky)
-    this.hemi.groundColor.set(look.hemiGround)
+    fog.color.copy(this.displaySky)
+    fog.near = this.rig.distance * (1.6 - 0.6 * this.smog)
+    fog.far = this.rig.distance * (5 - 2 * this.smog) + 120 * (1 - 0.4 * this.smog)
+    this.sun.color.lerp(new THREE.Color(look.sun).lerp(DUSK_SKY, dusk * 0.5).lerp(MOONLIGHT, this.night), Math.min(1, dt * 2))
+    const sunGoal = look.sunIntensity * (1 - 0.82 * this.night) * (1 - 0.15 * this.smog)
+    this.sun.intensity += (sunGoal - this.sun.intensity) * Math.min(1, dt * 2)
+    this.hemi.color.set(look.hemiSky).lerp(NIGHT_HEMI, this.night)
+    this.hemi.groundColor.set(look.hemiGround).lerp(NIGHT_HEMI, this.night * 0.7)
+    this.hemi.intensity = 1.1 * (1 - 0.55 * this.night)
+    // Windows and gas lamps glow brighter as the light goes.
+    material('glass').emissiveIntensity = 0.35 + 1.5 * this.night
+    material('lamp').emissiveIntensity = 0.7 + 1.9 * this.night
+    this.buildings.setNight(this.night)
+    setBuildingEnvironmentIntensity(0.55 * (1 - 0.8 * this.night))
 
     // The sun's shadow frustum follows the camera target and grows with zoom.
     const target = this.rig.target
@@ -219,11 +279,24 @@ export class WorldRenderer {
     this.nature.update(performance.now())
     this.buildings.sync(sim, this.time, dt)
     this.conduits.update(sim, this.time, dt)
+    this.trams.update(sim, dt)
+    this.airships.update(sim, dt, this.time)
     this.citizens.update(sim, alpha, this.time)
     this.particles.update(dt)
 
     if (this.composer) this.composer.render(dt)
     else this.renderer.render(this.scene, this.rig.camera)
+  }
+
+  /** 0 for a clean sky, 1 for a town under a pall of coal smoke: from the industry working right now. */
+  private smogGoal(sim: Simulation): number {
+    let working = 0
+    for (const b of sim.buildings.values()) {
+      if (b.site || sim.second - b.activeAt > 2) continue
+      const c = sim.def(b).components
+      if (c.producer || c.generator || c.gatherer || c.assembler) working++
+    }
+    return THREE.MathUtils.clamp((working - 4) / 24, 0, 1)
   }
 
   /** Ground point under a screen position (ray-marched against the heightfield), in tile space. */
@@ -264,6 +337,8 @@ export class WorldRenderer {
     this.citizens.dispose()
     this.overlays.dispose()
     this.conduits.dispose()
+    this.trams.dispose()
+    this.airships.dispose()
     this.particles.dispose()
     setBuildingEnvironment(null)
     this.environment.dispose()

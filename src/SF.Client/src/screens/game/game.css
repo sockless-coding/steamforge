@@ -12,6 +12,8 @@
 
 .world-canvas {
   display: block;
+  /* A touch of sepia and warmth: an old photograph of a brass-and-steam town. */
+  filter: sepia(0.14) saturate(1.06) contrast(1.04);
   width: 100%;
   height: 100%;
   outline: none;
@@ -440,6 +442,58 @@ kbd {
   box-shadow: inset 0 0 0 1px rgba(200, 146, 62, 0.35);
   font-size: 12px;
   white-space: nowrap;
+}
+
+.gauge-text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1px;
+}
+
+.gauge-text small {
+  margin-left: 2px;
+  font-size: 9px;
+  color: var(--parchment-dim);
+}
+
+.mini-dial {
+  flex-shrink: 0;
+}
+
+.credit-chip {
+  border: 0;
+  color: var(--brass-hi);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.res em.automatons {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--brass-hi);
+  font-style: normal;
+}
+
+.brass-text {
+  color: var(--brass-hi);
+}
+
+.trade-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trade-cell select {
+  padding: 3px 4px;
+  border: 1px solid var(--brass-lo);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--parchment);
+  font: inherit;
+  font-size: 12px;
 }
 
 .gauge-chip.short {

@@ -151,6 +151,17 @@ registerEffect('eat', (sim, c, [id]) => {
   return true
 })
 
+/** An automaton winds its mainspring with the coal it carries. */
+registerEffect('wind', (sim, c) => {
+  const a = sim.rules.automaton
+  if (!c.carry || amount(c.carry, a.windCoal) < a.windAmount - 1e-6) return false
+  addStock(c.carry, a.windCoal, -a.windAmount)
+  sim.recordConsumed(a.windCoal, a.windAmount)
+  if (Object.keys(c.carry).length === 0) c.carry = null
+  c.wind = a.windMonths
+  return true
+})
+
 /** Takes a carried tool or coat into use. */
 registerEffect('equip', (sim, c) => {
   const r = sim.rules.citizen

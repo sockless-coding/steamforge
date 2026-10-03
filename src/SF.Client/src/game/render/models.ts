@@ -24,6 +24,8 @@ export interface BuiltModel {
   bobs: THREE.Mesh[]
   /** Chimney and stack tops (smoke) and vents (steam). */
   emitters: Emitter[]
+  /** Local positions of gas lamps and lanterns (they cast pools of light at night). */
+  lamps: THREE.Vector3[]
   height: number
 }
 
@@ -265,6 +267,7 @@ function build(spec: ModelSpec): BuiltModel {
   const glows: THREE.Mesh[] = []
   const bobs: THREE.Mesh[] = []
   const emitters: Emitter[] = []
+  const lamps: THREE.Vector3[] = []
   let height = 0
 
   for (const p of spec.parts) {
@@ -275,6 +278,7 @@ function build(spec: ModelSpec): BuiltModel {
     height = Math.max(height, top)
     const emit = p.emit ?? (p.shape === 'chimney' || p.shape === 'stack' ? 'smoke' : undefined)
     if (emit) emitters.push({ pos: new THREE.Vector3(x, top + 0.08, z), kind: emit })
+    if (p.mat === 'lamp') lamps.push(new THREE.Vector3(x, y, z))
     if ((p.shape === 'gear' && p.spin) || p.glow || p.bob) {
       const mesh = new THREE.Mesh(g, material(p.mat))
       mesh.position.set(x, y, z)
@@ -303,7 +307,7 @@ function build(spec: ModelSpec): BuiltModel {
     mesh.receiveShadow = true
     group.add(mesh)
   }
-  return { group, gears, glows, bobs, emitters, height }
+  return { group, gears, glows, bobs, emitters, lamps, height }
 }
 
 /** A fresh instance of a building's model (shared geometry and materials). */
@@ -323,7 +327,7 @@ export function buildingModel(defId: string, spec: ModelSpec): BuiltModel {
     if (base.glows.some((g) => g.geometry === o.geometry)) glows.push(o)
     if (base.bobs.some((g) => g.geometry === o.geometry)) bobs.push(o)
   })
-  return { group, gears, glows, bobs, emitters: base.emitters, height: base.height }
+  return { group, gears, glows, bobs, emitters: base.emitters, lamps: base.lamps, height: base.height }
 }
 
 /** Scaffold frame drawn around construction sites. */

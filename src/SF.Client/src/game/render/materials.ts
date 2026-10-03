@@ -204,6 +204,19 @@ const painters: Record<string, Painter> = {
     }
     speckle(ctx, s, 0.2, 93)
   },
+  /** Doped airship canvas: tan gores with darker stitched seams. */
+  envelope: (ctx, s) => {
+    ctx.fillStyle = '#d2bf94'
+    ctx.fillRect(0, 0, s, s)
+    const gores = 8
+    for (let k = 0; k < gores; k++) {
+      ctx.fillStyle = shadeRgb('#d2bf94', 0.9 + hash2(k, 5, 111) * 0.14)
+      ctx.fillRect((k * s) / gores + 1, 0, s / gores - 2, s)
+      ctx.fillStyle = 'rgba(70,50,30,0.35)'
+      ctx.fillRect((k * s) / gores, 0, 1.5, s)
+    }
+    speckle(ctx, s, 0.12, 113)
+  },
   /** Cream render with soot stains low on the wall. */
   plaster: (ctx, s) => {
     ctx.fillStyle = '#d8ccb0'
@@ -263,6 +276,7 @@ const specs: Record<string, MatSpec> = {
   redpaint: { color: '#8e2a1e', roughness: 0.55, metalness: 0.3, map: 'rivets' },
   tile: { color: '#ffffff', roughness: 0.85, map: 'tile' },
   plaster: { color: '#ffffff', roughness: 0.95, map: 'plaster' },
+  envelope: { color: '#ffffff', roughness: 0.9, map: 'envelope' },
   malachite: { color: '#3f8a72', roughness: 0.7, metalness: 0.2 },
   /** Always-lit gas lamps and lanterns. */
   lamp: { color: '#ffe0a0', roughness: 0.4, emissive: '#ffb44a', emissiveIntensity: 1.6 },
@@ -287,6 +301,15 @@ export function setBuildingEnvironment(texture: THREE.Texture | null): void {
   }
 }
 
+let envIntensity = 0.55
+
+/** Reflection strength for building materials (dimmed at night so metal doesn't glow in the dark). */
+export function setBuildingEnvironmentIntensity(k: number): void {
+  if (Math.abs(k - envIntensity) < 0.005) return
+  envIntensity = k
+  for (const m of materials.values()) m.envMapIntensity = k
+}
+
 /** Shared material by content material name (buildings.json `mat`). Unknown names fall back to timber. */
 export function material(name: string): THREE.MeshStandardMaterial {
   let m = materials.get(name)
@@ -302,7 +325,7 @@ export function material(name: string): THREE.MeshStandardMaterial {
       transparent: spec.transparent !== undefined,
       opacity: spec.transparent ?? 1,
       envMap: environment,
-      envMapIntensity: 0.55,
+      envMapIntensity: envIntensity,
     })
     materials.set(name, m)
   }

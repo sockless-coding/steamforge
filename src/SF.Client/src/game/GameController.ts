@@ -97,6 +97,7 @@ export class GameController {
     this.quality = resolveQuality(options.settings.quality)
     this.renderer = new WorldRenderer(options.parent, this.sim, this.quality)
     this.renderer.rig.edgeScroll = options.settings.edgeScroll
+    this.renderer.setDayNight(options.settings.dayNight)
     const hall = [...this.sim.buildings.values()].find((b) => this.sim.def(b).components.shelter)
     if (hall) this.renderer.rig.jumpTo(hall.x + hall.w / 2, hall.y + hall.h / 2 + 4, 34)
 
@@ -308,6 +309,7 @@ export class GameController {
     this.quality = resolveQuality(settings.quality)
     this.renderer.setQuality(this.quality)
     this.renderer.rig.edgeScroll = settings.edgeScroll
+    this.renderer.setDayNight(settings.dayNight)
   }
 
   // ---------------------------------------------------------------- input
@@ -617,6 +619,7 @@ export class GameController {
         sim.component<{ radius?: number }>(def.id, 'gatherer')?.radius ??
         sim.component<{ radius: number }>(def.id, 'boiler')?.radius ??
         sim.component<{ radius: number }>(def.id, 'firefighting')?.radius ??
+        sim.component<{ radius: number }>(def.id, 'amenity')?.radius ??
         0
       overlays.setRing(f.x + f.w / 2, f.y + f.h / 2, radius)
       return
@@ -713,6 +716,7 @@ export class GameController {
       color: r.color,
       amount: sim.totals[r.id] ?? 0,
       limit: sim.limits[r.id] ?? null,
+      value: r.value ?? 0,
     }))
     const food = resources.filter((r) => r.category === 'food').reduce((s, r) => s + r.amount, 0)
     let builders = 0
@@ -756,6 +760,9 @@ export class GameController {
       networks: this.networkRows(),
       dispatches: sim.story.sent,
       locks: this.locks(),
+      credit: sim.credit,
+      trade: { ...sim.trade },
+      hasMast: [...sim.buildings.values()].some((b) => !b.site && !!sim.def(b).components.airship),
     })
   }
 
@@ -878,6 +885,7 @@ export class GameController {
       coat: c.coat,
       sick: c.sick > 0,
       carrying: c.carry ? Object.entries(c.carry).map(([r, q]) => `${Math.round(q)} ${sim.resource(r)?.name ?? r}`).join(', ') : null,
+      automaton: c.automaton ? { wind: c.wind ?? 0, windMonths: sim.rules.automaton.windMonths } : null,
     }
   }
 
@@ -895,6 +903,15 @@ export class GameController {
         label: 'Recipe',
         value: currentRecipe(sim, b, producer).id,
         values: recipes.map((id) => ({ id, name: sim.content.recipes.get(id)?.name ?? id })),
+      })
+    }
+    if (sim.def(b).components.assembler) {
+      const target = typeof b.data.target === 'number' ? String(b.data.target) : 'none'
+      options.push({
+        key: 'target',
+        label: 'Build automatons until there are',
+        value: target,
+        values: [{ id: 'none', name: 'No limit' }, ...[0, 2, 4, 6, 8, 10, 15, 20, 30].map((n) => ({ id: String(n), name: String(n) }))],
       })
     }
     const field = sim.component<FieldConfig>(b, 'field')

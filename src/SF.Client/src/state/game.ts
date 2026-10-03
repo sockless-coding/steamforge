@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { ResourceCategory } from '../api/types'
-import type { Notice } from '../game/sim/types'
+import type { Notice, TradeOrder } from '../game/sim/types'
 
 export type Tool =
   | { kind: 'select' }
@@ -20,6 +20,8 @@ export interface ResourceRow {
   color: string
   amount: number
   limit: number | null
+  /** Company credit per unit; 0 when the Company won't trade it. */
+  value: number
 }
 
 export interface SiteInfo {
@@ -72,6 +74,8 @@ export interface CitizenInfo {
   coat: number
   sick: boolean
   carrying: string | null
+  /** Clockwork automatons: months of winding left out of a full winding. */
+  automaton: { wind: number; windMonths: number } | null
 }
 
 export interface ProfessionRow {
@@ -124,7 +128,7 @@ export interface HudState {
   season: string
   monthProgress: number
   temperature: number
-  population: { total: number; adults: number; children: number; elders: number; homeless: number }
+  population: { total: number; adults: number; children: number; elders: number; homeless: number; automatons: number }
   peakPopulation: number
   resources: ResourceRow[]
   food: number
@@ -146,6 +150,11 @@ export interface HudState {
   dispatches: string[]
   /** Content still locked behind research: "building:<id>", "road:<id>", "network:<id>" -> research name. */
   locks: Record<string, string>
+  /** Company credit from airship trade. */
+  credit: number
+  trade: Record<string, TradeOrder>
+  /** A finished airship mast stands, so trade orders take effect. */
+  hasMast: boolean
 }
 
 export const initialHud: HudState = {
@@ -161,7 +170,7 @@ export const initialHud: HudState = {
   season: 'spring',
   monthProgress: 0,
   temperature: 0,
-  population: { total: 0, adults: 0, children: 0, elders: 0, homeless: 0 },
+  population: { total: 0, adults: 0, children: 0, elders: 0, homeless: 0, automatons: 0 },
   peakPopulation: 0,
   resources: [],
   food: 0,
@@ -180,6 +189,9 @@ export const initialHud: HudState = {
   networks: [],
   dispatches: [],
   locks: {},
+  credit: 0,
+  trade: {},
+  hasMast: false,
 }
 
 /** Snapshot of the running colony for React. The GameController publishes into it; components only read. */

@@ -102,6 +102,10 @@ All values live in content JSON.
 | Storage | Steamforge (all goods), Stockyard (materials, fuel), Warehouse (food, goods) |
 | Housing | Settler's Cottage, Brick Rowhouse, Steam Tenement (steam radiators replace firewood) |
 | Safety | Pump Well (radius 14) and Steam Fire Station (radius 24, puts fires out in seconds; needs steam). Otherwise a burning building is lost and the fire spreads |
+| Amenities | Gas Lamp (+6% happiness within 7 tiles), Clock Tower (+12% within 18; needs steam). Homes take at most +25% from amenities |
+| Trade | Airship Mast (see below) |
+| Logistics | Steam Tram Depot, Pneumatic Depot, Safety Valve (see below) |
+| Automatons | Automaton Works (see below) |
 
 ## The Steamforge
 
@@ -137,6 +141,38 @@ faster with galvanic lamps) and the Analytical Engine (4 points) work on the fir
 plans its unfinished requirements first, and progress is kept when the plan changes. The tree runs from Masonry,
 Deep Mining and Tailoring through Metallurgy, Pressure Piping and Copper to Steam Engines, Galvanism and Analytical
 Engines. Presets may start with research done (`startingResearch`).
+
+## Airship trade
+
+An Airship Mast (needs steam for its winches) is the colony's counting house with the Meridian Steam Company.
+Resources with a `value` in `resources.json` can be traded. Trade orders are set per resource in the Stores panel:
+
+- **Export above N**: laborers carry stock above N to the mast, where it is credited at once at value × `sellFactor`.
+- **Import up to N**: every `visitMonths` a Company airship flies in and moors at the mast's cone. It sells imports
+  at value × `buyFactor`, as far as credit and its cargo allow. Laborers haul the goods into storage.
+
+Prices and factors live in `rules.json` (`trade`) and the mast's `airship` component.
+
+## Clockwork automatons
+
+The Automaton Works (needs steam) assembles automatons from cogs, copper and iron, up to an optional target count.
+Automatons join the workforce like adult laborers but:
+
+- never eat, freeze, fall ill, marry or need a home, and work at a steady 90% with no tools
+- wind themselves with 2 coal from storage every 6 months; without coal they run down and stand idle
+- seize up for good after about 12 years of service (`rules.json` → `automaton`)
+
+A colony with only automatons left is still lost.
+
+## Steam logistics and pressure
+
+- **Steam tramways** (a road type with `needsDepot`): citizens travel at 3× walking pace while any Steam Tram Depot
+  has steam, and at 1.6× otherwise. Trams visibly run on the rails.
+- **Pneumatic depots** (`pneumatic` component): powered depots on the same steam grid even out their unreserved
+  goods every second, so anything delivered to one can be collected at any other.
+- **Overpressure**: each month, a fuelled boiler on a grid drawing more than 110% of its supply may burst (scaled by
+  `disasterRate`, never in the grace year, never the Steamforge). A **Safety Valve** on the grid bleeds 2 psi and
+  prevents bursts. Warnings come first.
 
 **Production limits** (in the Stores panel) stop producers once storage holds the limit.
 
@@ -192,13 +228,20 @@ builds the land in layers:
 - Conduits: copper steam mains on iron trestles with brass flanges and valve wheels, and copper power lines on
   insulated poles.
 - Particles: chimney smoke, steam vents and valve hiss, fire and snowfall.
+- Atmosphere: a five-minute real-time day/night cycle (a setting) with dusk tints and moonlight. Windows and gas lamps
+  brighten at night, and lamps cast pools of light. A coal-smoke haze browns the sky and draws the fog in as more
+  industry works. The canvas has a light sepia grade.
+- Airships: Company dirigibles approach, moor at and leave each airship mast, and cosmetic dirigibles drift over the
+  valley. Automatons are brass-barrel figures with a glowing eye. Steam trams run on iron rails.
+- HUD energy gauges are small brass pressure dials (red past full load).
 - Seasonal light and fog, with a shadow frustum that follows the camera.
 - Quality tiers (low, medium, high, ultra) adapt automatically.
 
 ## Persistence and backend
 
-- Saves are full snapshots (gzip + base64), currently version 2. Version 1 saves are migrated: the Guildhall becomes
-  the Steamforge, all research counts as done and all dispatches as received. Local slots and an autosave (every 3 minutes, on pause and on exit) live in
+- Saves are full snapshots (gzip + base64), currently version 3, migrated one version at a time:
+  - Version 1: the Guildhall becomes the Steamforge, all research counts as done and all dispatches as received.
+  - Version 2: gains empty trade orders and no credit. Local slots and an autosave (every 3 minutes, on pause and on exit) live in
   IndexedDB. Six cloud slots are available per account (`/api/saves`).
 - Accounts: a silent guest account is created on first founding and can be upgraded to a registered one. JWT access
   tokens with rotating refresh tokens.
@@ -208,6 +251,6 @@ builds the land in layers:
 ## Future work
 
 - Schools and education, a market and trade airships to order, pastures and orchards.
-- More energy consumers (pneumatic tubes, galvanic street lamps for happiness), and dispatches that set charter goals.
+- Galvanic street lamps and other power consumers, smog that affects health, and dispatches that set charter goals.
 - Taverns and chapels for happiness, an apothecary and herbs for health.
 - Production graphs and a nomad policy setting.

@@ -19,6 +19,27 @@ export interface RoadDef {
   cost: Stock
   work: number
   speed: number
+  /** Only this fast while a powered depot (a building with a `tramDepot` component) runs; otherwise `unpoweredSpeed`. */
+  needsDepot?: boolean
+  unpoweredSpeed?: number
+}
+
+export interface AutomatonRules {
+  /** Months a full winding lasts. */
+  windMonths: number
+  /** Coal used to wind one automaton. */
+  windCoal: string
+  windAmount: number
+  /** Years of service before an automaton is likely to seize up for good. */
+  lifeYears: number
+  workFactor: number
+}
+
+export interface TradeRules {
+  /** Company credit per unit value when exporting. */
+  sellFactor: number
+  /** Company credit per unit value when importing. */
+  buyFactor: number
 }
 
 export interface CitizenRules {
@@ -80,6 +101,8 @@ export interface RulesDef {
   events: { disastersPerYear: number; blessingsPerYear: number; graceYears: number }
   roads: RoadDef[]
   networks: NetworkDef[]
+  automaton: AutomatonRules
+  trade: TradeRules
   startingBuilders: number
   startingArea: number
 }
@@ -92,6 +115,8 @@ export interface ResourceDef {
   spoilagePerYear: number
   /** Production stops once storage holds this many (0 = unlimited). Player-adjustable in game. */
   defaultLimit: number
+  /** Company credit per unit; resources without a value cannot be traded by airship. */
+  value?: number
 }
 
 export interface FeatureYield {

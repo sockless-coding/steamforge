@@ -1,6 +1,7 @@
 // Dev-only helpers for visual review (exposed on window in dev builds; never used by the game itself).
 import type { GameController } from './GameController'
 import { findSpot, footprintSize, placeBuilding } from './sim/placement'
+import { createAutomaton } from './sim/population'
 
 /**
  * Fills the area around the Steamforge with one finished copy of every building, completes all research, lays a
@@ -33,6 +34,27 @@ export function showcase(controller: GameController): Record<string, number> {
       if (world.isLand(i) && world.building[i] === 0) world.conduit[i] |= bit
     }
   }
+  // Tram rails along the next row, a few street lamps, automatons at the forge and a moored airship.
+  const tram = sim.rules.roads.findIndex((r) => r.needsDepot) + 1
+  // The nearest clear row south of the town for a 24-tile tram line.
+  for (let dy = 6; tram && dy < 40; dy++) {
+    const tiles = Array.from({ length: 24 }, (_, k) => world.index(cx - 12 + k, cy + dy))
+    if (!tiles.every((i) => world.isLand(i) && world.building[i] === 0)) continue
+    for (const i of tiles) {
+      world.road[i] = tram
+      world.feature[i] = 0
+      sim.emit({ type: 'road', tile: i })
+      sim.emit({ type: 'feature', tile: i })
+    }
+    break
+  }
+  const lamp = sim.content.buildings.get('gas-lamp')
+  for (let dx = -9; lamp && dx <= 9; dx += 3) {
+    const spot = findSpot(sim, lamp, cx + dx, cy + 6, 4, true)
+    if (spot) placeBuilding(sim, lamp, spot.x, spot.y, 0, 1, 1, true)
+  }
+  for (let k = 0; k < 4; k++) createAutomaton(sim, world.xOf(hq.door) + 0.5 + k * 0.6, world.yOf(hq.door) + 1.5)
+  for (const b of sim.buildings.values()) if (sim.def(b).components.airship) b.data.ship = 'moored'
   sim.energy.dirty = true
   for (const b of sim.buildings.values()) b.activeAt = 1e9
   controller.renderer.handleEvents([...sim.drainEvents(), { type: 'conduit', tile: 0 }, { type: 'feature', tile: -1 }])

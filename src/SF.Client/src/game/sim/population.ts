@@ -52,7 +52,30 @@ export function createCitizen(sim: Simulation, n: NewCitizen): Citizen {
   if (n.home) moveInto(sim, c, n.home)
   sim.jobsDirty = true
   sim.housingDirty = true
-  sim.stats.peakPopulation = Math.max(sim.stats.peakPopulation, sim.citizens.size)
+  sim.stats.peakPopulation = Math.max(sim.stats.peakPopulation, sim.population().total)
+  return c
+}
+
+const AUTOMATON_NAMES = ['Jack', 'Tock', 'Gideon', 'Barnaby', 'Septimus', 'Ada', 'Percival', 'Millicent', 'Ignatius', 'Hester']
+
+/**
+ * A clockwork automaton: an adult laborer that never eats, freezes, marries or ages, but must be wound with coal
+ * every few months and eventually seizes up.
+ */
+export function createAutomaton(sim: Simulation, x: number, y: number): Citizen {
+  const r = sim.rules.automaton
+  const serial = Math.round(sim.stats.produced.automaton ?? 0) + 1
+  const c = createCitizen(sim, {
+    name: `Clockwork ${sim.rng.pick(AUTOMATON_NAMES)} No. ${serial}`,
+    female: false,
+    ageMonths: sim.rules.citizen.adultAge * 12,
+    x,
+    y,
+  })
+  c.automaton = true
+  c.wind = r.windMonths
+  c.hunger = 1
+  c.happiness = 0.6
   return c
 }
 
@@ -62,6 +85,7 @@ const causeText: Record<string, string> = {
   age: 'died of old age',
   sickness: 'succumbed to fever',
   fire: 'perished in a fire',
+  wear: 'seized up for good',
 }
 
 export function killCitizen(sim: Simulation, c: Citizen, cause: string): void {
@@ -71,12 +95,12 @@ export function killCitizen(sim: Simulation, c: Citizen, cause: string): void {
   const partner = sim.citizens.get(c.partner)
   if (partner) partner.partner = 0
   sim.citizens.delete(c.id)
-  sim.stats.deaths++
+  if (!c.automaton) sim.stats.deaths++
   sim.stats.deathsBy[cause] = (sim.stats.deathsBy[cause] ?? 0) + 1
   sim.jobsDirty = true
   sim.housingDirty = true
   sim.emit({ type: 'citizen', id: c.id, change: 'died', cause })
-  sim.notify(cause === 'age' ? 'info' : 'bad', `${c.name} ${causeText[cause] ?? 'died'}.`, sim.world.index(Math.floor(c.x), Math.floor(c.y)))
+  sim.notify(cause === 'age' || cause === 'wear' ? 'info' : 'bad', `${c.name} ${causeText[cause] ?? 'died'}.`, sim.world.index(Math.floor(c.x), Math.floor(c.y)))
 }
 
 function leaveHome(sim: Simulation, c: Citizen): void {
@@ -192,7 +216,7 @@ export function assignHousing(sim: Simulation): void {
   const r = sim.rules.citizen
   const houses: Building[] = []
   for (const b of sim.buildings.values()) if (!b.site && b.fire === 0 && housingCapacity(sim, b) > 0) houses.push(b)
-  const adults = () => [...sim.citizens.values()].filter((c) => isAdult(sim, c))
+  const adults = () => [...sim.citizens.values()].filter((c) => isAdult(sim, c) && !c.automaton)
 
   for (const house of houses) {
     if (house.residents.length > 0) continue

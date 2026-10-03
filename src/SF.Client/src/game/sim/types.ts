@@ -145,6 +145,10 @@ export interface Citizen {
   diet: string[]
   /** Ticks to wait before choosing a new task (back-off after failure). */
   wait: number
+  /** A clockwork automaton: works but never eats, freezes, marries or ages normally. */
+  automaton?: boolean
+  /** Automatons: months of winding left; at 0 it has run down. */
+  wind?: number
 }
 
 export interface RoadJob {
@@ -157,6 +161,12 @@ export interface RoadJob {
 export interface ConduitJob {
   tile: number
   network: string
+}
+
+export interface TradeOrder {
+  mode: 'export' | 'import'
+  /** Export everything above this many in storage, or import until storage holds this many. */
+  amount: number
 }
 
 export interface ResearchState {
@@ -198,6 +208,7 @@ export type Action =
   | { type: 'removeConduit'; network: string; tiles: number[] }
   | { type: 'research'; tech: string }
   | { type: 'clearResearch' }
+  | { type: 'setTrade'; res: string; mode: 'export' | 'import' | 'none'; amount: number }
   | { type: 'markClear'; tiles: number[]; clear: boolean }
   | { type: 'demolish'; building: number }
   | { type: 'cancelSite'; building: number }
@@ -217,7 +228,7 @@ export type SimEvent =
   | { type: 'conduit'; tile: number }
   | { type: 'research'; tech: string }
   | { type: 'terrain'; x: number; y: number; w: number; h: number }
-  | { type: 'citizen'; id: number; change: 'born' | 'arrived' | 'died'; cause?: string }
+  | { type: 'citizen'; id: number; change: 'born' | 'arrived' | 'died' | 'built'; cause?: string }
   | { type: 'month'; month: number; year: number }
   | { type: 'fire'; building: number; active: boolean }
   | { type: 'outcome'; outcome: 'lost' }

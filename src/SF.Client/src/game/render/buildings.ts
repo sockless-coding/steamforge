@@ -55,6 +55,24 @@ const roadPlanMaterial = new THREE.MeshBasicMaterial({ color: '#f6d98a', transpa
 const roadPlanGeometry = new THREE.PlaneGeometry(0.62, 0.62).rotateX(-Math.PI / 2)
 const blueprintCache = new Map<string, THREE.Group>()
 
+/** Warm radial glow cast on the ground by gas lamps at night (additive, no depth write). */
+const poolMaterial = (() => {
+  const size = 64
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = size
+  const ctx = canvas.getContext('2d')!
+  const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
+  g.addColorStop(0, 'rgba(255,200,120,1)')
+  g.addColorStop(0.35, 'rgba(255,170,80,0.55)')
+  g.addColorStop(1, 'rgba(255,150,60,0)')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, size, size)
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.colorSpace = THREE.SRGBColorSpace
+  return new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })
+})()
+const poolGeometry = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2)
+
 type IndicatorKind = 'power' | 'fuel'
 const indicatorMaterials = new Map<IndicatorKind, THREE.SpriteMaterial>()
 
@@ -139,6 +157,8 @@ export class BuildingLayer {
   private readonly selection: THREE.Mesh
   private roadPlans: THREE.InstancedMesh
   private roadPlanKey = ''
+  private pools: THREE.InstancedMesh
+  private poolsDirty = true
   selected = 0
 
   constructor(terrain: TerrainLayer, particles: Particles) {
@@ -151,7 +171,50 @@ export class BuildingLayer {
     this.selection.visible = false
     this.selection.renderOrder = 5
     this.roadPlans = this.makeRoadPlans(512)
+    this.pools = this.makePools(128)
     this.group.add(this.selection)
+  }
+
+  private makePools(capacity: number): THREE.InstancedMesh {
+    const mesh = new THREE.InstancedMesh(poolGeometry, poolMaterial, capacity)
+    mesh.count = 0
+    mesh.frustumCulled = false
+    mesh.renderOrder = 2
+    this.group.add(mesh)
+    return mesh
+  }
+
+  /** 0 by day, 1 at full night: how strongly lamps light the ground. */
+  setNight(night: number): void {
+    poolMaterial.opacity = night * 0.85
+    this.pools.visible = night > 0.02
+  }
+
+  /** Re-places the lamp light pools after buildings appear, finish or go. */
+  private syncPools(sim: Simulation): void {
+    if (!this.poolsDirty) return
+    this.poolsDirty = false
+    const spots: THREE.Vector3[] = []
+    for (const view of this.views.values()) {
+      const b = sim.buildings.get(view.id)
+      if (!b || b.site || !view.model) continue
+      for (const lamp of view.model.lamps) {
+        const p = lamp.clone().applyEuler(view.group.rotation).add(view.group.position)
+        p.y = this.terrain.heightAt(p.x, p.z) + 0.05
+        spots.push(p)
+      }
+    }
+    if (spots.length > this.pools.instanceMatrix.count) {
+      this.group.remove(this.pools)
+      this.pools.dispose()
+      this.pools = this.makePools(spots.length * 2)
+    }
+    spots.forEach((p, i) => {
+      this.matrix.makeScale(3.4, 1, 3.4).setPosition(p)
+      this.pools.setMatrixAt(i, this.matrix)
+    })
+    this.pools.count = spots.length
+    this.pools.instanceMatrix.needsUpdate = true
   }
 
   private makeRoadPlans(capacity: number): THREE.InstancedMesh {
@@ -186,6 +249,7 @@ export class BuildingLayer {
     outlineMaterial.opacity = 0.65 + 0.35 * pulse
     roadPlanMaterial.opacity = 0.3 + 0.25 * pulse
     this.syncRoadPlans(sim)
+    this.syncPools(sim)
   }
 
   /** Markers on road tiles that are ordered but not yet laid. */
@@ -308,6 +372,7 @@ export class BuildingLayer {
     }
     this.views.set(b.id, view)
     this.group.add(group)
+    this.poolsDirty = true
     return view
   }
 
@@ -320,6 +385,7 @@ export class BuildingLayer {
     }
     for (const p of view.piles) p.removeFromParent()
     this.views.delete(view.id)
+    this.poolsDirty = true
   }
 
   private animate(sim: Simulation, b: Building, view: BuildingView, time: number, dt: number): void {
@@ -345,6 +411,7 @@ export class BuildingLayer {
     }
     if (view.wasSite) {
       view.wasSite = false
+      this.poolsDirty = true
       model.group.scale.set(1, 1, 1)
       model.group.visible = true
       if (view.scaffold) {

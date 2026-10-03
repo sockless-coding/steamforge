@@ -27,6 +27,15 @@
     "unlocks": { "buildings": ["tailor"] }
   },
   {
+    "id": "gaslight",
+    "name": "Coal-Gas Lighting",
+    "description": "Gas lamps to light the streets. Homes near a lamp are happier, and the colony comes alive at dusk.",
+    "tier": 2,
+    "points": 15,
+    "requires": ["masonry"],
+    "unlocks": { "buildings": ["gas-lamp"] }
+  },
+  {
     "id": "metallurgy",
     "name": "Bloomery Metallurgy",
     "description": "Coal-fired furnaces reduce ore to iron, and smiths turn iron into tools.",
@@ -56,11 +65,11 @@
   {
     "id": "precision",
     "name": "Precision Machining",
-    "description": "Steam-driven lathes that cut true cogs, the heart of every engine.",
+    "description": "Steam-driven lathes that cut true cogs, the heart of every engine and every clock.",
     "tier": 3,
     "points": 45,
     "requires": ["piping"],
-    "unlocks": { "buildings": ["machine-works"] }
+    "unlocks": { "buildings": ["machine-works", "clock-tower"] }
   },
   {
     "id": "glasshouse",
@@ -74,11 +83,11 @@
   {
     "id": "engines",
     "name": "Steam Engines",
-    "description": "Coal-fired boiler houses to raise steam in quantity, and the machines that drink it.",
+    "description": "Coal-fired boiler houses to raise steam in quantity, the machines that drink it, and safety valves for when they drink too much.",
     "tier": 4,
     "points": 60,
     "requires": ["precision"],
-    "unlocks": { "buildings": ["boiler-house", "steam-sawmill"] }
+    "unlocks": { "buildings": ["boiler-house", "steam-sawmill", "safety-valve"] }
   },
   {
     "id": "fire-brigade",
@@ -124,5 +133,41 @@
     "points": 140,
     "requires": ["galvanism", "precision"],
     "unlocks": { "buildings": ["analytical-engine"] }
+  },
+  {
+    "id": "aeronautics",
+    "name": "Aeronautics",
+    "description": "A mooring mast for the Company's airships: export your surplus for credit and order supplies from the south.",
+    "tier": 5,
+    "points": 70,
+    "requires": ["engines"],
+    "unlocks": { "buildings": ["airship-mast"] }
+  },
+  {
+    "id": "tramways",
+    "name": "Steam Tramways",
+    "description": "Iron rails and a steam tram depot. Citizens ride across town at three times walking pace.",
+    "tier": 5,
+    "points": 60,
+    "requires": ["engines"],
+    "unlocks": { "roads": ["tramway"], "buildings": ["tram-depot"] }
+  },
+  {
+    "id": "pneumatics",
+    "name": "Pneumatic Post",
+    "description": "Brass tubes on the steam main shoot goods between depots, so anything delivered to one can be collected at all.",
+    "tier": 6,
+    "points": 80,
+    "requires": ["engines", "copper"],
+    "unlocks": { "buildings": ["pneumatic-depot"] }
+  },
+  {
+    "id": "automata",
+    "name": "Clockwork Automata",
+    "description": "Brass automatons that work without food or warmth. They need winding with coal, and they wear out in time.",
+    "tier": 6,
+    "points": 120,
+    "requires": ["engines", "copper"],
+    "unlocks": { "buildings": ["automaton-works"] }
   }
 ]

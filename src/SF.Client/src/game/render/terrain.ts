@@ -21,6 +21,7 @@ const TERRAIN_COLORS: Record<number, [number, number, number]> = {
 const ROAD_COLORS: [number, number, number][] = [
   [0.5, 0.39, 0.27],
   [0.48, 0.46, 0.43],
+  [0.38, 0.36, 0.34],
 ]
 
 /**

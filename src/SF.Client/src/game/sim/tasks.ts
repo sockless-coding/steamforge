@@ -126,11 +126,17 @@ export function moveSpeed(sim: Simulation, c: Citizen): number {
 
 export function workSpeed(sim: Simulation, c: Citizen, at?: number): number {
   const r = sim.rules.citizen
-  let s = sim.mods.productionMultiplier * (0.8 + 0.3 * c.happiness)
-  if (c.tools <= 0) s *= r.noToolsWorkFactor
-  if (c.age >= r.elderAge * 12) s *= r.elderWorkFactor
-  if (c.health < 0.4) s *= 0.7
-  if (c.sick > 0) s *= 0.6
+  let s: number
+  if (c.automaton) {
+    // Steady clockwork: no moods, tools, age or illness.
+    s = sim.mods.productionMultiplier * sim.rules.automaton.workFactor
+  } else {
+    s = sim.mods.productionMultiplier * (0.8 + 0.3 * c.happiness)
+    if (c.tools <= 0) s *= r.noToolsWorkFactor
+    if (c.age >= r.elderAge * 12) s *= r.elderWorkFactor
+    if (c.health < 0.4) s *= 0.7
+    if (c.sick > 0) s *= 0.6
+  }
   if (at) {
     const b = sim.buildings.get(at)
     if (b) s *= energyFactor(sim, b)

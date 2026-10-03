@@ -32,6 +32,26 @@ const CATEGORIES: { id: Category; label: string; icon: IconName }[] = [
 
 const SEASON_ICON: Record<string, IconName> = { Spring: 'tree', Summer: 'star', Autumn: 'wheat', Winter: 'snow' }
 
+/** A tiny brass pressure dial: the needle shows load (drawn over supplied), red past full. */
+function MiniDial({ load, color }: { load: number; color: string }) {
+  const point = (deg: number, r: number) => [13 + r * Math.sin((deg * Math.PI) / 180), 14 - r * Math.cos((deg * Math.PI) / 180)]
+  const arc = (from: number, to: number) => {
+    const [x1, y1] = point(from, 9)
+    const [x2, y2] = point(to, 9)
+    return `M ${x1} ${y1} A 9 9 0 ${to - from > 180 ? 1 : 0} 1 ${x2} ${y2}`
+  }
+  const [nx, ny] = point((Math.min(1.5, Math.max(0, load)) / 1.5) * 240 - 120, 8)
+  return (
+    <svg className="mini-dial" viewBox="0 0 26 26" width={24} height={24} aria-hidden="true">
+      <circle cx="13" cy="14" r="11.5" fill="#1c1612" stroke="var(--brass)" strokeWidth="1.6" />
+      <path d={arc(-120, 40)} stroke={color} strokeWidth="2" fill="none" opacity="0.75" />
+      <path d={arc(40, 120)} stroke="var(--danger)" strokeWidth="2" fill="none" />
+      <line x1="13" y1="14" x2={nx} y2={ny} stroke="var(--parchment)" strokeWidth="1.4" strokeLinecap="round" />
+      <circle cx="13" cy="14" r="1.8" fill="var(--brass-hi)" />
+    </svg>
+  )
+}
+
 type PanelKind = { kind: 'guild' } | { kind: 'stores' } | { kind: 'research' } | { kind: 'dispatches'; letter?: string }
 
 export function Hud({ controller, menu, setMenu }: HudProps) {
@@ -118,6 +138,11 @@ function TopBar({ hud, controller, onMenu, open }: { hud: HudState; controller: 
           <Icon name="people" size={16} />
           <b>{p.total}</b>
           {p.homeless > 0 && <em className="warn">{p.homeless} homeless</em>}
+          {p.automatons > 0 && (
+            <em className="automatons" title="Clockwork automatons">
+              <Icon name="gear" size={12} /> {p.automatons}
+            </em>
+          )}
         </span>
         <span className={`res ${hud.food < p.total * 8 ? 'low' : ''}`} title="Food">
           <Icon name="wheat" size={16} />
@@ -137,14 +162,24 @@ function TopBar({ hud, controller, onMenu, open }: { hud: HudState; controller: 
           .filter((n) => n.active)
           .map((n) => {
             const short = n.demand > n.supply + 1e-6
+            const load = n.supply > 0 ? n.demand / n.supply : n.demand > 0 ? 1.5 : 0
             return (
               <span key={n.id} className={`gauge-chip ${short ? 'short' : ''}`} title={`${n.name}: ${Math.round(n.supply)} ${n.unit} supplied, ${Math.round(n.demand)} ${n.unit} drawn`}>
-                <Icon name="bolt" size={14} style={{ color: n.color }} />
-                <b>{Math.round(n.demand)}</b>
-                <span className="muted">/{Math.round(n.supply)}</span>
+                <MiniDial load={load} color={n.color} />
+                <span className="gauge-text">
+                  <b>{Math.round(n.demand)}</b>
+                  <span className="muted">/{Math.round(n.supply)}</span>
+                  <small>{n.unit}</small>
+                </span>
               </span>
             )
           })}
+        {(hud.hasMast || hud.credit > 0) && (
+          <button type="button" className="gauge-chip credit-chip" onClick={() => open({ kind: 'stores' })} title="Company credit (airship trade orders are in the Stores panel)">
+            <Icon name="coin" size={15} />
+            <b>{Math.floor(hud.credit)}</b>
+          </button>
+        )}
         <button type="button" className={`research-chip ${r ? '' : 'idle'}`} onClick={() => open({ kind: 'research' })} title="Research (Drafting Office)">
           <Icon name="flask" size={15} />
           {r ? (

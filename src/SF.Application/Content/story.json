@@ -55,6 +55,24 @@
       "when": { "year": 6 }
     },
     {
+      "id": "airship-mast",
+      "title": "Dispatch: The Mooring Mast",
+      "text": "A mooring mast at {colony}! The airship Endeavour will call on a regular schedule from now on. Send us your surplus and we will credit the colony fairly, or near enough. Mind that the winches have steam, or the captain will not risk the approach.",
+      "when": { "building": "airship-mast" }
+    },
+    {
+      "id": "automata",
+      "title": "Dispatch: On Automata",
+      "text": "The Board has learned, with some alarm, that {colony} is building automatons. They do not eat and they do not complain, which recommends them. They do run down without coal, and when one seizes up for good it is scrap. Wind them, Chief Engineer, and keep your people fed besides.",
+      "when": { "building": "automaton-works" }
+    },
+    {
+      "id": "tramways",
+      "title": "Dispatch: Steam Trams",
+      "text": "Rails in the north! Ashcombe is envious. Keep the tram depot on a healthy steam main; a tram without steam is only a very heavy bench.",
+      "when": { "research": "tramways" }
+    },
+    {
       "id": "charter-fulfilled",
       "title": "Dispatch: The Charter Fulfilled",
       "text": "The telegraph from {colony} was confirmed this morning: an analytical engine stands in the north, driven by galvanic power from steam raised in a colony that did not exist a few years ago. The Board declares the Brass Charter fulfilled. The colony is yours, Chief Engineer. Keep it burning.",

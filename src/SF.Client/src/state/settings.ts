@@ -13,6 +13,8 @@ export interface Settings {
   edgeScroll: boolean
   /** Show the controls cheat sheet in game. */
   showHints: boolean
+  /** Run the gaslit day/night cycle (purely visual). */
+  dayNight: boolean
 }
 
 export const defaultSettings: Settings = {
@@ -23,6 +25,7 @@ export const defaultSettings: Settings = {
   ambienceVolume: 0.5,
   edgeScroll: false,
   showHints: true,
+  dayNight: true,
 }
 
 const KEY = 'sf.settings'

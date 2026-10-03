@@ -23,6 +23,7 @@ import { distanceTo, haulOutputTask, outputHeld, outputsOf } from './work'
  * job is a laborer, and workers with nothing to do pitch in as laborers too.
  */
 export function chooseTask(sim: Simulation, c: Citizen): Task | null {
+  if (c.automaton) return automatonTask(sim, c)
   const r = sim.rules.citizen
   if (c.hunger < r.hungerThreshold) {
     const t = eatTask(sim, c)
@@ -44,6 +45,29 @@ export function chooseTask(sim: Simulation, c: Citizen): Task | null {
   if (c.workplace) t = workplaceTask(sim, c)
   else if (c.profession === 'builder') t = builderTask(sim, c)
   return t ?? laborTask(sim, c) ?? idleTask(sim, c)
+}
+
+// ---------------------------------------------------------------- automatons
+
+/** Automatons wind themselves with coal before they run down, stand inert once they have, and otherwise work. */
+function automatonTask(sim: Simulation, c: Citizen): Task | null {
+  const a = sim.rules.automaton
+  const wind = c.wind ?? 0
+  if (wind <= 1) {
+    const store = nearestStorageWith(sim, a.windCoal, tileOf(c, sim), a.windAmount)
+    if (store) {
+      return task('need', 'Winding the mainspring', store.id, [
+        gotoBuilding(store),
+        { op: 'take', from: store.id, res: a.windCoal, qty: a.windAmount },
+        { op: 'work', seconds: 4, effect: 'wind' },
+      ], [reserveStock(store, a.windCoal, a.windAmount)])
+    }
+    if (wind <= 0) return task('idle', 'Run down', 0, [{ op: 'wait', seconds: 20 }])
+  }
+  let t: Task | null = null
+  if (c.workplace) t = workplaceTask(sim, c)
+  else if (c.profession === 'builder') t = builderTask(sim, c)
+  return t ?? laborTask(sim, c) ?? task('idle', 'Ticking over', 0, [{ op: 'wait', seconds: 6 + sim.rng.int(6) }])
 }
 
 // ---------------------------------------------------------------- needs

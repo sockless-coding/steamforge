@@ -146,6 +146,7 @@ function BuildingPanel({ info, controller }: { info: BuildingInfo; controller: G
 }
 
 function CitizenPanel({ info, controller }: { info: CitizenInfo; controller: GameController }) {
+  if (info.automaton) return <AutomatonPanel info={info} automaton={info.automaton} controller={controller} />
   return (
     <>
       <h3 className="engraved">{info.name}</h3>
@@ -187,6 +188,44 @@ function CitizenPanel({ info, controller }: { info: CitizenInfo; controller: Gam
       <NeedBar label="Warm" value={info.warmth} color="var(--ember)" />
       <NeedBar label="Health" value={info.health} color="var(--ok)" />
       <NeedBar label="Happiness" value={info.happiness} color="var(--brass-hi)" />
+      <div className="row">
+        <Button size="sm" variant="iron" icon="eye" onClick={() => controller.focusCitizen(info.id)}>
+          Follow
+        </Button>
+      </div>
+    </>
+  )
+}
+
+function AutomatonPanel({ info, automaton, controller }: { info: CitizenInfo; automaton: { wind: number; windMonths: number }; controller: GameController }) {
+  return (
+    <>
+      <h3 className="engraved">{info.name}</h3>
+      <p className="muted small">Clockwork automaton · {info.profession}</p>
+      <ul className="kv">
+        <li>
+          <span>Doing</span>
+          <b>{info.task ?? 'Nothing'}</b>
+        </li>
+        {info.workplace && (
+          <li>
+            <span>Works at</span>
+            <b>{info.workplace}</b>
+          </li>
+        )}
+        {info.carrying && (
+          <li>
+            <span>Carrying</span>
+            <b>{info.carrying}</b>
+          </li>
+        )}
+        <li>
+          <span>Mainspring</span>
+          <b className={automaton.wind > 1 ? '' : 'warn'}>{automaton.wind > 0 ? `${automaton.wind} months left` : 'Run down: needs coal'}</b>
+        </li>
+      </ul>
+      <NeedBar label="Wound" value={automaton.wind / automaton.windMonths} color="var(--brass-hi)" />
+      <p className="muted small">Automatons never eat, freeze or need a home. They wind themselves with coal from storage and seize up after years of service.</p>
       <div className="row">
         <Button size="sm" variant="iron" icon="eye" onClick={() => controller.focusCitizen(info.id)}>
           Follow

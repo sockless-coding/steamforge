@@ -10,10 +10,11 @@ namespace SF.Application.Features.Content;
 public static class ContentValidator
 {
     public static readonly HashSet<string> ComponentKinds =
-        ["storage", "housing", "shelter", "workplace", "firefighting", "gatherer", "producer", "field", "generator", "consumer", "research"];
+        ["storage", "housing", "shelter", "workplace", "firefighting", "gatherer", "producer", "field", "generator", "consumer", "research",
+         "amenity", "airship", "assembler", "tramDepot", "pneumatic", "valve"];
 
     /// <summary>Components that are worked by a building's staff; they need a workplace component.</summary>
-    public static readonly HashSet<string> StaffedComponents = ["gatherer", "producer", "field", "research"];
+    public static readonly HashSet<string> StaffedComponents = ["gatherer", "producer", "field", "research", "assembler"];
 
     public static readonly HashSet<string> EventKinds = ["fire", "blight", "sickness", "coldSnap", "nomads", "bounty", "pipeBurst", "supplies"];
     public static readonly HashSet<string> Categories = ["material", "fuel", "food", "goods"];
@@ -156,7 +157,7 @@ public static class ContentValidator
 
             var workplace = b.Components.ContainsKey("workplace");
             var staffed = b.Components.Keys.Any(StaffedComponents.Contains);
-            Check(!staffed || workplace, $"{where}: gatherer/producer/field/research components need a workplace component.");
+            Check(!staffed || workplace, $"{where}: gatherer/producer/field/research/assembler components need a workplace component.");
             Check(!workplace || staffed || b.Components.ContainsKey("generator"), $"{where}: a workplace needs something to work (gatherer, producer, field, research or generator).");
         }
 
@@ -224,6 +225,16 @@ public static class ContentValidator
                         Check(networks.Contains(net), $"{where} consumes unknown network '{net}'.");
                     }
 
+                    break;
+                case "assembler":
+                    Check(Keys("inputs").Any(), $"{where} assembler needs inputs.");
+                    CheckStock($"{where} assembler", Keys("inputs"));
+                    break;
+                case "pneumatic":
+                    Check(networks.Contains(Str("network") ?? string.Empty), $"{where} pneumatic tubes use an unknown network.");
+                    break;
+                case "amenity":
+                    Check(cfg.TryGetProperty("radius", out var ar) && ar.GetDouble() > 0, $"{where} amenity needs a positive radius.");
                     break;
                 case "research":
                     Check(cfg.TryGetProperty("points", out var points) && points.GetDouble() > 0, $"{where} research needs positive points.");

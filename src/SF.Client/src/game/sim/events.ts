@@ -142,7 +142,7 @@ registerEvent({
 registerEvent({
   kind: 'sickness',
   run: (sim, def) => {
-    const people = [...sim.citizens.values()].filter((c) => c.sick === 0)
+    const people = [...sim.citizens.values()].filter((c) => c.sick === 0 && !c.automaton)
     const count = Math.max(1, Math.round(people.length * num(def, 'fraction', 0.1)))
     if (people.length === 0) return false
     for (let n = 0; n < count && people.length; n++) {

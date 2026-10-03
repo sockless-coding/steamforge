@@ -40,12 +40,13 @@ import type {
   Notice,
   ResearchState,
   RoadJob,
+  TradeOrder,
   SimEvent,
   Stock,
 } from './types'
 import { MARK_CLEAR, World, type WorldSnapshot } from './world'
 
-export const SAVE_VERSION = 2
+export const SAVE_VERSION = 3
 
 export interface ColonySnapshot {
   v: number
@@ -61,6 +62,8 @@ export interface ColonySnapshot {
   conduitJobs: ConduitJob[]
   research: ResearchState
   story: StoryState
+  credit: number
+  trade: Record<string, TradeOrder>
   clearQueue: number[]
   limits: Record<string, number>
   builderTarget: number
@@ -100,6 +103,10 @@ export class Simulation {
   conduitJobs = new Map<number, ConduitJob>()
   research: ResearchState = { done: [], queue: [], progress: {} }
   story: StoryState = { sent: [] }
+  /** Company credit, earned by exporting through an airship mast and spent on imports. */
+  credit = 0
+  /** Standing airship trade orders per resource. */
+  trade: Record<string, TradeOrder> = {}
   /** Network topology and the last supply/demand solve. Derived; rebuilt on load. */
   readonly energy = new EnergyState()
   /** Tiles whose feature must be cleared (player marks and construction footprints). */
@@ -377,6 +384,13 @@ export class Simulation {
         this.research.queue = []
         return { ok: true }
       }
+      case 'setTrade': {
+        const res = this.resource(action.res)
+        if (!res?.value) return { ok: false, reason: 'The Company does not trade in that.' }
+        if (action.mode === 'none') delete this.trade[action.res]
+        else this.trade[action.res] = { mode: action.mode, amount: Math.max(0, Math.min(99999, Math.round(action.amount))) }
+        return { ok: true }
+      }
       case 'markClear': {
         for (const tile of action.tiles) {
           if (tile < 0 || tile >= this.world.size || this.world.feature[tile] === 0) continue
@@ -470,19 +484,25 @@ export class Simulation {
 
   // ---------------------------------------------------------------- queries for UI
 
-  population(): { total: number; adults: number; children: number; elders: number; homeless: number } {
+  /** People (automatons are counted separately and never homeless). */
+  population(): { total: number; adults: number; children: number; elders: number; homeless: number; automatons: number } {
     const c = this.rules.citizen
     let adults = 0
     let children = 0
     let elders = 0
     let homeless = 0
+    let automatons = 0
     for (const p of this.citizens.values()) {
+      if (p.automaton) {
+        automatons++
+        continue
+      }
       if (p.age < c.adultAge * 12) children++
       else if (p.age >= c.elderAge * 12) elders++
       else adults++
       if (!p.home) homeless++
     }
-    return { total: this.citizens.size, adults, children, elders, homeless }
+    return { total: this.citizens.size - automatons, adults, children, elders, homeless, automatons }
   }
 
   // ---------------------------------------------------------------- persistence
@@ -502,6 +522,8 @@ export class Simulation {
       conduitJobs: [...this.conduitJobs.values()],
       research: this.research,
       story: this.story,
+      credit: this.credit,
+      trade: this.trade,
       clearQueue: [...this.clearQueue],
       limits: this.limits,
       builderTarget: this.builderTarget,
@@ -528,6 +550,8 @@ export class Simulation {
     for (const j of s.conduitJobs) sim.conduitJobs.set(j.tile * 8 + sim.rules.networks.findIndex((n) => n.id === j.network), j)
     sim.research = s.research
     sim.story = s.story
+    sim.credit = s.credit
+    sim.trade = s.trade
     sim.clearQueue = new Set(s.clearQueue)
     sim.limits = s.limits
     sim.builderTarget = s.builderTarget
@@ -567,13 +591,24 @@ export class Simulation {
 }
 
 /**
- * Upgrades older snapshots. Version 1 predates research, energy networks and the story: its Guildhall becomes the
- * headquarters, every research counts as done (a legacy colony keeps what it had built) and every dispatch as
- * already received.
+ * Upgrades older snapshots one version at a time. Version 1 predates research, energy networks and the story: its
+ * Guildhall becomes the headquarters, every research counts as done (a legacy colony keeps what it had built) and
+ * every dispatch as already received. Version 2 predates airship trade.
  */
 function migrate(content: Content, s: ColonySnapshot): ColonySnapshot {
   if (s.v === SAVE_VERSION) return s
-  if (s.v !== 1) throw new Error(`Unsupported save version ${s.v}.`)
+  if (s.v === 1) migrateV1(content, s)
+  // Version 2 predates airship trade.
+  if (s.v === 2) {
+    s.credit = 0
+    s.trade = {}
+    s.v = 3
+  }
+  if (s.v !== SAVE_VERSION) throw new Error(`Unsupported save version ${s.v}.`)
+  return s
+}
+
+function migrateV1(content: Content, s: ColonySnapshot): void {
   const hq = content.bundle.buildings.find((b) => b.headquarters)
   for (const b of s.buildings) {
     if (b.def === 'guildhall' && hq && !content.buildings.has('guildhall')) b.def = hq.id
@@ -583,6 +618,5 @@ function migrate(content: Content, s: ColonySnapshot): ColonySnapshot {
   s.conduitJobs = []
   s.research = { done: content.bundle.research.map((t) => t.id), queue: [], progress: {} }
   s.story = { sent: content.bundle.story.dispatches.map((d) => d.id) }
-  s.v = SAVE_VERSION
-  return s
+  s.v = 2
 }

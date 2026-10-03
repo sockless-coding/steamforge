@@ -38,8 +38,22 @@
         { "shape": "cylinder", "mat": "brass", "pos": [0.62, 1.25, 1.77], "size": [0.26, 0.05, 0.26], "axis": "z" },
         { "shape": "cylinder", "mat": "dial", "pos": [0.62, 1.25, 1.8], "size": [0.2, 0.02, 0.2], "axis": "z" },
         { "shape": "pipe", "mat": "brass", "pos": [0.55, 2.0, 1.25], "size": [0.09, 0.7, 0.09], "emit": "steam" },
-        { "shape": "gear", "mat": "brass", "pos": [-1.8, 1.25, -0.3], "size": [1.35, 0.12, 1.35], "axis": "x", "spin": 0.7 },
-        { "shape": "gear", "mat": "iron", "pos": [-1.82, 0.75, -1.2], "size": [0.6, 0.1, 0.6], "axis": "x", "spin": -1.6 },
+        {
+          "shape": "gear",
+          "mat": "brass",
+          "pos": [-1.8, 1.25, -0.3],
+          "size": [1.35, 0.12, 1.35],
+          "axis": "x",
+          "spin": 0.7
+        },
+        {
+          "shape": "gear",
+          "mat": "iron",
+          "pos": [-1.82, 0.75, -1.2],
+          "size": [0.6, 0.1, 0.6],
+          "axis": "x",
+          "spin": -1.6
+        },
         { "shape": "cylinder", "mat": "darkiron", "pos": [-1.9, 1.25, -0.3], "size": [0.22, 0.1, 0.22], "axis": "x" },
         { "shape": "pipe", "mat": "copper", "pos": [1.83, 1.35, -0.5], "size": [0.14, 2.4, 0.14], "axis": "z" },
         { "shape": "pipe", "mat": "copper", "pos": [1.83, 0.3, 0.62], "size": [0.14, 1.05, 0.14] },
@@ -71,9 +85,7 @@
     "description": "A snug rendered cottage for one family, with a copper rain butt. Burns firewood through the winter.",
     "size": [2, 2],
     "cost": { "resources": { "logs": 16, "stone": 8 }, "work": 40 },
-    "components": {
-      "housing": { "capacity": 5, "insulation": 1 }
-    },
+    "components": { "housing": { "capacity": 5, "insulation": 1 } },
     "model": {
       "parts": [
         { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.8, 0.2, 1.8] },
@@ -101,9 +113,7 @@
     "description": "Solid brick walls hold the heat: a large family burns far less firewood.",
     "size": [3, 2],
     "cost": { "resources": { "stone": 24, "logs": 10, "iron": 4 }, "work": 90 },
-    "components": {
-      "housing": { "capacity": 8, "insulation": 1.8 }
-    },
+    "components": { "housing": { "capacity": 8, "insulation": 1.8 } },
     "model": {
       "parts": [
         { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [2.85, 0.22, 1.85] },
@@ -138,9 +148,7 @@
     "description": "A fenced yard with a steam crane for logs, stone, ore and fuel.",
     "size": [4, 4],
     "cost": { "resources": {}, "work": 8 },
-    "components": {
-      "storage": { "capacity": 600, "accepts": ["material", "fuel"] }
-    },
+    "components": { "storage": { "capacity": 600, "accepts": ["material", "fuel"] } },
     "model": {
       "parts": [
         { "shape": "box", "mat": "soil", "pos": [0, 0, 0], "size": [3.9, 0.05, 3.9] },
@@ -171,9 +179,7 @@
     "description": "A dry, rat-proof brick store with a loft hoist, for food and goods.",
     "size": [3, 3],
     "cost": { "resources": { "logs": 30, "stone": 12 }, "work": 60 },
-    "components": {
-      "storage": { "capacity": 700, "accepts": ["food", "goods"] }
-    },
+    "components": { "storage": { "capacity": 700, "accepts": ["food", "goods"] } },
     "model": {
       "parts": [
         { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [2.85, 0.25, 2.85] },
@@ -300,7 +306,11 @@
     "cost": { "resources": { "logs": 16, "stone": 4 }, "work": 35 },
     "components": {
       "workplace": { "workers": 3, "profession": "hunter" },
-      "gatherer": { "yield": { "venison": 4, "leather": 1 }, "seconds": 18, "scale": { "by": "feature", "id": "tree", "radius": 12, "full": 70 } }
+      "gatherer": {
+        "yield": { "venison": 4, "leather": 1 },
+        "seconds": 18,
+        "scale": { "by": "feature", "id": "tree", "radius": 12, "full": 70 }
+      }
     },
     "model": {
       "parts": [
@@ -330,7 +340,11 @@
     "placement": { "adjacent": { "id": "water", "min": 3 } },
     "components": {
       "workplace": { "workers": 3, "profession": "fisher" },
-      "gatherer": { "yield": { "fish": 3 }, "seconds": 18, "scale": { "by": "terrain", "id": "water", "radius": 6, "full": 30 } }
+      "gatherer": {
+        "yield": { "fish": 3 },
+        "seconds": 18,
+        "scale": { "by": "terrain", "id": "water", "radius": 6, "full": 30 }
+      }
     },
     "model": {
       "parts": [
@@ -344,7 +358,14 @@
         { "shape": "cylinder", "mat": "darkiron", "pos": [-0.65, 0.12, -0.7], "size": [0.1, 0.95, 0.1] },
         { "shape": "box", "mat": "darkiron", "pos": [-0.65, 1.02, -1.08], "size": [0.06, 0.06, 0.8] },
         { "shape": "cylinder", "mat": "brass", "pos": [-0.65, 0.38, -0.7], "size": [0.16, 0.24, 0.16], "axis": "x" },
-        { "shape": "gear", "mat": "brass", "pos": [-0.5, 0.38, -0.7], "size": [0.28, 0.03, 0.28], "axis": "x", "spin": 2 },
+        {
+          "shape": "gear",
+          "mat": "brass",
+          "pos": [-0.5, 0.38, -0.7],
+          "size": [0.28, 0.03, 0.28],
+          "axis": "x",
+          "spin": 2
+        },
         { "shape": "cylinder", "mat": "canvas", "pos": [-0.65, 0.58, -1.44], "size": [0.02, 0.44, 0.02] },
         { "shape": "cylinder", "mat": "canvas", "pos": [-0.55, 0.12, 0.65], "size": [0.4, 0.15, 0.4] },
         { "shape": "cylinder", "mat": "darkiron", "pos": [0.3, 0.12, -2.0], "size": [0.05, 0.7, 0.05] },
@@ -363,7 +384,12 @@
     "placement": { "variableSize": { "min": [3, 3], "max": [15, 15] } },
     "components": {
       "workplace": { "workers": 4, "profession": "farmer" },
-      "field": { "crops": ["potato", "cabbage", "barley"], "tilesPerWorker": 16, "plantSeconds": 2, "harvestSeconds": 2.5 }
+      "field": {
+        "crops": ["potato", "cabbage", "barley"],
+        "tilesPerWorker": 16,
+        "plantSeconds": 2,
+        "harvestSeconds": 2.5
+      }
     },
     "model": { "parts": [] }
   },
@@ -387,7 +413,14 @@
         { "shape": "box", "mat": "darkiron", "pos": [-1.5, 0, 1.4], "size": [0.14, 2.3, 0.14] },
         { "shape": "box", "mat": "darkiron", "pos": [1.5, 0, 1.4], "size": [0.14, 2.3, 0.14] },
         { "shape": "box", "mat": "plate", "pos": [0, 2.2, 1.4], "size": [3.2, 0.16, 0.16] },
-        { "shape": "gear", "mat": "brass", "pos": [-1.5, 1.6, 1.52], "size": [0.8, 0.08, 0.8], "axis": "z", "spin": 0.8 },
+        {
+          "shape": "gear",
+          "mat": "brass",
+          "pos": [-1.5, 1.6, 1.52],
+          "size": [0.8, 0.08, 0.8],
+          "axis": "z",
+          "spin": 0.8
+        },
         { "shape": "cylinder", "mat": "iron", "pos": [0.4, 1.15, 1.4], "size": [0.03, 1.05, 0.03] },
         { "shape": "box", "mat": "stone", "pos": [0.4, 0.5, 1.4], "size": [0.5, 0.4, 0.5], "bob": 0.45, "spin": 1.2 },
         { "shape": "tank", "mat": "copperplate", "pos": [1.35, 0, -1.2], "size": [0.6, 0.9, 0.6] },
@@ -424,7 +457,14 @@
         { "shape": "box", "mat": "darkiron", "pos": [-0.4, 1.4, -1.0], "size": [1.34, 0.08, 0.08] },
         { "shape": "box", "mat": "darkiron", "pos": [-0.4, 1.4, 0.2], "size": [1.34, 0.08, 0.08] },
         { "shape": "box", "mat": "plate", "pos": [-0.4, 2.55, -0.4], "size": [1.4, 0.12, 1.4] },
-        { "shape": "gear", "mat": "brass", "pos": [-0.4, 3.05, -0.4], "size": [1.0, 0.1, 1.0], "axis": "z", "spin": 1.2 },
+        {
+          "shape": "gear",
+          "mat": "brass",
+          "pos": [-0.4, 3.05, -0.4],
+          "size": [1.0, 0.1, 1.0],
+          "axis": "z",
+          "spin": 1.2
+        },
         { "shape": "box", "mat": "plate", "pos": [-0.4, 0.3, -0.4], "size": [0.5, 0.6, 0.5], "bob": 1.4, "spin": 0.6 },
         { "shape": "tank", "mat": "copperplate", "pos": [0.85, 0.65, 0.75], "size": [0.75, 1.0, 0.75], "axis": "x" },
         { "shape": "box", "mat": "darkiron", "pos": [0.85, 0.2, 0.75], "size": [0.8, 0.1, 0.5] },
@@ -455,8 +495,22 @@
         { "shape": "box", "mat": "brick", "pos": [-0.5, 0.15, -0.3], "size": [1.6, 0.95, 1.4] },
         { "shape": "gable", "mat": "slate", "pos": [-0.5, 1.1, -0.3], "size": [1.8, 0.6, 1.6] },
         { "shape": "box", "mat": "soot", "pos": [-0.5, 0.15, 0.41], "size": [0.6, 0.62, 0.05] },
-        { "shape": "torus", "mat": "darkiron", "pos": [-0.5, 0.77, 0.43], "size": [0.68, 0.07, 0], "axis": "z", "arc": 180 },
-        { "shape": "gear", "mat": "brass", "pos": [0.12, 0.72, 0.43], "size": [0.42, 0.06, 0.42], "axis": "z", "spin": 1.5 },
+        {
+          "shape": "torus",
+          "mat": "darkiron",
+          "pos": [-0.5, 0.77, 0.43],
+          "size": [0.68, 0.07, 0],
+          "axis": "z",
+          "arc": 180
+        },
+        {
+          "shape": "gear",
+          "mat": "brass",
+          "pos": [0.12, 0.72, 0.43],
+          "size": [0.42, 0.06, 0.42],
+          "axis": "z",
+          "spin": 1.5
+        },
         { "shape": "box", "mat": "iron", "pos": [0.2, 0.15, 1.0], "size": [2.0, 0.06, 0.1] },
         { "shape": "box", "mat": "iron", "pos": [0.2, 0.15, 1.25], "size": [2.0, 0.06, 0.1] },
         { "shape": "box", "mat": "plate", "pos": [0.8, 0.22, 1.12], "size": [0.5, 0.35, 0.4] },
@@ -495,18 +549,67 @@
         { "shape": "box", "mat": "timber", "pos": [0.22, 0.2, 0.55], "size": [0.08, 1.05, 0.08] },
         { "shape": "box", "mat": "timber", "pos": [-0.45, 1.2, 0.55], "size": [1.42, 0.08, 0.1] },
         { "shape": "cylinder", "mat": "darkiron", "pos": [-0.45, 1.08, 0.55], "size": [0.08, 1.3, 0.08], "axis": "x" },
-        { "shape": "pipe", "mat": "iron", "pos": [-0.85, 0.5, 0.55], "size": [0.08, 0.55, 0.08], "bob": 0.14, "spin": 5 },
-        { "shape": "box", "mat": "darkiron", "pos": [-0.85, 0.44, 0.55], "size": [0.15, 0.1, 0.15], "bob": 0.14, "spin": 5 },
-        { "shape": "pipe", "mat": "iron", "pos": [-0.45, 0.5, 0.55], "size": [0.08, 0.55, 0.08], "bob": 0.14, "spin": 6.3 },
-        { "shape": "box", "mat": "darkiron", "pos": [-0.45, 0.44, 0.55], "size": [0.15, 0.1, 0.15], "bob": 0.14, "spin": 6.3 },
-        { "shape": "pipe", "mat": "iron", "pos": [-0.05, 0.5, 0.55], "size": [0.08, 0.55, 0.08], "bob": 0.14, "spin": 7.1 },
-        { "shape": "box", "mat": "darkiron", "pos": [-0.05, 0.44, 0.55], "size": [0.15, 0.1, 0.15], "bob": 0.14, "spin": 7.1 },
+        {
+          "shape": "pipe",
+          "mat": "iron",
+          "pos": [-0.85, 0.5, 0.55],
+          "size": [0.08, 0.55, 0.08],
+          "bob": 0.14,
+          "spin": 5
+        },
+        {
+          "shape": "box",
+          "mat": "darkiron",
+          "pos": [-0.85, 0.44, 0.55],
+          "size": [0.15, 0.1, 0.15],
+          "bob": 0.14,
+          "spin": 5
+        },
+        {
+          "shape": "pipe",
+          "mat": "iron",
+          "pos": [-0.45, 0.5, 0.55],
+          "size": [0.08, 0.55, 0.08],
+          "bob": 0.14,
+          "spin": 6.3
+        },
+        {
+          "shape": "box",
+          "mat": "darkiron",
+          "pos": [-0.45, 0.44, 0.55],
+          "size": [0.15, 0.1, 0.15],
+          "bob": 0.14,
+          "spin": 6.3
+        },
+        {
+          "shape": "pipe",
+          "mat": "iron",
+          "pos": [-0.05, 0.5, 0.55],
+          "size": [0.08, 0.55, 0.08],
+          "bob": 0.14,
+          "spin": 7.1
+        },
+        {
+          "shape": "box",
+          "mat": "darkiron",
+          "pos": [-0.05, 0.44, 0.55],
+          "size": [0.15, 0.1, 0.15],
+          "bob": 0.14,
+          "spin": 7.1
+        },
         { "shape": "box", "mat": "darkiron", "pos": [0.7, 0.2, -1.2], "size": [0.1, 1.8, 0.1] },
         { "shape": "box", "mat": "darkiron", "pos": [1.3, 0.2, -1.2], "size": [0.1, 1.8, 0.1] },
         { "shape": "box", "mat": "darkiron", "pos": [0.7, 0.2, -0.6], "size": [0.1, 1.8, 0.1] },
         { "shape": "box", "mat": "darkiron", "pos": [1.3, 0.2, -0.6], "size": [0.1, 1.8, 0.1] },
         { "shape": "box", "mat": "plate", "pos": [1.0, 1.95, -0.9], "size": [0.75, 0.08, 0.75] },
-        { "shape": "gear", "mat": "copper", "pos": [1.0, 2.35, -0.9], "size": [0.65, 0.08, 0.65], "axis": "x", "spin": 1.4 },
+        {
+          "shape": "gear",
+          "mat": "copper",
+          "pos": [1.0, 2.35, -0.9],
+          "size": [0.65, 0.08, 0.65],
+          "axis": "x",
+          "spin": 1.4
+        },
         { "shape": "cone", "mat": "malachite", "pos": [1.0, 0.2, 0.85], "size": [0.75, 0.42, 0.75] },
         { "shape": "stack", "mat": "brick", "pos": [-1.12, 1.2, -0.9], "size": [0.3, 1.4, 0.3] },
         { "shape": "pipe", "mat": "brass", "pos": [0.25, 1.3, -0.9], "size": [0.07, 0.4, 0.07], "emit": "steam" }
@@ -572,7 +675,14 @@
         { "shape": "box", "mat": "darkiron", "pos": [-0.4, 1.02, 0.72], "size": [0.52, 0.1, 0.12] },
         { "shape": "tank", "mat": "copperplate", "pos": [-0.4, 1.12, 0.72], "size": [0.18, 0.3, 0.18] },
         { "shape": "pipe", "mat": "brass", "pos": [-0.4, 1.42, 0.72], "size": [0.05, 0.18, 0.05], "emit": "steam" },
-        { "shape": "pipe", "mat": "iron", "pos": [-0.4, 0.68, 0.72], "size": [0.05, 0.36, 0.05], "bob": 0.16, "spin": 7 },
+        {
+          "shape": "pipe",
+          "mat": "iron",
+          "pos": [-0.4, 0.68, 0.72],
+          "size": [0.05, 0.36, 0.05],
+          "bob": 0.16,
+          "spin": 7
+        },
         { "shape": "box", "mat": "iron", "pos": [-0.4, 0.56, 0.72], "size": [0.16, 0.14, 0.14], "bob": 0.16, "spin": 7 },
         { "shape": "box", "mat": "darkiron", "pos": [-0.4, 0.2, 0.72], "size": [0.22, 0.3, 0.16] }
       ]
@@ -585,10 +695,7 @@
     "description": "A treadle sewing machine stitches leather into warm greatcoats. Coated citizens lose heat far more slowly outdoors.",
     "size": [2, 2],
     "cost": { "resources": { "logs": 20, "stone": 8 }, "work": 50 },
-    "components": {
-      "workplace": { "workers": 2, "profession": "tailor" },
-      "producer": { "recipes": ["sew-coats"] }
-    },
+    "components": { "workplace": { "workers": 2, "profession": "tailor" }, "producer": { "recipes": ["sew-coats"] } },
     "model": {
       "parts": [
         { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.8, 0.2, 1.8] },
@@ -597,7 +704,14 @@
         { "shape": "chimney", "mat": "brick", "pos": [0.5, 1.45, -0.4], "size": [0.22, 0.75, 0.22] },
         { "shape": "box", "mat": "timber", "pos": [0.32, 0.2, 0.72], "size": [0.62, 0.75, 0.12] },
         { "shape": "box", "mat": "glass", "pos": [0.32, 0.42, 0.79], "size": [0.52, 0.42, 0.03] },
-        { "shape": "gear", "mat": "brass", "pos": [0.32, 0.63, 0.8], "size": [0.22, 0.03, 0.22], "axis": "z", "spin": 4 },
+        {
+          "shape": "gear",
+          "mat": "brass",
+          "pos": [0.32, 0.63, 0.8],
+          "size": [0.22, 0.03, 0.22],
+          "axis": "z",
+          "spin": 4
+        },
         { "shape": "box", "mat": "canvas", "pos": [0.32, 1.0, 0.8], "size": [0.72, 0.04, 0.26] },
         { "shape": "box", "mat": "plank", "pos": [-0.38, 0.2, 0.66], "size": [0.3, 0.62, 0.05] },
         { "shape": "box", "mat": "brass", "pos": [-0.7, 1.05, 0.75], "size": [0.04, 0.04, 0.3] },
@@ -625,8 +739,22 @@
         { "shape": "gable", "mat": "glassroof", "pos": [0.65, 1.5, -0.05], "size": [1.3, 0.55, 1.6], "rot": 90 },
         { "shape": "box", "mat": "darkiron", "pos": [0, 1.5, 0.75], "size": [2.62, 0.06, 0.06] },
         { "shape": "box", "mat": "darkiron", "pos": [0, 1.5, -0.85], "size": [2.62, 0.06, 0.06] },
-        { "shape": "gear", "mat": "brass", "pos": [-0.75, 0.95, 0.73], "size": [0.75, 0.08, 0.75], "axis": "z", "spin": 1.0 },
-        { "shape": "gear", "mat": "copper", "pos": [-0.25, 0.75, 0.74], "size": [0.45, 0.08, 0.45], "axis": "z", "spin": -1.6 },
+        {
+          "shape": "gear",
+          "mat": "brass",
+          "pos": [-0.75, 0.95, 0.73],
+          "size": [0.75, 0.08, 0.75],
+          "axis": "z",
+          "spin": 1.0
+        },
+        {
+          "shape": "gear",
+          "mat": "copper",
+          "pos": [-0.25, 0.75, 0.74],
+          "size": [0.45, 0.08, 0.45],
+          "axis": "z",
+          "spin": -1.6
+        },
         { "shape": "box", "mat": "plank", "pos": [0.6, 0.2, 0.71], "size": [0.4, 0.75, 0.05] },
         { "shape": "box", "mat": "glass", "pos": [0.15, 0.6, 0.71], "size": [0.3, 0.4, 0.04] },
         { "shape": "box", "mat": "glass", "pos": [1.05, 0.6, 0.71], "size": [0.3, 0.4, 0.04] },
@@ -689,8 +817,22 @@
         { "shape": "box", "mat": "plate", "pos": [0.2, 0.15, 0], "size": [1.6, 0.45, 0.5] },
         { "shape": "gear", "mat": "brass", "pos": [0.2, 0.68, 0], "size": [0.75, 0.04, 0.75], "axis": "z", "spin": 8 },
         { "shape": "tank", "mat": "copperplate", "pos": [-0.95, 0.15, -0.45], "size": [0.42, 0.9, 0.42] },
-        { "shape": "box", "mat": "brass", "pos": [-0.95, 1.08, -0.45], "size": [0.2, 0.08, 0.2], "bob": 0.14, "spin": 5 },
-        { "shape": "gear", "mat": "brass", "pos": [-0.45, 0.65, -0.55], "size": [0.6, 0.06, 0.6], "axis": "z", "spin": 4 },
+        {
+          "shape": "box",
+          "mat": "brass",
+          "pos": [-0.95, 1.08, -0.45],
+          "size": [0.2, 0.08, 0.2],
+          "bob": 0.14,
+          "spin": 5
+        },
+        {
+          "shape": "gear",
+          "mat": "brass",
+          "pos": [-0.45, 0.65, -0.55],
+          "size": [0.6, 0.06, 0.6],
+          "axis": "z",
+          "spin": 4
+        },
         { "shape": "pipe", "mat": "brass", "pos": [-0.7, 0.15, -0.72], "size": [0.06, 1.1, 0.06], "emit": "steam" },
         { "shape": "cylinder", "mat": "timber", "pos": [0.9, 0.75, 0], "size": [0.25, 0.9, 0.25], "axis": "x" },
         { "shape": "cylinder", "mat": "timber", "pos": [0.9, 0.28, 0.62], "size": [0.24, 1.0, 0.24], "axis": "x" },
@@ -705,9 +847,7 @@
     "description": "A brass hand pump under a copper canopy. Fires within reach are put out quickly; fires out of reach of a well burn unchecked.",
     "size": [1, 1],
     "cost": { "resources": { "stone": 8, "logs": 2 }, "work": 20 },
-    "components": {
-      "firefighting": { "radius": 14 }
-    },
+    "components": { "firefighting": { "radius": 14 } },
     "model": {
       "parts": [
         { "shape": "cylinder", "mat": "stone", "pos": [0, 0, 0], "size": [0.75, 0.4, 0.75] },
@@ -746,7 +886,14 @@
         { "shape": "box", "mat": "glass", "pos": [-0.5, 0.45, 0.71], "size": [0.34, 0.8, 0.04] },
         { "shape": "box", "mat": "glass", "pos": [0.5, 0.45, 0.71], "size": [0.34, 0.8, 0.04] },
         { "shape": "box", "mat": "glass", "pos": [0.95, 0.45, 0.71], "size": [0.34, 0.8, 0.04] },
-        { "shape": "torus", "mat": "stone", "pos": [-0.95, 1.25, 0.72], "size": [0.4, 0.06, 0], "axis": "z", "arc": 180 },
+        {
+          "shape": "torus",
+          "mat": "stone",
+          "pos": [-0.95, 1.25, 0.72],
+          "size": [0.4, 0.06, 0],
+          "axis": "z",
+          "arc": 180
+        },
         { "shape": "torus", "mat": "stone", "pos": [-0.5, 1.25, 0.72], "size": [0.4, 0.06, 0], "axis": "z", "arc": 180 },
         { "shape": "torus", "mat": "stone", "pos": [0.5, 1.25, 0.72], "size": [0.4, 0.06, 0], "axis": "z", "arc": 180 },
         { "shape": "torus", "mat": "stone", "pos": [0.95, 1.25, 0.72], "size": [0.4, 0.06, 0], "axis": "z", "arc": 180 },
@@ -880,8 +1027,22 @@
         { "shape": "gable", "mat": "slate", "pos": [-0.3, 1.7, -0.05], "size": [2.2, 0.6, 1.65] },
         { "shape": "box", "mat": "redpaint", "pos": [-0.75, 0.2, 0.71], "size": [0.7, 0.92, 0.05] },
         { "shape": "box", "mat": "redpaint", "pos": [0.15, 0.2, 0.71], "size": [0.7, 0.92, 0.05] },
-        { "shape": "torus", "mat": "stone", "pos": [-0.75, 1.12, 0.72], "size": [0.76, 0.07, 0], "axis": "z", "arc": 180 },
-        { "shape": "torus", "mat": "stone", "pos": [0.15, 1.12, 0.72], "size": [0.76, 0.07, 0], "axis": "z", "arc": 180 },
+        {
+          "shape": "torus",
+          "mat": "stone",
+          "pos": [-0.75, 1.12, 0.72],
+          "size": [0.76, 0.07, 0],
+          "axis": "z",
+          "arc": 180
+        },
+        {
+          "shape": "torus",
+          "mat": "stone",
+          "pos": [0.15, 1.12, 0.72],
+          "size": [0.76, 0.07, 0],
+          "axis": "z",
+          "arc": 180
+        },
         { "shape": "box", "mat": "brass", "pos": [-0.3, 1.52, 0.72], "size": [1.5, 0.12, 0.03] },
         { "shape": "box", "mat": "brick", "pos": [1.1, 0.2, -0.3], "size": [0.6, 2.6, 0.6] },
         { "shape": "hip", "mat": "verdigris", "pos": [1.1, 2.8, -0.3], "size": [0.74, 0.45, 0.74] },
@@ -917,7 +1078,14 @@
         { "shape": "torus", "mat": "copper", "pos": [-0.9, 0.68, 1.05], "size": [0.68, 0.05, 0], "axis": "x" },
         { "shape": "torus", "mat": "copper", "pos": [-0.6, 0.68, 1.05], "size": [0.68, 0.05, 0], "axis": "x" },
         { "shape": "torus", "mat": "copper", "pos": [-0.3, 0.68, 1.05], "size": [0.68, 0.05, 0], "axis": "x" },
-        { "shape": "gear", "mat": "brass", "pos": [-0.05, 0.68, 1.05], "size": [0.5, 0.06, 0.5], "axis": "x", "spin": 6 },
+        {
+          "shape": "gear",
+          "mat": "brass",
+          "pos": [-0.05, 0.68, 1.05],
+          "size": [0.5, 0.06, 0.5],
+          "axis": "x",
+          "spin": 6
+        },
         { "shape": "box", "mat": "plate", "pos": [1.05, 0.25, 1.0], "size": [0.5, 0.3, 0.5] },
         { "shape": "cylinder", "mat": "copper", "pos": [1.05, 0.55, 1.0], "size": [0.22, 1.3, 0.22] },
         { "shape": "torus", "mat": "brass", "pos": [1.05, 0.8, 1.0], "size": [0.34, 0.04, 0] },
@@ -1022,6 +1190,253 @@
         { "shape": "sphere", "mat": "lamp", "pos": [-1.85, 1.58, 1.32], "size": [0.18, 0.22, 0.18] },
         { "shape": "cylinder", "mat": "darkiron", "pos": [1.85, 0.3, 1.32], "size": [0.07, 1.2, 0.07] },
         { "shape": "sphere", "mat": "lamp", "pos": [1.85, 1.58, 1.32], "size": [0.18, 0.22, 0.18] }
+      ]
+    }
+  },
+  {
+    "id": "gas-lamp",
+    "name": "Gas Lamp",
+    "category": "civic",
+    "description": "A cast-iron gas lamp. Homes within its glow are happier, and it lights the streets at dusk.",
+    "size": [1, 1],
+    "cost": { "resources": { "stone": 2, "iron": 1 }, "work": 8 },
+    "components": { "amenity": { "radius": 7, "happiness": 0.06 } },
+    "model": {
+      "parts": [
+        { "shape": "cylinder", "mat": "stone", "pos": [0, 0, 0], "size": [0.34, 0.18, 0.34] },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [0, 0.18, 0], "size": [0.08, 1.3, 0.08] },
+        { "shape": "torus", "mat": "darkiron", "pos": [0, 0.48, 0], "size": [0.16, 0.03, 0] },
+        { "shape": "cylinder", "mat": "brass", "pos": [0, 1.45, 0], "size": [0.2, 0.05, 0.2] },
+        { "shape": "sphere", "mat": "lamp", "pos": [0, 1.62, 0], "size": [0.19, 0.26, 0.19] },
+        { "shape": "box", "mat": "darkiron", "pos": [0.1, 1.48, 0.1], "size": [0.015, 0.26, 0.015] },
+        { "shape": "box", "mat": "darkiron", "pos": [-0.1, 1.48, 0.1], "size": [0.015, 0.26, 0.015] },
+        { "shape": "box", "mat": "darkiron", "pos": [0.1, 1.48, -0.1], "size": [0.015, 0.26, 0.015] },
+        { "shape": "box", "mat": "darkiron", "pos": [-0.1, 1.48, -0.1], "size": [0.015, 0.26, 0.015] },
+        { "shape": "cone", "mat": "darkiron", "pos": [0, 1.74, 0], "size": [0.32, 0.16, 0.32] },
+        { "shape": "sphere", "mat": "brass", "pos": [0, 1.94, 0], "size": [0.05, 0.05, 0.05] }
+      ]
+    }
+  },
+  {
+    "id": "clock-tower",
+    "name": "Clock Tower",
+    "category": "civic",
+    "description": "A steam-wound clock tower with four brass faces. The whole neighbourhood takes heart from its chimes. Needs steam.",
+    "size": [2, 2],
+    "cost": { "resources": { "stone": 30, "logs": 10, "iron": 6, "cogs": 4 }, "work": 110 },
+    "components": {
+      "amenity": { "radius": 18, "happiness": 0.12 },
+      "consumer": { "uses": { "steam": 2 }, "required": true }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.85, 0.25, 1.85] },
+        { "shape": "box", "mat": "brick", "pos": [0, 0.25, 0], "size": [1.3, 3.0, 1.3] },
+        { "shape": "box", "mat": "stone", "pos": [0, 1.4, 0], "size": [1.36, 0.08, 1.36] },
+        { "shape": "box", "mat": "plank", "pos": [0, 0.25, 0.66], "size": [0.36, 0.7, 0.05] },
+        { "shape": "torus", "mat": "stone", "pos": [0, 0.95, 0.67], "size": [0.4, 0.05, 0], "axis": "z", "arc": 180 },
+        { "shape": "box", "mat": "stone", "pos": [0, 3.25, 0], "size": [1.45, 0.9, 1.45] },
+        { "shape": "cylinder", "mat": "dial", "pos": [0, 3.7, 0.73], "size": [0.8, 0.03, 0.8], "axis": "z" },
+        { "shape": "cylinder", "mat": "dial", "pos": [0, 3.7, -0.73], "size": [0.8, 0.03, 0.8], "axis": "z" },
+        { "shape": "cylinder", "mat": "dial", "pos": [0.73, 3.7, 0], "size": [0.8, 0.03, 0.8], "axis": "x" },
+        { "shape": "cylinder", "mat": "dial", "pos": [-0.73, 3.7, 0], "size": [0.8, 0.03, 0.8], "axis": "x" },
+        { "shape": "torus", "mat": "brass", "pos": [0, 3.7, 0.75], "size": [0.86, 0.06, 0], "axis": "z" },
+        { "shape": "torus", "mat": "brass", "pos": [0, 3.7, -0.75], "size": [0.86, 0.06, 0], "axis": "z" },
+        { "shape": "torus", "mat": "brass", "pos": [0.75, 3.7, 0], "size": [0.86, 0.06, 0], "axis": "x" },
+        { "shape": "torus", "mat": "brass", "pos": [-0.75, 3.7, 0], "size": [0.86, 0.06, 0], "axis": "x" },
+        { "shape": "box", "mat": "darkiron", "pos": [0, 3.72, 0.77], "size": [0.035, 0.3, 0.02] },
+        { "shape": "box", "mat": "darkiron", "pos": [0.08, 3.7, 0.77], "size": [0.2, 0.035, 0.02] },
+        { "shape": "box", "mat": "darkiron", "pos": [0, 3.72, -0.77], "size": [0.035, 0.3, 0.02] },
+        { "shape": "box", "mat": "darkiron", "pos": [-0.08, 3.7, -0.77], "size": [0.2, 0.035, 0.02] },
+        { "shape": "gear", "mat": "brass", "pos": [0, 3.7, 0.79], "size": [0.16, 0.02, 0.16], "axis": "z", "spin": 0.4 },
+        {
+          "shape": "gear",
+          "mat": "brass",
+          "pos": [0, 3.7, -0.79],
+          "size": [0.16, 0.02, 0.16],
+          "axis": "z",
+          "spin": -0.4
+        },
+        { "shape": "hip", "mat": "verdigris", "pos": [0, 4.15, 0], "size": [1.55, 1.3, 1.55] },
+        { "shape": "pipe", "mat": "brass", "pos": [0, 5.4, 0], "size": [0.06, 0.4, 0.06] },
+        { "shape": "sphere", "mat": "brass", "pos": [0, 5.85, 0], "size": [0.12, 0.12, 0.12] },
+        { "shape": "pipe", "mat": "brass", "pos": [0.55, 4.0, -0.55], "size": [0.06, 0.3, 0.06], "emit": "steam" },
+        { "shape": "sphere", "mat": "lamp", "pos": [-0.5, 0.95, 0.72], "size": [0.1, 0.13, 0.1] },
+        { "shape": "sphere", "mat": "lamp", "pos": [0.5, 0.95, 0.72], "size": [0.1, 0.13, 0.1] }
+      ]
+    }
+  },
+  {
+    "id": "safety-valve",
+    "name": "Safety Valve",
+    "category": "power",
+    "description": "A weighted brass valve on the steam main. Bleeds a little steam, but no overloaded boiler on its grid will ever burst.",
+    "size": [1, 1],
+    "cost": { "resources": { "stone": 4, "iron": 4, "cogs": 1 }, "work": 25 },
+    "components": { "valve": {}, "consumer": { "uses": { "steam": 2 } } },
+    "model": {
+      "parts": [
+        { "shape": "cylinder", "mat": "stone", "pos": [0, 0, 0], "size": [0.62, 0.2, 0.62] },
+        { "shape": "tank", "mat": "copperplate", "pos": [0, 0.2, 0], "size": [0.36, 0.5, 0.36] },
+        { "shape": "cylinder", "mat": "brass", "pos": [0, 0.45, 0.19], "size": [0.14, 0.03, 0.14], "axis": "z" },
+        { "shape": "cylinder", "mat": "dial", "pos": [0, 0.45, 0.205], "size": [0.1, 0.01, 0.1], "axis": "z" },
+        { "shape": "pipe", "mat": "brass", "pos": [0, 0.7, 0], "size": [0.1, 0.8, 0.1], "emit": "steam" },
+        { "shape": "torus", "mat": "brass", "pos": [0, 1.2, 0], "size": [0.2, 0.04, 0] },
+        { "shape": "box", "mat": "darkiron", "pos": [0.15, 1.1, 0], "size": [0.42, 0.04, 0.05] },
+        { "shape": "sphere", "mat": "iron", "pos": [0.34, 1.08, 0], "size": [0.13, 0.13, 0.13] }
+      ]
+    }
+  },
+  {
+    "id": "airship-mast",
+    "name": "Airship Mast",
+    "category": "civic",
+    "description": "A lattice mooring mast for the Company's airships. Laborers carry export goods here for credit, and every few months an airship moors with your import orders. The winches need steam.",
+    "size": [3, 3],
+    "cost": { "resources": { "logs": 30, "stone": 20, "iron": 16, "cogs": 8 }, "work": 140 },
+    "components": {
+      "airship": { "visitMonths": 3, "cargo": 80, "approachSeconds": 12, "staySeconds": 25, "capacity": 120 },
+      "consumer": { "uses": { "steam": 4 }, "required": true }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [2.85, 0.25, 2.85] },
+        { "shape": "box", "mat": "brick", "pos": [-0.75, 0.25, 0.75], "size": [1.2, 1.0, 1.2] },
+        { "shape": "gable", "mat": "slate", "pos": [-0.75, 1.25, 0.75], "size": [1.35, 0.45, 1.35] },
+        { "shape": "box", "mat": "plank", "pos": [-0.75, 0.25, 1.36], "size": [0.36, 0.65, 0.04] },
+        {
+          "shape": "gear",
+          "mat": "brass",
+          "pos": [-0.28, 0.82, 1.37],
+          "size": [0.46, 0.06, 0.46],
+          "axis": "z",
+          "spin": 1.2
+        },
+        { "shape": "box", "mat": "darkiron", "pos": [0.0, 0.25, -0.7], "size": [0.1, 5.2, 0.1] },
+        { "shape": "box", "mat": "darkiron", "pos": [0.7, 0.25, -0.7], "size": [0.1, 5.2, 0.1] },
+        { "shape": "box", "mat": "darkiron", "pos": [0.0, 0.25, 0.0], "size": [0.1, 5.2, 0.1] },
+        { "shape": "box", "mat": "darkiron", "pos": [0.7, 0.25, 0.0], "size": [0.1, 5.2, 0.1] },
+        { "shape": "torus", "mat": "darkiron", "pos": [0.35, 1.6, -0.35], "size": [1.06, 0.05, 0] },
+        { "shape": "torus", "mat": "darkiron", "pos": [0.35, 3.0, -0.35], "size": [1.06, 0.05, 0] },
+        { "shape": "torus", "mat": "darkiron", "pos": [0.35, 4.4, -0.35], "size": [1.06, 0.05, 0] },
+        { "shape": "box", "mat": "darkiron", "pos": [0.35, 2.3, -0.35], "size": [0.8, 0.05, 0.05] },
+        { "shape": "box", "mat": "darkiron", "pos": [0.35, 3.7, -0.35], "size": [0.05, 0.05, 0.8] },
+        { "shape": "pipe", "mat": "copper", "pos": [0.35, 0.25, -0.35], "size": [0.12, 5.2, 0.12] },
+        { "shape": "cylinder", "mat": "plate", "pos": [0.35, 5.45, -0.35], "size": [1.35, 0.12, 1.35] },
+        { "shape": "torus", "mat": "brass", "pos": [0.35, 5.6, -0.35], "size": [1.3, 0.05, 0] },
+        { "shape": "cone", "mat": "brass", "pos": [0.35, 5.57, -0.35], "size": [0.5, 0.6, 0.5] },
+        { "shape": "sphere", "mat": "lamp", "pos": [0.35, 6.25, -0.35], "size": [0.2, 0.2, 0.2] },
+        { "shape": "pipe", "mat": "brass", "pos": [-1.2, 1.25, 0.4], "size": [0.07, 0.4, 0.07], "emit": "steam" },
+        { "shape": "sphere", "mat": "lamp", "pos": [-1.2, 0.9, 1.38], "size": [0.1, 0.13, 0.1] }
+      ]
+    }
+  },
+  {
+    "id": "tram-depot",
+    "name": "Steam Tram Depot",
+    "category": "civic",
+    "description": "Keeps the steam trams running. While the depot has steam, citizens ride every tramway at three times walking pace.",
+    "size": [3, 2],
+    "cost": { "resources": { "stone": 24, "logs": 10, "iron": 12, "cogs": 6 }, "work": 100 },
+    "components": { "tramDepot": {}, "consumer": { "uses": { "steam": 6 }, "required": true } },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [2.85, 0.2, 1.85] },
+        { "shape": "box", "mat": "brick", "pos": [0, 0.2, -0.25], "size": [2.6, 1.3, 1.3] },
+        { "shape": "gable", "mat": "slate", "pos": [0, 1.5, -0.25], "size": [2.75, 0.55, 1.5] },
+        { "shape": "box", "mat": "soot", "pos": [-0.6, 0.2, 0.41], "size": [0.8, 0.9, 0.03] },
+        { "shape": "box", "mat": "soot", "pos": [0.6, 0.2, 0.41], "size": [0.8, 0.9, 0.03] },
+        { "shape": "torus", "mat": "stone", "pos": [-0.6, 1.1, 0.42], "size": [0.84, 0.07, 0], "axis": "z", "arc": 180 },
+        { "shape": "torus", "mat": "stone", "pos": [0.6, 1.1, 0.42], "size": [0.84, 0.07, 0], "axis": "z", "arc": 180 },
+        { "shape": "box", "mat": "brass", "pos": [0, 1.32, 0.42], "size": [1.1, 0.12, 0.03] },
+        { "shape": "box", "mat": "iron", "pos": [0, 0.2, 0.6], "size": [2.8, 0.04, 0.05] },
+        { "shape": "box", "mat": "iron", "pos": [0, 0.2, 0.82], "size": [2.8, 0.04, 0.05] },
+        { "shape": "box", "mat": "redpaint", "pos": [-0.6, 0.27, 0.71], "size": [1.0, 0.44, 0.32] },
+        { "shape": "box", "mat": "glass", "pos": [-0.6, 0.5, 0.875], "size": [0.8, 0.14, 0.01] },
+        { "shape": "box", "mat": "darkiron", "pos": [-0.6, 0.71, 0.71], "size": [1.05, 0.05, 0.36] },
+        { "shape": "pipe", "mat": "darkiron", "pos": [-1.0, 0.76, 0.71], "size": [0.07, 0.24, 0.07], "emit": "steam" },
+        { "shape": "sphere", "mat": "lamp", "pos": [-0.1, 0.42, 0.71], "size": [0.08, 0.08, 0.08] },
+        { "shape": "stack", "mat": "brick", "pos": [1.05, 1.5, -0.6], "size": [0.28, 1.0, 0.28] }
+      ]
+    }
+  },
+  {
+    "id": "pneumatic-depot",
+    "name": "Pneumatic Depot",
+    "category": "storage",
+    "description": "A small store on the pneumatic post. Depots on the same steam grid share their goods by tube, so whatever reaches one can be collected at any. Needs steam.",
+    "size": [2, 2],
+    "cost": { "resources": { "stone": 16, "iron": 8, "copper": 6 }, "work": 70 },
+    "components": {
+      "storage": { "capacity": 150, "accepts": ["material", "fuel", "food", "goods"] },
+      "pneumatic": { "network": "steam" },
+      "consumer": { "uses": { "steam": 3 }, "required": true }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.8, 0.2, 1.8] },
+        { "shape": "box", "mat": "brick", "pos": [0, 0.2, -0.1], "size": [1.5, 1.0, 1.3] },
+        { "shape": "hip", "mat": "verdigris", "pos": [0, 1.2, -0.1], "size": [1.65, 0.6, 1.45] },
+        { "shape": "box", "mat": "plank", "pos": [0, 0.2, 0.56], "size": [0.35, 0.6, 0.05] },
+        { "shape": "pipe", "mat": "brass", "pos": [0, 1.0, 0.62], "size": [0.12, 1.3, 0.12], "axis": "x" },
+        { "shape": "pipe", "mat": "brass", "pos": [-0.6, 0.2, 0.62], "size": [0.12, 0.8, 0.12] },
+        { "shape": "pipe", "mat": "brass", "pos": [0.6, 0.2, 0.62], "size": [0.12, 0.8, 0.12] },
+        { "shape": "pipe", "mat": "brass", "pos": [0.45, 1.1, -0.45], "size": [0.14, 0.95, 0.14], "emit": "steam" },
+        { "shape": "pipe", "mat": "brass", "pos": [-0.45, 1.1, -0.45], "size": [0.14, 0.95, 0.14] },
+        { "shape": "sphere", "mat": "brass", "pos": [-0.45, 2.08, -0.45], "size": [0.16, 0.16, 0.16] },
+        { "shape": "tank", "mat": "brassplate", "pos": [0.3, 0.42, 0.74], "size": [0.13, 0.36, 0.13], "axis": "x" },
+        { "shape": "cylinder", "mat": "brass", "pos": [-0.42, 0.65, 0.57], "size": [0.18, 0.04, 0.18], "axis": "z" },
+        { "shape": "cylinder", "mat": "dial", "pos": [-0.42, 0.65, 0.59], "size": [0.14, 0.02, 0.14], "axis": "z" }
+      ]
+    }
+  },
+  {
+    "id": "automaton-works",
+    "name": "Automaton Works",
+    "category": "industry",
+    "description": "Engineers assemble clockwork automatons from cogs, copper and iron. Automatons work without food or warmth but must be wound with coal. Needs steam.",
+    "size": [3, 2],
+    "cost": { "resources": { "stone": 30, "iron": 16, "copper": 10, "cogs": 10 }, "work": 150 },
+    "components": {
+      "workplace": { "workers": 2, "profession": "engineer" },
+      "assembler": { "inputs": { "cogs": 6, "copper": 4, "iron": 2 }, "seconds": 40 },
+      "consumer": { "uses": { "steam": 6 }, "required": true }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [2.85, 0.2, 1.85] },
+        { "shape": "box", "mat": "brick", "pos": [-0.3, 0.2, -0.1], "size": [2.1, 1.35, 1.5] },
+        { "shape": "gable", "mat": "glassroof", "pos": [-0.3, 1.55, -0.1], "size": [2.25, 0.6, 1.65] },
+        { "shape": "box", "mat": "darkiron", "pos": [-0.3, 2.13, -0.1], "size": [2.25, 0.05, 0.05] },
+        { "shape": "box", "mat": "glass", "pos": [-0.65, 0.5, 0.66], "size": [0.8, 0.6, 0.04] },
+        { "shape": "box", "mat": "plank", "pos": [0.35, 0.2, 0.66], "size": [0.34, 0.7, 0.05] },
+        {
+          "shape": "gear",
+          "mat": "brass",
+          "pos": [-1.05, 1.08, 0.67],
+          "size": [0.5, 0.06, 0.5],
+          "axis": "z",
+          "spin": 1.4
+        },
+        {
+          "shape": "gear",
+          "mat": "copper",
+          "pos": [-0.72, 1.18, 0.68],
+          "size": [0.3, 0.05, 0.3],
+          "axis": "z",
+          "spin": -2.3
+        },
+        { "shape": "stack", "mat": "brick", "pos": [-1.1, 1.55, -0.55], "size": [0.3, 1.2, 0.3] },
+        { "shape": "pipe", "mat": "brass", "pos": [0.4, 1.55, -0.4], "size": [0.07, 0.4, 0.07], "emit": "steam" },
+        { "shape": "cylinder", "mat": "stone", "pos": [1.05, 0.2, 0.35], "size": [0.5, 0.25, 0.5] },
+        { "shape": "pipe", "mat": "darkiron", "pos": [0.98, 0.45, 0.35], "size": [0.07, 0.3, 0.07] },
+        { "shape": "pipe", "mat": "darkiron", "pos": [1.12, 0.45, 0.35], "size": [0.07, 0.3, 0.07] },
+        { "shape": "tank", "mat": "brassplate", "pos": [1.05, 0.74, 0.35], "size": [0.32, 0.5, 0.32] },
+        { "shape": "pipe", "mat": "darkiron", "pos": [0.85, 0.82, 0.35], "size": [0.05, 0.36, 0.05] },
+        { "shape": "pipe", "mat": "darkiron", "pos": [1.25, 0.82, 0.35], "size": [0.05, 0.36, 0.05] },
+        { "shape": "sphere", "mat": "copper", "pos": [1.05, 1.36, 0.35], "size": [0.24, 0.24, 0.24] },
+        { "shape": "sphere", "mat": "arc", "pos": [1.05, 1.38, 0.46], "size": [0.07, 0.05, 0.04], "glow": true },
+        { "shape": "pipe", "mat": "brass", "pos": [1.05, 1.47, 0.35], "size": [0.03, 0.12, 0.03] }
       ]
     }
   }

@@ -1,4 +1,5 @@
 import { chooseTask } from './ai'
+import { amenityByHome } from './components/amenity'
 import type { ShelterConfig } from './components/basic'
 import { solveEnergy } from './energy'
 import { rollEvents, updateFires } from './events'
@@ -59,7 +60,10 @@ registerSystem({
     const spm = sim.rules.secondsPerMonth
     const cold = sim.coldness
     const dead: [number, string][] = []
+    const amenity = amenityByHome(sim)
     for (const c of sim.citizens.values()) {
+      // Automatons have no needs; their mainspring is wound monthly below.
+      if (c.automaton) continue
       c.hunger = Math.max(0, c.hunger - (r.hungerPerMonth * sim.mods.hungerRate) / spm)
 
       const inside = c.inside ? sim.buildings.get(c.inside) : undefined
@@ -94,7 +98,8 @@ registerSystem({
         0.15 * Math.min(1, new Set(c.diet).size / 4) +
         (cold <= 0 || home?.data.heated ? 0.15 : 0) +
         0.15 * c.health +
-        (c.hunger > 0.2 ? 0.1 : 0)
+        (c.hunger > 0.2 ? 0.1 : 0) +
+        (home ? (amenity.get(home.id) ?? 0) : 0)
       c.happiness += (target - c.happiness) * 0.02
     }
     for (const [id, cause] of dead) {
@@ -107,7 +112,17 @@ registerSystem({
     const wear = sim.mods.wearRate
     const cold = sim.coldness > 0
     const dead: number[] = []
+    const worn: number[] = []
+    const a = sim.rules.automaton
     for (const c of sim.citizens.values()) {
+      if (c.automaton) {
+        c.age++
+        c.wind = Math.max(0, (c.wind ?? 0) - 1)
+        if (c.wind === 0) sim.notify('warn', `${c.name} has run down. Keep coal in storage so automatons can be wound.`, sim.world.index(Math.floor(c.x), Math.floor(c.y)))
+        const service = (c.age - r.adultAge * 12) / 12 / a.lifeYears
+        if (service >= 1.3 || (service > 0.75 && sim.rng.chance(0.05 * service * service))) worn.push(c.id)
+        continue
+      }
       c.age++
       if (c.age === r.adultAge * 12 && c.profession === 'child') {
         c.profession = 'laborer'
@@ -130,6 +145,10 @@ registerSystem({
     for (const id of dead) {
       const c = sim.citizens.get(id)
       if (c) killCitizen(sim, c, 'age')
+    }
+    for (const id of worn) {
+      const c = sim.citizens.get(id)
+      if (c) killCitizen(sim, c, 'wear')
     }
   },
 })
@@ -281,14 +300,15 @@ registerSystem({ id: 'story', month: (sim) => checkDispatches(sim, {}) })
 registerSystem({
   id: 'outcome',
   second: (sim) => {
-    if (sim.citizens.size === 0 && sim.outcome === 'playing') {
+    // Automatons cannot carry on a colony alone.
+    if (sim.population().total === 0 && sim.outcome === 'playing') {
       sim.outcome = 'lost'
       sim.notify('bad', 'The last colonist is gone. The forge fires have gone cold.')
       sim.emit({ type: 'outcome', outcome: 'lost' })
     }
   },
   month: (sim) => {
-    const pop = sim.citizens.size
+    const pop = sim.population().total
     sim.stats.peakPopulation = Math.max(sim.stats.peakPopulation, pop)
     let food = 0
     for (const f of foodIds(sim)) food += sim.totals[f] ?? 0

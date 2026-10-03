@@ -199,6 +199,8 @@ export function solveEnergy(sim: Simulation, write: boolean): void {
       power = Math.min(power, n >= 0 ? (satisfied[n]?.get(b.id) ?? 0) : 0)
     }
     b.data.power = power
+    // Buildings that run on energy alone (clock tower, depots, valves) animate while supplied.
+    if (power >= 0.5 && !sim.def(b).components.workplace && !sim.def(b).components.housing) b.activeAt = sim.second
     const boost = (consumer.workBonus ?? 0) * power
     if (boost > 0) b.data.boost = boost
     else delete b.data.boost
