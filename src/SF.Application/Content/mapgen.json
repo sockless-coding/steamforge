@@ -18,7 +18,6 @@
       "rivers": 1,
       "forest": 0.5,
       "rocks": 0.012,
-      "berries": 0.02,
       "deposits": { "stone": 5, "iron": 3, "coal": 3, "copper": 3 }
     },
     {
@@ -32,7 +31,6 @@
       "rivers": 1,
       "forest": 0.4,
       "rocks": 0.02,
-      "berries": 0.014,
       "deposits": { "stone": 7, "iron": 5, "coal": 5, "copper": 4 }
     },
     {
@@ -46,7 +44,6 @@
       "rivers": 2,
       "forest": 0.55,
       "rocks": 0.01,
-      "berries": 0.025,
       "deposits": { "stone": 4, "iron": 2, "coal": 2, "copper": 2 }
     }
   ]

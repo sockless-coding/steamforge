@@ -1,4 +1,4 @@
-import { gridOf, type ConsumerConfig, type GeneratorConfig } from '../energy'
+import { gridOf, headOf, type BoosterConfig, type ConsumerConfig, type GeneratorConfig } from '../energy'
 import { amount, available, nearestStorageWith } from '../inventory'
 import type { Simulation } from '../simulation'
 import { gotoBuilding, reserveIncoming, reserveStock, task } from '../tasks'
@@ -98,7 +98,11 @@ registerComponent<ConsumerConfig>({
       const grid = gridOf(sim, b, id)
       const name = net?.name ?? id
       if (!grid || grid.supply <= 0) lines.push(`${cfg.required ? 'Needs' : 'Can use'} ${use} ${net?.unit ?? ''} of ${name.toLowerCase()}: not connected`)
-      else lines.push(`${name}: ${use} ${net?.unit ?? ''}, supplied ${Math.round(Math.min(1, grid.supply / Math.max(grid.demand, 1e-9)) * 100)}%`)
+      else {
+        const head = headOf(sim, b, id)
+        const pressure = head < 0.995 ? `, pressure ${Math.round(head * 100)}% at this end of the main` : ''
+        lines.push(`${name}: ${use} ${net?.unit ?? ''}, supplied ${Math.round(Math.min(1, grid.supply / Math.max(grid.demand, 1e-9)) * 100)}%${pressure}`)
+      }
     }
     if (cfg.required && power < 0.05) lines.push('Idle without energy')
     else if (cfg.required && power < 0.99) lines.push(`Working at ${Math.round(power * 100)}% for lack of energy`)
@@ -108,3 +112,13 @@ registerComponent<ConsumerConfig>({
   },
 })
 
+
+/** Booster pumps: the energy solver treats their footprint as a fresh source of head (see solveHeads). */
+registerComponent<BoosterConfig>({
+  kind: 'booster',
+  describe: (sim, b, cfg) => {
+    const net = network(sim, cfg.network)
+    const power = (b.data.power as number | undefined) ?? 0
+    return [power > 0.01 ? `Restoring ${net?.name.toLowerCase() ?? cfg.network} pressure to ${Math.round(cfg.head * Math.min(1, power / Math.max(headOf(sim, b, cfg.network), 1e-9)) * 100)}% downstream` : 'Idle: no pressure reaches the pump']
+  },
+})

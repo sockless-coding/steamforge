@@ -11,7 +11,8 @@ public static class ContentValidator
 {
     public static readonly HashSet<string> ComponentKinds =
         ["storage", "housing", "shelter", "workplace", "firefighting", "gatherer", "producer", "field", "generator", "consumer", "research",
-         "amenity", "lighting", "airship", "assembler", "tramDepot", "pneumatic", "valve", "emitter", "scrubber", "clinic"];
+         "amenity", "lighting", "airship", "assembler", "tramDepot", "pneumatic", "valve", "emitter", "scrubber", "clinic",
+         "booster", "tractor"];
 
     /// <summary>Components that are worked by a building's staff; they need a workplace component.</summary>
     public static readonly HashSet<string> StaffedComponents = ["gatherer", "producer", "field", "research", "assembler"];
@@ -21,6 +22,7 @@ public static class ContentValidator
     public static readonly HashSet<string> Terrains = ["grass", "water", "mountain", "stone", "iron", "coal", "sand", "copper"];
     public static readonly HashSet<string> Shapes = ["box", "cylinder", "cone", "sphere", "gable", "hip", "gear", "chimney", "stack", "tank", "pipe", "torus", "dome"];
     public static readonly HashSet<string> Emitters = ["smoke", "steam"];
+    public static readonly HashSet<string> ConduitStyles = ["duct", "main", "lagged", "water", "wire"];
     public static readonly HashSet<string> NatureModels = ["tree", "rock", "ironstone", "bush", "mushroom"];
     public static readonly HashSet<string> Modifiers = ["winterSeverity", "disasterRate", "productionMultiplier", "birthRate", "spoilageRate", "wearRate", "hungerRate", "sootRate"];
     public static readonly HashSet<string> RequiredProfessions = ["child", "laborer", "builder"];
@@ -99,11 +101,23 @@ public static class ContentValidator
         }
 
         Check(r.Networks.Count is >= 1 and <= 8, "Rules: 1-8 energy networks are supported.");
+        var conduitGrades = r.Networks.SelectMany(n => new[] { n.Conduit }.Concat(n.Upgrades ?? [])).ToList();
+        Unique("conduit grade", conduitGrades, g => g.Id);
         foreach (var net in r.Networks)
         {
-            CheckStock($"Network {net.Id} conduit", net.Conduit.Cost.Keys);
-            Check(net.Conduit.Work > 0, $"Network {net.Id} conduit needs positive work.");
+            foreach (var grade in new[] { net.Conduit }.Concat(net.Upgrades ?? []))
+            {
+                var where = $"Network {net.Id} conduit {grade.Id}";
+                CheckStock(where, grade.Cost.Keys);
+                Check(grade.Work > 0, $"{where} needs positive work.");
+                Check(grade.LossPerTile is >= 0 and < 1, $"{where}: lossPerTile must be in [0, 1).");
+                Check(ConduitStyles.Contains(grade.Style), $"{where} has unknown style '{grade.Style}'.");
+            }
+
+            Check((net.Upgrades?.Count ?? 0) < 255, $"Network {net.Id} has too many conduit grades.");
         }
+
+        var conduits = conduitGrades.Select(g => g.Id).ToHashSet();
 
         Check(r.Wind is not null, "Rules: wind settings are required.");
         if (r.Wind is { } wind)
@@ -187,6 +201,18 @@ public static class ContentValidator
                 ValidateComponent(where, kind, cfg);
             }
 
+            // A converter (a generator that also consumes) draws on a network solved before the one it feeds.
+            if (b.Components.TryGetValue("generator", out var gen) && b.Components.TryGetValue("consumer", out var con)
+                && gen.TryGetProperty("network", out var genNet) && con.TryGetProperty("uses", out var uses) && uses.ValueKind == JsonValueKind.Object)
+            {
+                var output = r.Networks.ToList().FindIndex(n => n.Id == genNet.GetString());
+                foreach (var input in uses.EnumerateObject())
+                {
+                    var index = r.Networks.ToList().FindIndex(n => n.Id == input.Name);
+                    Check(index < 0 || output < 0 || index < output, $"{where}: a converter's input network '{input.Name}' must come before its output network in rules.networks.");
+                }
+            }
+
             var workplace = b.Components.ContainsKey("workplace");
             var staffed = b.Components.Keys.Any(StaffedComponents.Contains);
             Check(!staffed || workplace, $"{where}: gatherer/producer/field/research/assembler components need a workplace component.");
@@ -262,6 +288,14 @@ public static class ContentValidator
                         Check(networks.Contains(net), $"{where} consumes unknown network '{net}'.");
                     }
 
+                    break;
+                case "booster":
+                    Check(networks.Contains(Str("network") ?? string.Empty), $"{where} booster drives an unknown network.");
+                    Check(cfg.TryGetProperty("head", out var head) && head.GetDouble() is > 0 and <= 1, $"{where} booster head must be in (0, 1].");
+                    break;
+                case "tractor":
+                    Check(cfg.TryGetProperty("radius", out var tr) && tr.GetDouble() > 0, $"{where} tractor needs a positive radius.");
+                    Check(cfg.TryGetProperty("bonus", out var bonus) && bonus.GetDouble() > 0, $"{where} tractor needs a positive bonus.");
                     break;
                 case "assembler":
                     Check(Keys("inputs").Any(), $"{where} assembler needs inputs.");
@@ -350,6 +384,7 @@ public static class ContentValidator
             Unlock(t.Id, "building", t.Unlocks.Buildings, buildings);
             Unlock(t.Id, "road", t.Unlocks.Roads, roads);
             Unlock(t.Id, "network", t.Unlocks.Networks, networks);
+            Unlock(t.Id, "conduit", t.Unlocks.Conduits, conduits);
             Unlock(t.Id, "recipe", t.Unlocks.Recipes, recipes);
         }
 

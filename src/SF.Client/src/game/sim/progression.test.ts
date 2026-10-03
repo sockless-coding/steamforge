@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { energyBlocked } from './energy'
+import { energyBlocked, networkIndex } from './energy'
 import { eventHandler } from './events'
 import { canPlace, footprintSize, placeBuilding } from './placement'
 import { addResearchPoints, isUnlocked } from './research'
@@ -41,7 +41,7 @@ describe('the Steamforge', () => {
     expect(sim.perform({ type: 'demolish', building: forge.id }).ok).toBe(false)
     runSeconds(sim, 2)
     expect(forge.data.lit).toBe(true)
-    expect(sim.energy.totals[0].supply).toBeGreaterThan(0)
+    expect(sim.energy.totals[networkIndex(sim, 'steam')].supply).toBeGreaterThan(0)
   })
 
   it('burns firewood from its own stores, and laborers top it up from other storage', () => {
@@ -61,7 +61,11 @@ describe('research', () => {
     const smelter = canPlace(sim, sim.def('smelter'), forge.x + 8, forge.y, 0)
     expect(smelter).toEqual({ ok: false, reason: 'Requires research: Bloomery Metallurgy.' })
     expect(sim.perform({ type: 'road', road: 'cobble', tiles: [sim.world.index(forge.x + 8, forge.y)] }).ok).toBe(false)
-    expect(sim.perform({ type: 'conduit', network: 'steam', tiles: [sim.world.index(forge.x + 8, forge.y)] }).ok).toBe(false)
+    // Brick steam ducts are laid from the founding; riveted mains and the water network wait for research.
+    const tile = sim.world.index(forge.x + 8, forge.y)
+    expect(sim.perform({ type: 'conduit', network: 'steam', grade: 'iron-main', tiles: [tile] }).ok).toBe(false)
+    expect(sim.perform({ type: 'conduit', network: 'water', tiles: [tile] }).ok).toBe(false)
+    expect(sim.perform({ type: 'conduit', network: 'steam', tiles: [tile] }).ok).toBe(true)
     expect(isUnlocked(sim, 'building', 'drafting-office')).toBe(true)
     expect(isUnlocked(sim, 'building', 'cottage')).toBe(true)
   })
@@ -109,7 +113,7 @@ describe('energy networks', () => {
     expect(energyBlocked(sim, works)).toBe(false)
   })
 
-  it('a distant workshop is idle until a steam pipe connects it', () => {
+  it('a distant workshop is idle until a duct connects it, and pressure falls along the duct', () => {
     const sim = newColony()
     const forge = hq(sim)
     const x = forge.x + forge.w + 4
@@ -119,20 +123,53 @@ describe('energy networks', () => {
     expect(energyBlocked(sim, works)).toBe(true)
     lay(sim, 'steam', row(sim, forge.x + forge.w, x - 1, forge.y))
     runSeconds(sim, 2)
-    expect(works.data.power).toBeCloseTo(1, 5)
+    // Four tiles of brick duct between the Steamforge and the works.
+    const duct = sim.rules.networks[networkIndex(sim, 'steam')].conduit.lossPerTile
+    expect(works.data.power).toBeCloseTo(1 - 4 * duct, 5)
   })
 
-  it('builders lay ordered pipes once piping is researched, spending iron', () => {
+  it('better grades of main lose less pressure, and a booster pump restores it', () => {
+    const sim = newColony()
+    const forge = hq(sim)
+    const n = networkIndex(sim, 'steam')
+    const x = forge.x + forge.w + 12
+    const works = build(sim, 'machine-works', x, forge.y)
+    const run = row(sim, forge.x + forge.w, x - 1, forge.y)
+    lay(sim, 'steam', run)
+    runSeconds(sim, 8)
+    const viaDuct = works.data.power as number
+    expect(viaDuct).toBeCloseTo(1 - 12 * sim.rules.networks[n].conduit.lossPerTile, 5)
+    const lagged = sim.rules.networks[n].upgrades!.findIndex((g) => g.id === 'lagged-main') + 1
+    for (const t of run) sim.world.setGrade(n, t, lagged)
+    runSeconds(sim, 2)
+    expect(works.data.power).toBeCloseTo(1 - 12 * sim.rules.networks[n].upgrades![lagged - 1].lossPerTile, 5)
+    expect(works.data.power as number).toBeGreaterThan(viaDuct)
+    // Back to brick, with a booster pump halfway along.
+    for (const t of run) sim.world.setGrade(n, t, 0)
+    const pump = build(sim, 'booster-pump', forge.x + forge.w + 6, forge.y)
+    runSeconds(sim, 4)
+    expect(pump.data.power as number).toBeGreaterThan(0.5)
+    expect(works.data.power as number).toBeGreaterThan(viaDuct + 0.1)
+  })
+
+  it('builders lay ordered mains once piping is researched, spending iron, and upgrade ducts in place', () => {
     const sim = newColony()
     sim.research.done.push('mining', 'metallurgy', 'piping')
     const forge = hq(sim)
+    const n = networkIndex(sim, 'steam')
     const tiles = row(sim, forge.x + forge.w, forge.x + forge.w + 3, forge.y + 1)
+    lay(sim, 'steam', tiles.slice(0, 2))
     const iron = sim.totals.iron ?? 0
     runSeconds(sim, 1)
-    expect(sim.perform({ type: 'conduit', network: 'steam', tiles }).ok).toBe(true)
+    expect(sim.perform({ type: 'conduit', network: 'steam', grade: 'iron-main', tiles }).ok).toBe(true)
     expect(sim.conduitJobs.size).toBe(4)
+    // Ordering the same grade again changes nothing.
+    expect(sim.perform({ type: 'conduit', network: 'steam', grade: 'iron-main', tiles }).ok).toBe(false)
     runMonths(sim, 2)
-    for (const t of tiles) expect(sim.world.conduit[t] & 1).toBe(1)
+    for (const t of tiles) {
+      expect(sim.world.conduit[t] & (1 << n)).toBe(1 << n)
+      expect(sim.world.gradeOf(n, t)).toBe(1)
+    }
     expect(sim.conduitJobs.size).toBe(0)
     expect(sim.totals.iron ?? 0).toBeLessThanOrEqual(iron - 4 + 1e-6)
   })
@@ -169,7 +206,7 @@ describe('energy networks', () => {
     runSeconds(sim, 2)
     const def = content.events.get('pipe-burst')!
     expect(eventHandler(def.kind)!.run(sim, def)).toBe(true)
-    const broken = tiles.filter((t) => !(sim.world.conduit[t] & 1))
+    const broken = tiles.filter((t) => !(sim.world.conduit[t] & (1 << networkIndex(sim, 'steam'))))
     expect(broken.length).toBe(3)
     expect(sim.conduitJobs.size).toBe(3)
   })

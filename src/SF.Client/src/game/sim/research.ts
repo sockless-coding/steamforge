@@ -4,7 +4,7 @@ import type { Simulation } from './simulation'
 import { checkDispatches } from './story'
 
 /** Content a research can unlock. Anything no research unlocks is available from the founding. */
-export type UnlockKind = 'building' | 'road' | 'network' | 'recipe'
+export type UnlockKind = 'building' | 'road' | 'network' | 'conduit' | 'recipe'
 
 const lockCache = new WeakMap<Content, Map<string, ResearchDef>>()
 
@@ -18,6 +18,7 @@ function locks(content: Content): Map<string, ResearchDef> {
       for (const id of u.buildings ?? []) map.set(`building:${id}`, tech)
       for (const id of u.roads ?? []) map.set(`road:${id}`, tech)
       for (const id of u.networks ?? []) map.set(`network:${id}`, tech)
+      for (const id of u.conduits ?? []) map.set(`conduit:${id}`, tech)
       for (const id of u.recipes ?? []) map.set(`recipe:${id}`, tech)
     }
     lockCache.set(content, map)
@@ -90,6 +91,7 @@ export function unlockNames(sim: Simulation, tech: ResearchDef): string[] {
     ...(u.buildings ?? []).map((id) => sim.content.buildings.get(id)?.name ?? id),
     ...(u.roads ?? []).map((id) => sim.rules.roads.find((r) => r.id === id)?.name ?? id),
     ...(u.networks ?? []).map((id) => sim.rules.networks.find((n) => n.id === id)?.conduit.name ?? id),
+    ...(u.conduits ?? []).map((id) => sim.rules.networks.flatMap((n) => n.upgrades ?? []).find((c) => c.id === id)?.name ?? id),
     ...(u.recipes ?? []).map((id) => sim.content.recipes.get(id)?.name ?? id),
   ]
 }

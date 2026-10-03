@@ -23,6 +23,11 @@ export class World {
   road: Uint8Array
   /** Bitmask of energy networks (bit n = rules.networks[n]) with a conduit on the tile. */
   conduit: Uint8Array
+  /**
+   * Conduit grade per tile, one array per network index (0 = the network's basic conduit, k = upgrades[k - 1]).
+   * Allocated when a network first gets an upgraded tile.
+   */
+  grades: (Uint8Array | null)[] = []
   mark: Uint8Array
   /** 1 where a building's entrance must stay clear. */
   door: Uint8Array
@@ -46,6 +51,18 @@ export class World {
     this.conduit = new Uint8Array(this.size)
     this.mark = new Uint8Array(this.size)
     this.door = new Uint8Array(this.size)
+  }
+
+  /** Grade of the conduit of network n on tile i (0 for the basic grade or no conduit). */
+  gradeOf(n: number, i: number): number {
+    return this.grades[n]?.[i] ?? 0
+  }
+
+  setGrade(n: number, i: number, grade: number): void {
+    if (grade === 0 && !this.grades[n]) return
+    while (this.grades.length <= n) this.grades.push(null)
+    this.grades[n] ??= new Uint8Array(this.size)
+    this.grades[n]![i] = grade
   }
 
   index(x: number, y: number): number {
@@ -136,6 +153,7 @@ export class World {
       road: encodeArray(this.road),
       conduit: encodeArray(this.conduit),
       mark: encodeArray(this.mark),
+      grades: this.grades.map((g) => (g ? encodeArray(g) : null)),
     }
   }
 
@@ -149,6 +167,7 @@ export class World {
     world.road = decodeArray(s.road, Uint8Array)
     world.conduit = decodeArray(s.conduit, Uint8Array)
     world.mark = decodeArray(s.mark, Uint8Array)
+    world.grades = (s.grades ?? []).map((g) => (g ? decodeArray(g, Uint8Array) : null))
     return world
   }
 }
@@ -164,4 +183,6 @@ export interface WorldSnapshot {
   road: string
   conduit: string
   mark: string
+  /** Conduit grades per network (from save version 6). */
+  grades?: (string | null)[]
 }

@@ -340,7 +340,9 @@ registerEvent({
     }
     for (const tile of burst) {
       world.conduit[tile] &= ~bit
-      sim.conduitJobs.set(tile * 8 + n, { tile, network })
+      const g = world.gradeOf(n, tile)
+      const grade = g > 0 ? sim.rules.networks[n].upgrades?.[g - 1]?.id : undefined
+      sim.conduitJobs.set(tile * 8 + n, grade ? { tile, network, grade } : { tile, network })
       sim.emit({ type: 'conduit', tile })
     }
     sim.energy.dirty = true

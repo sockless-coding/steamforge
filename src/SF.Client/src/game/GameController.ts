@@ -21,7 +21,7 @@ import { MusicDirector } from './audio/music'
 import { play } from './audio/synth'
 import type { FieldConfig } from './sim/components/field'
 import { currentRecipe, type ProducerConfig } from './sim/components/producer'
-import { participates, touchesGrid, type ConsumerConfig, type GeneratorConfig } from './sim/energy'
+import { conduitGrades, gradeIndex, networkIndex, participates, touchesGrid, type ConsumerConfig, type GeneratorConfig } from './sim/energy'
 import { canPlace, doorTile, footprintSize, totalWork } from './sim/placement'
 import { canResearch, currentResearch, isUnlocked, lockedBy, unlockNames } from './sim/research'
 import { Simulation, type ColonySnapshot } from './sim/simulation'
@@ -605,7 +605,7 @@ export class GameController {
     if (t.kind === 'road') {
       if (this.perform({ type: 'road', road: t.road, tiles: this.roadPath(a, b) }).ok) play('hammer', { volume: 0.3 })
     } else if (t.kind === 'conduit') {
-      const result = this.perform({ type: 'conduit', network: t.network, tiles: this.roadPath(a, b) })
+      const result = this.perform({ type: 'conduit', network: t.network, grade: t.grade, tiles: this.roadPath(a, b) })
       if (result.ok) play('hammer', { volume: 0.3 })
       else this.hint = result.reason
     } else if (t.kind === 'removeConduit') {
@@ -684,12 +684,14 @@ export class GameController {
     if (t.kind === 'conduit') {
       const tiles = dragging ? this.roadPath(dragging, tile) : [sim.world.index(tile[0], tile[1])]
       const w = sim.world
-      const net = sim.rules.networks.find((n) => n.id === t.network)
+      const at = gradeIndex(sim, t.network, t.grade)
+      const grade = at ? conduitGrades(sim.rules.networks[at.n])[at.g] : null
       const marks = tiles.map((i) => ({ x: w.xOf(i), y: w.yOf(i), ok: w.isLand(i) && w.building[i] === 0 }))
       overlays.setTiles([...this.gridMarks(t.network), ...marks])
-      const cost = Object.entries(net?.conduit.cost ?? {}).map(([r, q]) => `${q * tiles.length} ${sim.resource(r)?.name.toLowerCase() ?? r}`)
-      const lock = lockedBy(sim, 'network', t.network)
-      this.hint = lock ? `Requires research: ${lock.name}` : `${tiles.length} tiles${cost.length ? ` · ${cost.join(', ')}` : ''} · runs over roads`
+      const cost = Object.entries(grade?.cost ?? {}).map(([r, q]) => `${q * tiles.length} ${sim.resource(r)?.name.toLowerCase() ?? r}`)
+      const lock = lockedBy(sim, 'network', t.network) ?? (t.grade && at && at.g > 0 ? lockedBy(sim, 'conduit', t.grade) : null)
+      const loss = grade ? ` · loses ${Math.round(grade.lossPerTile * 1000) / 10}% pressure per tile` : ''
+      this.hint = lock ? `Requires research: ${lock.name}` : `${tiles.length} tiles${cost.length ? ` · ${cost.join(', ')}` : ''}${loss} · runs over roads`
       return
     }
     if (t.kind === 'removeConduit') {
@@ -740,15 +742,25 @@ export class GameController {
     return consumer?.required ? `Not on a ${name} grid yet: connect it with ${net?.conduit.name.toLowerCase() ?? 'conduits'} · ` : `Can join a ${name} grid · `
   }
 
-  /** Footprints of every building on a network: green when supplied (or lit), red when starved. */
+  /**
+   * Every building and conduit tile on a network, shaded by the pressure reaching it: green at full head, amber at
+   * half, red where none arrives. Generators show green while lit.
+   */
   private gridMarks(network: string): TileMark[] {
     const sim = this.sim
     const marks: TileMark[] = []
+    const n = networkIndex(sim, network)
+    const heads = sim.energy.tileHeads[n]
     for (const b of sim.buildings.values()) {
       if (!participates(sim, b, network)) continue
       const gen = sim.component<GeneratorConfig>(b, 'generator')
-      const ok = gen?.network === network ? b.data.lit === true : ((b.data.power as number | undefined) ?? 0) >= 0.99
-      for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) marks.push({ x, y, ok })
+      const head = gen?.network === network ? (b.data.lit === true ? 1 : 0) : ((b.data.power as number | undefined) ?? 0)
+      for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) marks.push({ x, y, ok: head >= 0.99, head })
+    }
+    const w = sim.world
+    for (let i = 0; i < w.size; i++) {
+      if (!(w.conduit[i] & (1 << n))) continue
+      marks.push({ x: w.xOf(i), y: w.yOf(i), ok: true, head: heads?.[i] ?? 0 })
     }
     return marks
   }
@@ -877,6 +889,10 @@ export class GameController {
     for (const net of sim.rules.networks) {
       const lock = lockedBy(sim, 'network', net.id)
       if (lock) out[`network:${net.id}`] = lock.name
+      for (const grade of net.upgrades ?? []) {
+        const gradeLock = lock ?? lockedBy(sim, 'conduit', grade.id)
+        if (gradeLock) out[`conduit:${grade.id}`] = gradeLock.name
+      }
     }
     return out
   }

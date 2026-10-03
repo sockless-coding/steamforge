@@ -264,8 +264,8 @@ function placeDeposits(
       for (let attempt = 0; attempt < 400 && chosen < 0; attempt++) {
         let x: number
         let y: number
-        if (k === 0 && key === 'stone') {
-          // The first stone seam is always within reach of the founding site.
+        if (k === 0 && (key === 'stone' || key === 'coal')) {
+          // The first stone seam and a shallow coal outcrop are always within reach of the founding site.
           const angle = rng.next() * Math.PI * 2
           const d = startingArea + 8 + rng.next() * 16
           x = Math.round(spawn.x + Math.cos(angle) * d)
@@ -278,7 +278,8 @@ function placeDeposits(
         const i = world.index(x, y)
         if (world.terrain[i] !== Terrain.Grass) continue
         if (Math.hypot(x - spawn.x, y - spawn.y) < startingArea + 5) continue
-        if (key !== 'stone' && mountainDistance[i] > 6 && attempt < 300) continue
+        const nearStart = k === 0 && (key === 'stone' || key === 'coal')
+        if (!nearStart && mountainDistance[i] > 6 && attempt < 300) continue
         chosen = i
       }
       if (chosen < 0) continue
@@ -298,8 +299,6 @@ function placeNature(world: World, content: Content, rng: Rng, preset: TerrainPr
   const tree = index('tree')
   const rock = index('rock')
   const ironstone = index('ironstone')
-  const berries = index('berries')
-  const mushrooms = index('mushrooms')
   const n = world.width
   for (let y = 0; y < n; y++) {
     for (let x = 0; x < n; x++) {
@@ -316,10 +315,6 @@ function placeNature(world: World, content: Content, rng: Rng, preset: TerrainPr
         world.feature[i] = rock
       } else if (ironstone && t === Terrain.Iron && roll < 0.16) {
         world.feature[i] = ironstone
-      } else if (berries && t === Terrain.Grass && rng.chance(preset.berries * (2 + density * 12))) {
-        world.feature[i] = berries
-      } else if (mushrooms && t === Terrain.Grass && density > 0.15 && rng.chance(preset.berries * density * 12)) {
-        world.feature[i] = mushrooms
       }
     }
   }

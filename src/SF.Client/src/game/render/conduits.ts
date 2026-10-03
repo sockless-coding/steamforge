@@ -1,15 +1,18 @@
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
-import { participates } from '../sim/energy'
+import type { ConduitStyle } from '../../api/types'
+import { gradeIndex, networkIndex, participates, tileGrade } from '../sim/energy'
 import type { Simulation } from '../sim/simulation'
 import { material } from './materials'
 import type { Particles } from './particles'
 import type { TerrainLayer } from './terrain'
 
-/** Height of steam mains above the ground (citizens walk underneath), and of power lines. */
-const PIPE_Y = 0.62
-const PIPE_R = 0.075
-const WIRE_Y = 1.42
+/** Height above the ground of each conduit style's centre line (citizens walk under mains and wires). */
+const STYLE_Y: Record<ConduitStyle, number> = { duct: 0.12, water: 0.08, main: 0.62, lagged: 0.62, wire: 1.42 }
+/** Pipe radius per style. */
+const STYLE_R: Record<ConduitStyle, number> = { duct: 0.07, water: 0.055, main: 0.075, lagged: 0.1, wire: 0.012 }
+/** Pipe material per style. */
+const STYLE_MAT: Record<ConduitStyle, string> = { duct: 'tile', water: 'darkiron', main: 'plate', lagged: 'copper', wire: 'copper' }
 
 const DIRS = [
   [1, 0],
@@ -30,17 +33,37 @@ function segment(a: THREE.Vector3, b: THREE.Vector3, radius: number, sides = 8):
   return g.toNonIndexed()
 }
 
+/** A ring around a pipe at a point, facing along the x or z axis. */
+function band(centre: THREE.Vector3, along: 'x' | 'z', radius: number, width = 0.06): THREE.BufferGeometry {
+  const g = new THREE.CylinderGeometry(radius, radius, width, 10)
+  g.rotateZ(along === 'x' ? Math.PI / 2 : 0).rotateX(along === 'z' ? Math.PI / 2 : 0)
+  return g.translate(centre.x, centre.y, centre.z).toNonIndexed()
+}
+
+/** Geometry collected per material, merged into one mesh each. */
+class Buckets {
+  readonly parts = new Map<string, THREE.BufferGeometry[]>()
+
+  add(mat: string, g: THREE.BufferGeometry): void {
+    let list = this.parts.get(mat)
+    if (!list) this.parts.set(mat, (list = []))
+    list.push(g)
+  }
+}
+
 /** One network's built conduits, merged per material. */
 interface NetworkMesh {
   meshes: THREE.Mesh[]
-  /** Junction positions, for the occasional hiss of steam from a valve. */
+  /** Junction positions on live steam mains, for the occasional hiss of a valve. */
   joints: THREE.Vector3[]
 }
 
 /**
- * Draws laid conduits from World.conduit: copper steam mains on iron trestles (with brass flanges and valve wheels
- * at junctions) and copper power lines strung between insulated poles. Pipes reach into the buildings they serve.
- * Planned conduits show as pulsing markers. Rebuilt only when a 'conduit' or building event marks it dirty.
+ * Draws laid conduits from World.conduit in the style of each tile's grade: clay steam ducts in timber troughs,
+ * riveted iron mains on trestles (with brass flanges and valve wheels at junctions), copper-sheathed lagged mains,
+ * low cast-iron water mains with hydrants, and copper power lines strung between insulated poles. Where two grades
+ * of different height meet, a riser joins them. Conduits reach into the buildings they serve. Planned conduits show
+ * as pulsing markers. Rebuilt only when a 'conduit' or building event marks it dirty.
  */
 export class ConduitLayer {
   readonly group = new THREE.Group()
@@ -84,8 +107,9 @@ export class ConduitLayer {
     }
     this.syncPlans(sim, time)
     // Valves hiss now and then on live steam mains.
-    const steam = sim.energy.totals[0]
-    const joints = this.nets[0]?.joints ?? []
+    const n = networkIndex(sim, 'steam')
+    const steam = n >= 0 ? sim.energy.totals[n] : undefined
+    const joints = this.nets[n]?.joints ?? []
     if (steam && steam.supply > 0 && joints.length) {
       this.hissAcc += dt * Math.min(3, joints.length * 0.08)
       while (this.hissAcc >= 1) {
@@ -98,7 +122,7 @@ export class ConduitLayer {
 
   private syncPlans(sim: Simulation, time: number): void {
     let key = `${sim.conduitJobs.size}`
-    for (const k of sim.conduitJobs.keys()) key += `,${k}`
+    for (const [k, job] of sim.conduitJobs) key += `,${k}:${job.grade ?? ''}`
     for (const m of this.planMaterials) m.opacity = 0.45 + 0.3 * Math.sin(time * 3)
     if (key === this.planKey) return
     this.planKey = key
@@ -108,17 +132,20 @@ export class ConduitLayer {
       this.plans = this.makePlans(sim.conduitJobs.size * 2)
     }
     const world = sim.world
-    let n = 0
+    let count = 0
     for (const job of sim.conduitJobs.values()) {
-      const net = sim.rules.networks.findIndex((x) => x.id === job.network)
+      const at = gradeIndex(sim, job.network, job.grade)
+      if (!at) continue
+      const net = sim.rules.networks[at.n]
+      const style = (at.g === 0 ? net.conduit : net.upgrades![at.g - 1]).style
       const x = world.xOf(job.tile) + 0.5
       const y = world.yOf(job.tile) + 0.5
-      this.matrix.makeTranslation(x, this.terrain.heightAt(x, y) + (net === 0 ? PIPE_Y : WIRE_Y), y)
-      this.plans.setMatrixAt(n, this.matrix)
-      this.plans.setColorAt(n, this.color.set(sim.rules.networks[net]?.color ?? '#ffffff'))
-      n++
+      this.matrix.makeTranslation(x, this.terrain.heightAt(x, y) + STYLE_Y[style], y)
+      this.plans.setMatrixAt(count, this.matrix)
+      this.plans.setColorAt(count, this.color.set(net.color))
+      count++
     }
-    this.plans.count = n
+    this.plans.count = count
     this.plans.instanceMatrix.needsUpdate = true
     if (this.plans.instanceColor) this.plans.instanceColor.needsUpdate = true
   }
@@ -136,7 +163,7 @@ export class ConduitLayer {
   private rebuild(sim: Simulation): void {
     this.clear()
     sim.rules.networks.forEach((net, n) => {
-      this.nets[n] = n === 0 ? this.buildPipes(sim, n, net.id) : this.buildWires(sim, n, net.id)
+      this.nets[n] = this.buildNetwork(sim, n, net.id)
       for (const m of this.nets[n].meshes) this.group.add(m)
     })
   }
@@ -155,123 +182,167 @@ export class ConduitLayer {
     })
   }
 
-  private buildPipes(sim: Simulation, n: number, network: string): NetworkMesh {
+  private buildNetwork(sim: Simulation, n: number, network: string): NetworkMesh {
     const world = sim.world
-    const t = this.terrain
-    const pipe: THREE.BufferGeometry[] = []
-    const brass: THREE.BufferGeometry[] = []
-    const iron: THREE.BufferGeometry[] = []
+    const buckets = new Buckets()
     const joints: THREE.Vector3[] = []
     for (let i = 0; i < world.size; i++) {
       if (!(world.conduit[i] & (1 << n))) continue
-      const x = world.xOf(i)
-      const y = world.yOf(i)
-      const cx = x + 0.5
-      const cy = y + 0.5
-      const ground = t.heightAt(cx, cy)
-      const centre = new THREE.Vector3(cx, ground + PIPE_Y, cy)
-      const links = this.links(sim, n, network, x, y)
-      let count = 0
-      links.forEach((on, d) => {
-        if (!on) return
-        count++
-        const [dx, dy] = DIRS[d]
-        const ex = cx + dx * 0.5
-        const ey = cy + dy * 0.5
-        const edgeY = (ground + t.heightAt(cx + dx, cy + dy)) / 2 + PIPE_Y
-        pipe.push(segment(centre, new THREE.Vector3(ex, edgeY, ey), PIPE_R))
-      })
-      const straight = count === 2 && ((links[0] && links[2]) || (links[1] && links[3]))
-      if (count === 0) pipe.push(new THREE.SphereGeometry(PIPE_R * 1.3, 8, 6).translate(centre.x, centre.y, centre.z).toNonIndexed())
-      if (straight) {
-        // A riveted flange where two sections meet.
-        const along = links[0] ? 'x' : 'z'
-        const flange = new THREE.CylinderGeometry(PIPE_R * 1.45, PIPE_R * 1.45, 0.06, 10)
-        flange.rotateZ(along === 'x' ? Math.PI / 2 : 0).rotateX(along === 'z' ? Math.PI / 2 : 0)
-        brass.push(flange.translate(centre.x, centre.y, centre.z).toNonIndexed())
-      } else if (count > 0) {
-        // Elbows and junctions: a brass ball joint, and a valve wheel on tees and crosses.
-        brass.push(new THREE.SphereGeometry(PIPE_R * 1.55, 10, 8).translate(centre.x, centre.y, centre.z).toNonIndexed())
-        if (count >= 3) {
-          brass.push(new THREE.CylinderGeometry(0.02, 0.02, 0.18, 6).translate(centre.x, centre.y + 0.14, centre.z).toNonIndexed())
-          brass.push(new THREE.TorusGeometry(0.1, 0.018, 5, 14).rotateX(Math.PI / 2).translate(centre.x, centre.y + 0.23, centre.z).toNonIndexed())
-          joints.push(centre.clone())
-        }
-      }
-      // Trestle: two legs and a saddle, except across roads where the main spans on its own.
-      if (world.road[i] === 0) {
-        const across = links[0] || links[2] ? 'z' : 'x'
-        for (const s of [-1, 1]) {
-          const ox = across === 'x' ? s * 0.16 : 0
-          const oz = across === 'z' ? s * 0.16 : 0
-          const foot = new THREE.Vector3(cx + ox * 1.4, ground, cy + oz * 1.4)
-          iron.push(segment(foot, new THREE.Vector3(cx + ox * 0.5, centre.y - PIPE_R, cy + oz * 0.5), 0.022, 5))
-        }
-        const saddle = new THREE.BoxGeometry(across === 'x' ? 0.3 : 0.06, 0.035, across === 'z' ? 0.3 : 0.06)
-        iron.push(saddle.translate(cx, centre.y - PIPE_R - 0.01, cy).toNonIndexed())
-      }
+      const style = tileGrade(sim, n, i).style
+      if (style === 'wire') this.wireTile(sim, n, network, i, buckets)
+      else this.pipeTile(sim, n, network, i, style, buckets, joints)
     }
-    return { meshes: this.meshes([['copper', pipe], ['brass', brass], ['darkiron', iron]]), joints }
-  }
-
-  private buildWires(sim: Simulation, n: number, network: string): NetworkMesh {
-    const world = sim.world
-    const t = this.terrain
-    const wire: THREE.BufferGeometry[] = []
-    const wood: THREE.BufferGeometry[] = []
-    const glass: THREE.BufferGeometry[] = []
-    for (let i = 0; i < world.size; i++) {
-      if (!(world.conduit[i] & (1 << n))) continue
-      const x = world.xOf(i)
-      const y = world.yOf(i)
-      const cx = x + 0.5
-      const cy = y + 0.5
-      const ground = t.heightAt(cx, cy)
-      const links = this.links(sim, n, network, x, y)
-      const count = links.filter(Boolean).length
-      const straight = count === 2 && ((links[0] && links[2]) || (links[1] && links[3]))
-      // Poles on every other tile of a straight run, and wherever the line turns, branches or ends.
-      const pole = !straight || (x + y) % 2 === 0
-      const alongX = links[0] || links[2]
-      links.forEach((on, d) => {
-        if (!on) return
-        const [dx, dy] = DIRS[d]
-        const edgeY = (ground + t.heightAt(cx + dx, cy + dy)) / 2 + WIRE_Y
-        for (const s of [-1, 1]) {
-          // Two wires either side of the pole, sagging slightly towards the tile edge.
-          const ox = dy !== 0 ? s * 0.13 : 0
-          const oz = dx !== 0 ? s * 0.13 : 0
-          wire.push(segment(new THREE.Vector3(cx + ox, ground + WIRE_Y, cy + oz), new THREE.Vector3(cx + dx * 0.5 + ox, edgeY - 0.05, cy + dy * 0.5 + oz), 0.012, 4))
-        }
-      })
-      if (!pole) continue
-      wood.push(new THREE.CylinderGeometry(0.035, 0.045, WIRE_Y + 0.12, 6).translate(cx, ground + (WIRE_Y + 0.12) / 2, cy).toNonIndexed())
-      const arm = new THREE.BoxGeometry(alongX ? 0.05 : 0.36, 0.04, alongX ? 0.36 : 0.05)
-      wood.push(arm.translate(cx, ground + WIRE_Y - 0.03, cy).toNonIndexed())
-      for (const s of [-1, 1]) {
-        const ox = alongX ? 0 : s * 0.13
-        const oz = alongX ? s * 0.13 : 0
-        glass.push(new THREE.CylinderGeometry(0.025, 0.03, 0.07, 6).translate(cx + ox, ground + WIRE_Y + 0.02, cy + oz).toNonIndexed())
-      }
-    }
-    return { meshes: this.meshes([['copper', wire], ['timber', wood], ['glass', glass]]), joints: [] }
-  }
-
-  private meshes(parts: [string, THREE.BufferGeometry[]][]): THREE.Mesh[] {
-    const out: THREE.Mesh[] = []
-    for (const [mat, geos] of parts) {
-      if (geos.length === 0) continue
-      const merged = mergeGeometries(geos.map((g) => (g.index ? g.toNonIndexed() : g)).map((g) => {
-        g.deleteAttribute('uv')
-        return g
-      }))
+    const meshes: THREE.Mesh[] = []
+    for (const [mat, geos] of buckets.parts) {
+      const merged = mergeGeometries(
+        geos.map((g) => {
+          const flat = g.index ? g.toNonIndexed() : g
+          flat.deleteAttribute('uv')
+          return flat
+        }),
+      )
       if (!merged) continue
       const mesh = new THREE.Mesh(merged, material(mat))
       mesh.castShadow = true
       mesh.receiveShadow = true
-      out.push(mesh)
+      meshes.push(mesh)
     }
-    return out
+    return { meshes, joints }
+  }
+
+  private pipeTile(sim: Simulation, n: number, network: string, i: number, style: ConduitStyle, b: Buckets, joints: THREE.Vector3[]): void {
+    const world = sim.world
+    const t = this.terrain
+    const x = world.xOf(i)
+    const y = world.yOf(i)
+    const cx = x + 0.5
+    const cy = y + 0.5
+    const ground = t.heightAt(cx, cy)
+    const lift = STYLE_Y[style]
+    const r = STYLE_R[style]
+    const pipeMat = STYLE_MAT[style]
+    const centre = new THREE.Vector3(cx, ground + lift, cy)
+    const links = this.links(sim, n, network, x, y)
+    let count = 0
+    links.forEach((on, d) => {
+      if (!on) return
+      count++
+      const [dx, dy] = DIRS[d]
+      const edgeGround = (ground + t.heightAt(cx + dx, cy + dy)) / 2
+      const edge = new THREE.Vector3(cx + dx * 0.5, edgeGround + lift, cy + dy * 0.5)
+      b.add(pipeMat, segment(centre, edge, r))
+      // A lower grade on the other side: drop a riser at the tile edge.
+      const j = world.index(x + dx, y + dy)
+      if (world.conduit[j] & (1 << n)) {
+        const other = STYLE_Y[tileGrade(sim, n, j).style]
+        if (other < lift - 0.05) {
+          b.add(pipeMat, segment(edge, new THREE.Vector3(edge.x, edgeGround + other, edge.z), r))
+          b.add('brass', new THREE.SphereGeometry(r * 1.4, 8, 6).translate(edge.x, edgeGround + other, edge.z).toNonIndexed())
+        }
+      }
+    })
+    const straight = count === 2 && ((links[0] && links[2]) || (links[1] && links[3]))
+    const along = links[0] || links[2] ? 'x' : 'z'
+    const across = along === 'x' ? 'z' : 'x'
+    if (count === 0) b.add(pipeMat, new THREE.SphereGeometry(r * 1.3, 8, 6).translate(centre.x, centre.y, centre.z).toNonIndexed())
+
+    switch (style) {
+      case 'duct': {
+        // A timber trough under the clay pipe, with a stone cap at bends and junctions.
+        if (straight) {
+          const trough = new THREE.BoxGeometry(along === 'x' ? 1 : 0.26, 0.1, along === 'z' ? 1 : 0.26)
+          b.add('plank', trough.translate(cx, ground + 0.05, cy).toNonIndexed())
+          b.add('tile', band(centre, along, r * 1.25, 0.05))
+        } else if (count > 0) {
+          b.add('stone', new THREE.BoxGeometry(0.34, 0.24, 0.34).translate(cx, ground + 0.12, cy).toNonIndexed())
+        }
+        break
+      }
+      case 'water': {
+        // Stone sleepers under the main, and a red hydrant on tees and crosses.
+        if (straight && (x + y) % 2 === 0) {
+          b.add('stone', new THREE.BoxGeometry(across === 'x' ? 0.3 : 0.1, 0.05, across === 'z' ? 0.3 : 0.1).translate(cx, ground + 0.025, cy).toNonIndexed())
+        }
+        if (straight) b.add('darkiron', band(centre, along, r * 1.4, 0.04))
+        else if (count > 0) b.add('darkiron', new THREE.SphereGeometry(r * 1.6, 8, 6).translate(centre.x, centre.y, centre.z).toNonIndexed())
+        if (count >= 3) {
+          b.add('redpaint', new THREE.CylinderGeometry(0.07, 0.08, 0.36, 10).translate(cx + 0.18, ground + 0.18, cy + 0.18).toNonIndexed())
+          b.add('redpaint', new THREE.SphereGeometry(0.075, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2).translate(cx + 0.18, ground + 0.36, cy + 0.18).toNonIndexed())
+          b.add('brass', new THREE.CylinderGeometry(0.03, 0.03, 0.12, 6).rotateZ(Math.PI / 2).translate(cx + 0.18, ground + 0.24, cy + 0.18).toNonIndexed())
+        }
+        break
+      }
+      case 'main':
+      case 'lagged': {
+        if (straight) {
+          // Riveted flanges on iron mains; brass bands holding the sheathing on lagged ones.
+          b.add('brass', band(centre, along, r * (style === 'lagged' ? 1.12 : 1.45), style === 'lagged' ? 0.05 : 0.06))
+          if (style === 'lagged') {
+            for (const s of [-0.3, 0.3]) {
+              const p = centre.clone().add(new THREE.Vector3(along === 'x' ? s : 0, 0, along === 'z' ? s : 0))
+              b.add('brass', band(p, along, r * 1.08, 0.03))
+            }
+          }
+        } else if (count > 0) {
+          // Elbows and junctions: a brass ball joint, and a valve wheel on tees and crosses.
+          b.add('brass', new THREE.SphereGeometry(r * 1.55, 10, 8).translate(centre.x, centre.y, centre.z).toNonIndexed())
+          if (count >= 3) {
+            b.add('brass', new THREE.CylinderGeometry(0.02, 0.02, 0.18, 6).translate(centre.x, centre.y + 0.14 + r, centre.z).toNonIndexed())
+            b.add('brass', new THREE.TorusGeometry(0.1, 0.018, 5, 14).rotateX(Math.PI / 2).translate(centre.x, centre.y + 0.23 + r, centre.z).toNonIndexed())
+            if (network === 'steam') joints.push(centre.clone())
+          }
+        }
+        // Trestle: two legs and a saddle, except across roads where the main spans on its own.
+        if (world.road[i] === 0) {
+          for (const s of [-1, 1]) {
+            const ox = across === 'x' ? s * 0.16 : 0
+            const oz = across === 'z' ? s * 0.16 : 0
+            const foot = new THREE.Vector3(cx + ox * 1.4, ground, cy + oz * 1.4)
+            b.add('darkiron', segment(foot, new THREE.Vector3(cx + ox * 0.5, centre.y - r, cy + oz * 0.5), 0.022, 5))
+          }
+          const saddle = new THREE.BoxGeometry(across === 'x' ? 0.3 : 0.06, 0.035, across === 'z' ? 0.3 : 0.06)
+          b.add('darkiron', saddle.translate(cx, centre.y - r - 0.01, cy).toNonIndexed())
+        }
+        break
+      }
+    }
+  }
+
+  private wireTile(sim: Simulation, n: number, network: string, i: number, b: Buckets): void {
+    const world = sim.world
+    const t = this.terrain
+    const x = world.xOf(i)
+    const y = world.yOf(i)
+    const cx = x + 0.5
+    const cy = y + 0.5
+    const ground = t.heightAt(cx, cy)
+    const lift = STYLE_Y.wire
+    const links = this.links(sim, n, network, x, y)
+    const count = links.filter(Boolean).length
+    const straight = count === 2 && ((links[0] && links[2]) || (links[1] && links[3]))
+    // Poles on every other tile of a straight run, and wherever the line turns, branches or ends.
+    const pole = !straight || (x + y) % 2 === 0
+    const alongX = links[0] || links[2]
+    links.forEach((on, d) => {
+      if (!on) return
+      const [dx, dy] = DIRS[d]
+      const edgeY = (ground + t.heightAt(cx + dx, cy + dy)) / 2 + lift
+      for (const s of [-1, 1]) {
+        // Two wires either side of the pole, sagging slightly towards the tile edge.
+        const ox = dy !== 0 ? s * 0.13 : 0
+        const oz = dx !== 0 ? s * 0.13 : 0
+        b.add('copper', segment(new THREE.Vector3(cx + ox, ground + lift, cy + oz), new THREE.Vector3(cx + dx * 0.5 + ox, edgeY - 0.05, cy + dy * 0.5 + oz), STYLE_R.wire, 4))
+      }
+    })
+    if (!pole) return
+    b.add('timber', new THREE.CylinderGeometry(0.035, 0.045, lift + 0.12, 6).translate(cx, ground + (lift + 0.12) / 2, cy).toNonIndexed())
+    const arm = new THREE.BoxGeometry(alongX ? 0.05 : 0.36, 0.04, alongX ? 0.36 : 0.05)
+    b.add('timber', arm.translate(cx, ground + lift - 0.03, cy).toNonIndexed())
+    for (const s of [-1, 1]) {
+      const ox = alongX ? 0 : s * 0.13
+      const oz = alongX ? s * 0.13 : 0
+      b.add('glass', new THREE.CylinderGeometry(0.025, 0.03, 0.07, 6).translate(cx + ox, ground + lift + 0.02, cy + oz).toNonIndexed())
+    }
   }
 
   dispose(): void {

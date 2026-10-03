@@ -1,5 +1,6 @@
 // Dev-only helpers for visual review (exposed on window in dev builds; never used by the game itself).
 import type { GameController } from './GameController'
+import { networkIndex } from './sim/energy'
 import { findSpot, footprintSize, placeBuilding } from './sim/placement'
 import { createAutomaton } from './sim/population'
 
@@ -23,15 +24,22 @@ export function showcase(controller: GameController): Record<string, number> {
     const [w, h] = footprintSize(def, 0)
     ids[def.id] = placeBuilding(sim, def, spot.x, spot.y, 0, w, h, true).id
   }
-  // A steam main and a power line along the plaza, clear of buildings.
+  // One row of each network along the plaza, clear of buildings: a water main, a steam duct upgraded to riveted and
+  // lagged mains along its length, and a power line.
   const world = sim.world
-  for (let dx = -10; dx <= 10; dx++) {
-    for (const [dy, bit] of [
-      [2, 1],
-      [3, 2],
-    ] as const) {
+  const rows: [number, string, (dx: number) => number][] = [
+    [1, 'water', () => 0],
+    [2, 'steam', (dx) => (dx < -3 ? 0 : dx < 4 ? 1 : 2)],
+    [3, 'power', () => 0],
+  ]
+  for (const [dy, network, grade] of rows) {
+    const n = networkIndex(sim, network)
+    if (n < 0) continue
+    for (let dx = -10; dx <= 10; dx++) {
       const i = world.index(cx + dx, cy + dy)
-      if (world.isLand(i) && world.building[i] === 0) world.conduit[i] |= bit
+      if (!world.isLand(i) || world.building[i] !== 0) continue
+      world.conduit[i] |= 1 << n
+      world.setGrade(n, i, Math.min(grade(dx), sim.rules.networks[n].upgrades?.length ?? 0))
     }
   }
   // Tram rails along the next row, a few street lamps, automatons at the forge and a moored airship.

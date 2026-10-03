@@ -13,12 +13,13 @@
   { "id": "herbs", "name": "Herbs", "category": "goods", "color": "#6a9a5a", "spoilagePerYear": 0.3, "defaultLimit": 80, "value": 2 },
   { "id": "tonic", "name": "Lung Tonic", "category": "goods", "color": "#4a8a8a", "spoilagePerYear": 0, "defaultLimit": 60, "value": 6 },
   { "id": "coats", "name": "Coats", "category": "goods", "color": "#5a6a8a", "spoilagePerYear": 0, "defaultLimit": 60, "value": 12 },
-  { "id": "berries", "name": "Berries", "category": "food", "color": "#9a2a4a", "spoilagePerYear": 0.45, "defaultLimit": 0, "value": 1 },
-  { "id": "mushrooms", "name": "Mushrooms", "category": "food", "color": "#c8b090", "spoilagePerYear": 0.45, "defaultLimit": 0, "value": 1 },
+  { "id": "rations", "name": "Company Rations", "category": "food", "color": "#8a7a5a", "spoilagePerYear": 0, "defaultLimit": 0, "value": 2 },
   { "id": "venison", "name": "Venison", "category": "food", "color": "#9a3a2a", "spoilagePerYear": 0.375, "defaultLimit": 0, "value": 2 },
   { "id": "fish", "name": "Fish", "category": "food", "color": "#7a9ab0", "spoilagePerYear": 0.45, "defaultLimit": 0, "value": 1.5 },
   { "id": "potatoes", "name": "Potatoes", "category": "food", "color": "#c09a5a", "spoilagePerYear": 0.15, "defaultLimit": 0, "value": 1 },
   { "id": "cabbage", "name": "Cabbage", "category": "food", "color": "#7aa84a", "spoilagePerYear": 0.225, "defaultLimit": 0, "value": 1 },
   { "id": "barley", "name": "Barley", "category": "food", "color": "#d8c070", "spoilagePerYear": 0.075, "defaultLimit": 0, "value": 1 },
+  { "id": "bread", "name": "Bread", "category": "food", "color": "#c89a5a", "spoilagePerYear": 0.2, "defaultLimit": 0, "value": 2 },
+  { "id": "tinned", "name": "Tinned Food", "category": "food", "color": "#9aa4a8", "spoilagePerYear": 0, "defaultLimit": 0, "value": 4 },
   { "id": "tomatoes", "name": "Hothouse Tomatoes", "category": "food", "color": "#c8402a", "spoilagePerYear": 0.45, "defaultLimit": 0, "value": 2 }
 ]

@@ -19,8 +19,11 @@ ledger. The charter counts as fulfilled when an Analytical Engine stands in the 
 
 ## Core loop
 
-1. Gather: fell trees, clear boulders, forage, hunt and fish.
-2. Build: lay out homes, storage and workplaces. Every site goes through clearing, then material delivery, then building.
+1. Gather and grow: fell trees, clear boulders, dig coal, hunt and fish, and grow food in fields and steam
+   glasshouses. The Company's ration crates carry the colony through its first year.
+2. Build: lay out homes, storage and workplaces around the Steamforge, and lay steam ducts and mains to them.
+   Pressure falls along every tile of pipe, so a town grows compact around its boilers. Every site goes through
+   clearing, then material delivery, then building.
 3. Staff: assign professions in the Guild panel. Anyone without a job is a laborer.
 4. Research: engineers at a Drafting Office unlock new buildings, roads, conduits and recipes.
 5. Survive the seasons: crops grow from spring to autumn, and winter drains warmth and food.
@@ -119,14 +122,14 @@ All values live in content JSON.
 | Chain | Buildings |
 |---|---|
 | Logs → firewood | Forester's Lodge (fells and replants), Woodcutter's Shed, Steam Sawmill (needs steam) |
-| Food | Forager's Hut (berries, mushrooms; seasonal), Hunter's Lodge (scales with nearby forest), Fishing Dock (needs shore), Crop Field (potatoes, cabbage, barley), Steam Glasshouse (tomatoes all year; needs steam) |
-| Stone / ore / coal | Quarry, Iron Mine, Coal Pit and Copper Mine, each placed over a matching seam |
+| Food | Company rations (starting stock and supply airships; never spoil), Steam Glasshouse (tomatoes all year, or herbs; needs steam; available from the founding), Hunter's Lodge (scales with nearby forest), Fishing Dock and Steam Trawler Dock (three times the catch; needs steam), Crop Field (potatoes, cabbage, barley), Bakehouse (barley → bread), Steam Cannery (fish, venison or vegetables + iron → tinned food that never spoils; needs steam), Steam Tractor Shed (fields within 12 tiles planted and harvested 80% faster; needs steam) |
+| Stone / ore / coal | Quarry, Coal Pit (from the founding; a coal outcrop always lies near the founding site), Iron Mine and Copper Mine, each placed over a matching seam |
 | Metal → tools / cogs | Smelter (ore + coal → iron or copper), Arc Furnace (ore → twice the metal; needs power), Toolworks (iron + logs), Machine Works (iron → cogs; needs steam) |
 | Leather → coats | Hunter's Lodge byproduct → Tailor's Shop |
-| Energy | Steamforge, Boiler House, Galvanic Dynamo (see below) |
+| Energy | Steamforge, Boiler House, Galvanic Dynamo, Pump House and Windpump Well (feedwater), Booster Pump (see below) |
 | Research | Drafting Office, Analytical Engine (needs power) |
 | Storage | Steamforge (all goods), Stockyard (materials, fuel), Warehouse (food, goods) |
-| Housing | Settler's Cottage, Brick Rowhouse, Steam Tenement (steam radiators replace firewood) |
+| Housing | Settler's Cottage, Brick Rowhouse, Steam Tenement. All have radiators: on a steam grid they burn firewood only for the share of heat the steam does not supply |
 | Safety | Pump Well (radius 14) and Steam Fire Station (radius 24, puts fires out in seconds; needs steam). Otherwise a burning building is lost and the fire spreads |
 | Health | Apothecary (brews glasshouse herbs into lung tonic; homes within 16 tiles take 60% less soot damage while tonic lasts) |
 | Clean air | Galvanic Precipitator (clears 12% of the soot within 12 tiles each second; needs power) |
@@ -140,36 +143,86 @@ All values live in content JSON.
 
 The headquarters (`"headquarters": true` in `buildings.json`; exactly one) is placed at founding and can neither be
 demolished nor burn. It stores all goods, shelters the homeless and is a small steam generator: it burns coal, or
-firewood if it has no coal, from its own stores, and laborers top it up from other storage. Workshops built against
-its walls get its steam without any pipes.
+firewood if it has no coal, from its own stores, and laborers top it up from other storage. Homes and workshops built
+against its walls get its steam without any pipes. It holds its own cistern, so it needs no feedwater.
 
-## Energy networks
+## Energy networks and pressure
 
-Networks are data (`rules.json` → `networks`): **Steam** (psi), carried by riveted steam pipes, and **Galvanic
-Power** (volts), carried by copper conduits. Builders lay conduits like roads; they cost materials per tile, run over
-roads and stay walkable.
+Networks are data (`rules.json` → `networks`), solved in this order:
 
-- A **grid** is a connected group of conduit tiles plus every participating building they touch. Buildings also
-  connect through their own footprint, so neighbouring buildings need no pipe between them.
-- **Generators** (`generator` component) supply energy while lit: the Steamforge (12 psi), the Boiler House (40 psi;
-  coal and a stoker) and the Galvanic Dynamo (30 volts, drawn from 20 psi of steam). Fuel burns with grid load, and
-  an idle generator banks its fire to a quarter.
-- **Consumers** (`consumer` component) draw energy while staffed, or for homes while occupied in the cold. Each gets
-  its grid's supply/demand ratio (at most 1):
-  - `required` buildings cannot work without it, and partial supply slows them down
-  - `workBonus` speeds work up
-  - `heatBonus` replaces a home's firewood
-- Unpowered required buildings and cold generators show a floating badge. A Burst Steam Main tears out a short run
-  of pipe and queues its repair.
+1. **Feedwater** (gallons), carried by water mains
+2. **Steam** (psi), carried by ducts and mains
+3. **Galvanic Power** (volts), carried by copper conduits
+
+Builders lay conduits like roads: they cost materials per tile, run over roads and stay walkable.
+
+**Conduit grades.** Each network has a basic conduit and optional upgrades (`upgrades`). Every grade has a cost, a
+`lossPerTile` and a drawing `style`. Laying a different grade over a conduit re-lays it in place, and research unlocks
+grades by id (`unlocks.conduits`). Each tile's grade is saved in `World.grades`.
+
+| Network | Grade | Cost per tile | Loss per tile | Unlocked by |
+|---|---|---|---|---|
+| Feedwater | Water Main | 1 stone | 1% | Hydraulics |
+| Steam | Clay Steam Duct | 1 log | 3.5% | founding |
+| Steam | Riveted Steam Main | 1 iron | 1.5% | Pressure Piping |
+| Steam | Lagged Steam Main | 1 iron, 1 copper | 0.5% | Lagged Mains |
+| Power | Copper Conduit | 1 copper | 0.4% | Galvanism |
+
+**Grids.** A grid is a connected group of conduit tiles plus every participating building they touch. Buildings also
+connect through their own footprint, so neighbouring buildings need no pipe between them, and a terrace of homes
+passes steam along.
+
+**Generators** (`generator` component) supply energy while lit. Fuel burns with grid load, and an idle generator
+banks its fire to a quarter.
+
+| Generator | Output | Needs |
+|---|---|---|
+| Steamforge | 12 psi | Its own cistern |
+| Boiler House | 40 psi | Coal, a stoker, and 12 gallons of feedwater |
+| Galvanic Dynamo | 30 volts | 20 psi of steam |
+| Pump House | 40 gallons | A shore and coal |
+| Windpump Well | 12 gallons | Nothing; works anywhere |
+
+A converter's output scales with how well its own input is supplied. The validator checks that a converter's input
+network comes before its output network.
+
+**Pressure (head).**
+- Every second, a cheapest-path search runs outward from each lit generator's footprint. Each conduit tile costs its
+  grade's loss, and building footprints cost nothing.
+- A building's head is 1 minus the cheapest total loss to it. Ten tiles of clay duct leave 65%; ten tiles of lagged
+  main leave 95%.
+- A **Booster Pump** (`booster`) that the pressure reaches becomes a fresh source at 95% head (times its own supply),
+  and the search continues from it.
+- The search is deterministic: ties go to the lowest tile index.
+- Heads are derived and recomputed on load. They are not saved.
+
+**Consumers** (`consumer` component) draw energy while staffed, or, for homes, while occupied in the cold. Each gets
+its grid's supply/demand ratio (at most 1) times the head that reaches it:
+- `required` buildings cannot work without it, and partial supply slows them down
+- `workBonus` speeds work up
+- `heatBonus` replaces that share of a home's firewood. Every home type has `heatBonus` 1: cottages draw 1 psi,
+  rowhouses 1.5, tenements 3.
+
+**Display.**
+- The inspector shows the pressure at the building.
+- Placing a building that uses a network, or laying its conduit, shades every tile and building on that network from
+  green (full head) through amber to red (none).
+- Unpowered required buildings and cold generators show a floating badge.
+- A Burst Steam Main tears out a short run of pipe and queues its repair in the same grade.
 
 ## Research (`research.json`)
 
-Each research item has a tier, a point cost, requirements and unlocks (buildings, roads, networks, recipes). Content
+Each research item has a tier, a point cost, requirements and unlocks (buildings, roads, networks, conduit grades,
+recipes). Content
 that no research unlocks is available from the founding. Engineers at a Drafting Office (1 point per work cycle;
 faster with galvanic lamps) and the Analytical Engine (4 points) work on the first item in the plan. Choosing an item
-plans its unfinished requirements first, and progress is kept when the plan changes. The tree runs from Masonry,
-Deep Mining and Tailoring through Metallurgy, Pressure Piping and Copper to Steam Engines, Galvanism and Analytical
-Engines. Presets may start with research done (`startingResearch`).
+plans its unfinished requirements first, and progress is kept when the plan changes. Presets may start with research
+done (`startingResearch`). The tree runs:
+
+- Masonry, Deep Mining (iron), Tailoring and Steam Baking
+- Metallurgy, Sanitary Science, Pressure Piping (riveted mains, the trawler) and Copper
+- Hydraulics (water, pump houses, windpumps) and Steam Canning
+- Steam Engines (boilers, booster pumps, tractor sheds), Lagged Mains, Galvanism and Analytical Engines
 
 ## Airship trade
 
@@ -259,8 +312,8 @@ Coal smoke is simulated (`soot.ts`, settings in `rules.json` → `soot` and `win
 
 | Preset | Families | Start | Winters | Disasters | Production | Soot |
 |---|---|---|---|---|---|---|
-| Tinkerer | 6 | Large stores, 4 cottages, a stockyard, a warehouse; Masonry and Tailoring researched | ×0.6 | ×0.4 | ×1.2 | ×0.6 |
-| Engineer | 5 | Modest stores and a stockyard | ×1 | ×1 | ×1 | ×1 |
+| Tinkerer | 6 | Large stores (320 rations, 60 coal), 4 cottages, a stockyard, a warehouse; Masonry and Tailoring researched | ×0.6 | ×0.4 | ×1.2 | ×0.6 |
+| Engineer | 5 | Modest stores (260 rations, 30 coal, 70 stone, 14 iron) and a stockyard | ×1 | ×1 | ×1 | ×1 |
 | Ironclad | 4 | Thin stores | ×1.35 | ×1.6 | ×0.95 | ×1.3 |
 | Brass Inferno | 3 | Scraps | ×1.7 | ×2.4 | ×0.85 | ×1.6 |
 
@@ -289,7 +342,7 @@ crop in the ground) is set aside and another is drawn, so the configured rates h
   They bring no tools. Some groups (`feverChance`) carry fever, which the petition card warns about. Welcoming them
   makes about half of them and a few colonists ill.
 - **Bumper season** (blessing): crops grow faster.
-- **Supply airship** (blessing): Company crates of iron, tools, coats and cogs land at the Steamforge.
+- **Supply airship** (blessing): Company crates of iron, tools, coats, cogs and rations land at the Steamforge.
 
 ## World
 
@@ -299,8 +352,9 @@ builds the land in layers:
 1. fbm elevation with a mountain rim
 2. meandering rivers carved with shelving banks, plus lakes
 3. sand along the shore
-4. stone, iron, coal and copper seams near the mountains (one stone seam is always close to the start)
-5. forests, boulders, ironstone, berry bushes and mushroom rings
+4. stone, iron, coal and copper seams near the mountains (one stone seam and one coal outcrop always lie close to
+   the start)
+5. forests, boulders and ironstone
 6. a flattened founding site holding the Steamforge and a short road
 
 ## Rendering
@@ -321,8 +375,14 @@ builds the land in layers:
   riveted tanks, flanged pipes, tori and domes. Materials are procedural (brick, slate, clay tile, riveted plate,
   copper, brass, verdigris), and building metals reflect a studio environment map. Gears spin, pistons and stamps
   stroke (`bob`), furnaces and galvanic coils glow, and vents puff steam (`emit`) while a building works.
-- Conduits: copper steam mains on iron trestles with brass flanges and valve wheels, and copper power lines on
-  insulated poles.
+- Conduits are drawn by each tile's grade `style`:
+  - `duct`: clay steam ducts in timber troughs on the ground
+  - `main`: riveted iron mains on trestles, with brass flanges and valve wheels
+  - `lagged`: copper-sheathed lagged mains with brass bands
+  - `water`: low cast-iron water mains on stone sleepers, with red hydrants at junctions
+  - `wire`: copper power lines on insulated poles
+
+  Where grades of different height meet, a riser joins them.
 - Particles: chimney smoke, steam vents and valve hiss, fire and snowfall.
   - Coal-burning buildings belch thick black smoke in proportion to their soot, and stoves give off a grey wisp.
   - Plumes leave the chimney upright and lean with the simulation's wind.
@@ -349,12 +409,20 @@ builds the land in layers:
 
 ## Persistence and backend
 
-- Saves are full snapshots (gzip + base64), currently version 5, migrated one version at a time:
+- Saves are full snapshots (gzip + base64), currently version 6, migrated one version at a time:
   - Version 1: the Guildhall becomes the Steamforge, all research counts as done and all dispatches as received.
   - Version 2: gains empty trade orders and no credit.
   - Version 3: the clock is rescaled from 40- to 120-second months so the colony keeps its date. It gains no waiting
     travellers and no recent disaster.
   - Version 4: gains clean air (no soot or grime) and the season's prevailing wind at middling strength.
+  - Version 5:
+    - Conduit bits are remapped by network id, because Feedwater now comes first, and steam pipes become riveted
+      mains.
+    - Berry bushes and mushroom rings leave the map, and stored berries and mushrooms become rations.
+    - Forager's huts are pulled down: their workers become laborers, tasks involving them are dropped, and half
+      their timber is refunded.
+    - Removed research is dropped. A colony with Steam Engines gains Hydraulics, with a notice that boilers now need
+      feedwater.
 - Snapshots hold the soot and grime fields as base64 `Float32Array`s, and the wind in `weather`.
 - Local slots and an autosave (every 3 minutes, on pause and on exit) live in IndexedDB. Six cloud slots are
   available per account (`/api/saves`).

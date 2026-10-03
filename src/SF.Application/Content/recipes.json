@@ -6,9 +6,13 @@
   { "id": "forge-tools", "name": "Forge tools", "inputs": { "iron": 1, "logs": 1 }, "outputs": { "tools": 1 }, "seconds": 32 },
   { "id": "sew-coats", "name": "Sew coats", "inputs": { "leather": 2 }, "outputs": { "coats": 1 }, "seconds": 28 },
   { "id": "machine-cogs", "name": "Machine cogs", "inputs": { "iron": 1 }, "outputs": { "cogs": 2 }, "seconds": 24 },
-  { "id": "grow-tomatoes", "name": "Grow tomatoes", "inputs": {}, "outputs": { "tomatoes": 3 }, "seconds": 32 },
+  { "id": "grow-tomatoes", "name": "Grow tomatoes", "inputs": {}, "outputs": { "tomatoes": 4 }, "seconds": 32 },
   { "id": "grow-herbs", "name": "Grow herbs", "inputs": {}, "outputs": { "herbs": 3 }, "seconds": 32 },
   { "id": "brew-tonic", "name": "Brew lung tonic", "inputs": { "herbs": 2 }, "outputs": { "tonic": 2 }, "seconds": 24 },
+  { "id": "bake-bread", "name": "Bake bread", "inputs": { "barley": 2 }, "outputs": { "bread": 4 }, "seconds": 24 },
+  { "id": "can-fish", "name": "Tin fish", "inputs": { "fish": 3, "iron": 1 }, "outputs": { "tinned": 5 }, "seconds": 28 },
+  { "id": "can-vegetables", "name": "Tin vegetables", "inputs": { "potatoes": 2, "cabbage": 2, "iron": 1 }, "outputs": { "tinned": 6 }, "seconds": 28 },
+  { "id": "can-venison", "name": "Tin venison", "inputs": { "venison": 3, "iron": 1 }, "outputs": { "tinned": 5 }, "seconds": 28 },
   { "id": "arc-iron", "name": "Arc-smelt iron", "inputs": { "ironOre": 2 }, "outputs": { "iron": 2 }, "seconds": 20 },
   { "id": "arc-copper", "name": "Arc-smelt copper", "inputs": { "copperOre": 2 }, "outputs": { "copper": 2 }, "seconds": 20 }
 ]

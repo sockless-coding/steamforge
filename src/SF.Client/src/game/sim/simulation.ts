@@ -22,8 +22,8 @@ import {
   refund,
 } from './placement'
 import { abortTask, rebuildClaims } from './tasks'
-import { encodeArray } from './codec'
-import { EnergyState } from './energy'
+import { decodeArray, encodeArray } from './codec'
+import { conduitGrades, EnergyState, gradeIndex } from './energy'
 import { answerPetition } from './events'
 import { createFounders, fireWorker } from './population'
 import { canResearch, isUnlocked, lockedBy, researchPlan } from './research'
@@ -49,7 +49,7 @@ import type {
 } from './types'
 import { MARK_CLEAR, World, type WorldSnapshot } from './world'
 
-export const SAVE_VERSION = 5
+export const SAVE_VERSION = 6
 
 export interface ColonySnapshot {
   v: number
@@ -396,16 +396,20 @@ export class Simulation {
         return { ok: true }
       }
       case 'conduit': {
-        const n = this.rules.networks.findIndex((x) => x.id === action.network)
-        if (n < 0) return { ok: false, reason: 'Unknown network.' }
-        const lock = lockedBy(this, 'network', action.network)
+        const at = gradeIndex(this, action.network, action.grade)
+        if (!at) return { ok: false, reason: 'Unknown network or conduit.' }
+        const { n, g } = at
+        const lock = lockedBy(this, 'network', action.network) ?? (g > 0 ? lockedBy(this, 'conduit', action.grade!) : null)
         if (lock) return { ok: false, reason: `Requires research: ${lock.name}.` }
         let placed = 0
         for (const tile of action.tiles) {
           if (tile < 0 || tile >= this.world.size) continue
           if (!this.world.isLand(tile) || this.world.building[tile] !== 0) continue
-          if (this.world.conduit[tile] & (1 << n) || this.conduitJobs.has(tile * 8 + n)) continue
-          this.conduitJobs.set(tile * 8 + n, { tile, network: action.network })
+          // Skip tiles that already carry, or are about to carry, this grade; a conduit of another grade is re-laid.
+          if (this.world.conduit[tile] & (1 << n) && this.world.gradeOf(n, tile) === g) continue
+          const job = this.conduitJobs.get(tile * 8 + n)
+          if (job && gradeIndex(this, job.network, job.grade)?.g === g) continue
+          this.conduitJobs.set(tile * 8 + n, g > 0 ? { tile, network: action.network, grade: action.grade } : { tile, network: action.network })
           this.queueClear(tile)
           this.emit({ type: 'conduit', tile })
           placed++
@@ -658,7 +662,8 @@ export class Simulation {
  * Upgrades older snapshots one version at a time. Version 1 predates research, energy networks and the story: its
  * Guildhall becomes the headquarters, every research counts as done (a legacy colony keeps what it had built) and
  * every dispatch as already received. Version 2 predates airship trade. Version 3 predates day and night (40-second
- * months), petitions and disaster spacing. Version 4 predates soot and wind.
+ * months), petitions and disaster spacing. Version 4 predates soot and wind. Version 5 predates feedwater, conduit
+ * grades and the food rework (see migrateV5).
  */
 function migrate(content: Content, s: ColonySnapshot): ColonySnapshot {
   if (s.v === SAVE_VERSION) return s
@@ -680,8 +685,142 @@ function migrate(content: Content, s: ColonySnapshot): ColonySnapshot {
     s.weather = probe.weather
     s.v = 5
   }
+  if (s.v === 5) migrateV5(content, s)
   if (s.v !== SAVE_VERSION) throw new Error(`Unsupported save version ${s.v}.`)
   return s
+}
+
+/** Version 5's networks and features, in their order then (conduit bits and feature codes index these). */
+const V5_NETWORKS = ['steam', 'power']
+const V5_FEATURES = ['tree', 'rock', 'ironstone', 'berries', 'mushrooms']
+/** Foods that no longer exist, and the forager's hut that gathered them. */
+const V5_GONE_FOODS = ['berries', 'mushrooms']
+const V5_FORAGER = 'foragers-hut'
+
+/**
+ * Version 5 to 6:
+ * - The water network comes first, so conduit bits are remapped by network id. Version 5 steam pipes were riveted
+ *   iron, so they become iron mains.
+ * - Berry bushes and mushroom rings are gone from the map, and stored berries and mushrooms become Company rations.
+ * - Forager's huts are pulled down. Their workers become laborers, tasks that involved a hut are dropped (with their
+ *   reservations), and half the hut's timber goes to the headquarters.
+ * - Glasshouse Horticulture is gone from the research tree (glasshouses are available from the founding).
+ * - A colony that had researched Steam Engines gets Hydraulics, its new requirement, and a notice that boilers now
+ *   need feedwater.
+ */
+function migrateV5(content: Content, s: ColonySnapshot): void {
+  const rules = content.bundle.rules
+  const remap = V5_NETWORKS.map((id) => rules.networks.findIndex((n) => n.id === id))
+  const old = decodeArray(s.world.conduit, Uint8Array)
+  const conduit = new Uint8Array(old.length)
+  const steam = remap[0]
+  const ironGrade = steam >= 0 ? conduitGrades(rules.networks[steam]).findIndex((g) => g.id === 'iron-main') : -1
+  const grades = new Uint8Array(old.length)
+  for (let i = 0; i < old.length; i++) {
+    V5_NETWORKS.forEach((_, k) => {
+      if (old[i] & (1 << k) && remap[k] >= 0) conduit[i] |= 1 << remap[k]
+    })
+    if (old[i] & 1 && ironGrade > 0) grades[i] = ironGrade
+  }
+  s.world.conduit = encodeArray(conduit)
+  s.world.grades = rules.networks.map((_, n) => (n === steam && ironGrade > 0 ? encodeArray(grades) : null))
+  s.conduitJobs = s.conduitJobs.filter((j) => rules.networks.some((n) => n.id === j.network))
+  for (const j of s.conduitJobs) if (j.network === 'steam' && ironGrade > 0) j.grade = 'iron-main'
+
+  const features = decodeArray(s.world.feature, Uint8Array)
+  const growth = decodeArray(s.world.growth, Uint8Array)
+  const codes = V5_FEATURES.map((id) => content.bundle.features.findIndex((f) => f.id === id) + 1)
+  for (let i = 0; i < features.length; i++) {
+    if (features[i] === 0) continue
+    const code = codes[features[i] - 1] ?? 0
+    if (code === 0) growth[i] = 0
+    features[i] = code
+  }
+  s.world.feature = encodeArray(features)
+  s.world.growth = encodeArray(growth)
+
+  const hq = s.buildings.find((b) => content.buildings.get(b.def)?.headquarters)
+  const rations = content.resources.has('rations') ? 'rations' : null
+  const convert = (stock: Stock | null | undefined) => {
+    if (!stock) return
+    for (const res of V5_GONE_FOODS) {
+      const qty = stock[res]
+      if (qty === undefined) continue
+      delete stock[res]
+      if (rations && qty > 0) stock[rations] = (stock[rations] ?? 0) + qty
+    }
+  }
+
+  // Pull down forager's huts and drop every task that touched one.
+  const huts = new Set(s.buildings.filter((b) => b.def === V5_FORAGER && !content.buildings.has(V5_FORAGER)).map((b) => b.id))
+  const byId = new Map(s.buildings.map((b) => [b.id, b]))
+  for (const c of s.citizens) {
+    const t = c.task
+    const touches =
+      t &&
+      (huts.has(t.about) ||
+        t.res.some((r) => r.kind !== 'tile' && huts.has(r.b)) ||
+        t.steps.some((st) => ('from' in st && huts.has(st.from)) || ('to' in st && huts.has(st.to)) || ('at' in st && st.at !== undefined && huts.has(st.at))))
+    if (touches) {
+      for (const r of t!.res) {
+        if (r.kind === 'tile') continue
+        const b = byId.get(r.b)
+        if (!b || huts.has(b.id)) continue
+        const sub = (stock: Stock, res: string, qty: number) => {
+          stock[res] = (stock[res] ?? 0) - qty
+          if (stock[res] <= 1e-6) delete stock[res]
+        }
+        if (r.kind === 'stock') sub(b.reserved, r.res, r.qty)
+        else if (r.kind === 'incoming') sub(b.incoming, r.res, r.qty)
+        else if (r.kind === 'site' && b.site) sub(b.site.incoming, r.res, r.qty)
+        else if (r.kind === 'slot') b.data[r.key] = Math.max(0, ((b.data[r.key] as number | undefined) ?? 0) - 1)
+      }
+      c.task = null
+      c.path = null
+      if (c.carry && hq) for (const res in c.carry) hq.stock[res] = (hq.stock[res] ?? 0) + c.carry[res]
+      c.carry = null
+    }
+    if (huts.has(c.workplace) || c.profession === 'forager') {
+      c.workplace = 0
+      if (c.profession !== 'child') c.profession = 'laborer'
+    }
+    c.diet = c.diet.filter((f) => !V5_GONE_FOODS.includes(f))
+    convert(c.carry)
+  }
+  for (const id of huts) {
+    const hut = byId.get(id)!
+    if (hq) {
+      for (const res in hut.stock) hq.stock[res] = (hq.stock[res] ?? 0) + hut.stock[res]
+      if (!hut.site) hq.stock.logs = (hq.stock.logs ?? 0) + 7
+    }
+  }
+  s.buildings = s.buildings.filter((b) => !huts.has(b.id))
+  for (const b of s.buildings) {
+    convert(b.stock)
+    convert(b.reserved)
+    convert(b.incoming)
+    b.workers = b.workers.filter((w) => s.citizens.some((c) => c.id === w && c.workplace === b.id))
+  }
+  for (const res of V5_GONE_FOODS) {
+    delete s.trade[res]
+    delete s.limits[res]
+  }
+
+  // Research that no longer exists (Glasshouse Horticulture: glasshouses are available from the founding).
+  const known = (id: string) => content.research.has(id)
+  s.research.done = s.research.done.filter(known)
+  s.research.queue = s.research.queue.filter(known)
+  for (const id of Object.keys(s.research.progress)) if (!known(id)) delete s.research.progress[id]
+
+  // Steam Engines now requires Hydraulics: boilers need feedwater.
+  if (s.research.done.includes('engines') && content.research.has('hydraulics') && !s.research.done.includes('hydraulics')) {
+    s.research.done.push('hydraulics')
+  }
+  if (s.buildings.some((b) => b.def === 'boiler-house')) {
+    const id = (s.notices.at(-1)?.id ?? 0) + 1
+    s.notices.push({ id, tick: s.tick, level: 'warn', text: 'Boiler houses now raise steam from feedwater. Lay water mains to them from a pump house on the shore or a windpump well.' })
+  }
+  s.v = 6
 }
 
 function migrateV3(content: Content, s: ColonySnapshot): void {

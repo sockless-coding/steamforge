@@ -5,7 +5,7 @@
       "To the Chief Engineer of the {colony} Expedition.",
       "By resolution of the Board of the Meridian Steam Company, you are entrusted with Steamforge No. 9, one of the twelve sealed pressure engines cast at our Ashcombe works, and with the families who have chosen to follow it north beyond the last railhead.",
       "Past the Hollowmere ranges lies country no surveyor has walked. The Board requires a colony there, self-sufficient within the decade, as proof that brass and steam can master any frontier. Eleven forges have gone before yours. Four still answer our telegrams.",
-      "The Steamforge will shelter your people and keep a fire against the cold. It raises a modest head of steam for any workshop built against its flanks, but it cannot feed you, and it will not burn without fuel. Gather timber and stone, raise homes before the first frost, and set your engineers to work at the drafting table: every pipe you lay and every engine you raise brings {colony} closer to standing on its own.",
+      "The Steamforge will shelter your people and keep a fire against the cold. It raises a modest head of steam for the homes and workshops built against its flanks or reached by a duct, but it cannot feed you, and it will not burn without fuel. Gather timber and stone, raise homes before the first frost, and set your engineers to work at the drafting table: every pipe you lay and every engine you raise brings {colony} closer to standing on its own.",
       "Our supply airships will call when the winds allow. Do not count on them.",
       "The Board expects reports. We expect results."
     ],
@@ -27,8 +27,14 @@
     {
       "id": "piping",
       "title": "Dispatch: Pressure Piping",
-      "text": "So you have learned to pipe steam. Mind your mains: a burst pipe in a cold month has emptied more than one colony. Run them along your streets, keep a stock of iron for repairs, and remember that every workshop on a main shares what the boilers can give.",
+      "text": "So you have learned to rivet a proper main. A brick duct loses a third of its steam in ten yards; iron keeps it. Mind your mains all the same: a burst pipe in a cold month has emptied more than one colony. Keep your homes close to the boilers, keep a stock of iron for repairs, and remember that every house and workshop on a main shares what the boilers can give.",
       "when": { "research": "piping" }
+    },
+    {
+      "id": "hydraulics",
+      "title": "Dispatch: Feedwater",
+      "text": "A boiler without water is a bomb, Chief Engineer, and the Board has lost two forges to men who forgot it. Lay your water mains before your boiler houses, and build them near the river if you can: a pump house on the shore lifts more than any number of windpumps.",
+      "when": { "research": "hydraulics" }
     },
     {
       "id": "boiler-house",

@@ -11,11 +11,11 @@
   {
     "id": "mining",
     "name": "Deep Mining",
-    "description": "Timbered shafts and steam winches to sink mines into iron and coal seams.",
+    "description": "Timbered shafts and steam winches to sink mines into the iron seams.",
     "tier": 1,
     "points": 20,
     "requires": [],
-    "unlocks": { "buildings": ["iron-mine", "coal-pit"] }
+    "unlocks": { "buildings": ["iron-mine"] }
   },
   {
     "id": "tailoring",
@@ -25,6 +25,15 @@
     "points": 15,
     "requires": [],
     "unlocks": { "buildings": ["tailor"] }
+  },
+  {
+    "id": "baking",
+    "name": "Steam Baking",
+    "description": "A brick oven and a steam blower turn barley into bread that keeps through the winter.",
+    "tier": 1,
+    "points": 15,
+    "requires": [],
+    "unlocks": { "buildings": ["bakehouse"] }
   },
   {
     "id": "gaslight",
@@ -47,11 +56,29 @@
   {
     "id": "piping",
     "name": "Pressure Piping",
-    "description": "Riveted iron mains that carry the Steamforge's steam to workshops anywhere in the colony.",
+    "description": "Riveted iron mains that carry steam much farther than brick ducts, and the steam trawler that drinks it.",
     "tier": 2,
     "points": 30,
     "requires": ["metallurgy"],
-    "unlocks": { "networks": ["steam"] }
+    "unlocks": { "conduits": ["iron-main"], "buildings": ["steam-trawler"] }
+  },
+  {
+    "id": "hydraulics",
+    "name": "Hydraulics",
+    "description": "Water mains, shore pump houses and windpumps. Boilers raise their steam from the feedwater.",
+    "tier": 3,
+    "points": 35,
+    "requires": ["piping"],
+    "unlocks": { "networks": ["water"], "buildings": ["pump-house", "windpump"] }
+  },
+  {
+    "id": "canning",
+    "name": "Steam Canning",
+    "description": "Steam retorts that seal food in iron tins. Tinned food never spoils.",
+    "tier": 3,
+    "points": 40,
+    "requires": ["metallurgy"],
+    "unlocks": { "buildings": ["cannery"] }
   },
   {
     "id": "copper",
@@ -72,31 +99,31 @@
     "unlocks": { "buildings": ["machine-works", "clock-tower"] }
   },
   {
-    "id": "glasshouse",
-    "name": "Glasshouse Horticulture",
-    "description": "Steam-heated glass halls that grow fresh tomatoes through the depths of winter.",
-    "tier": 3,
-    "points": 45,
-    "requires": ["piping"],
-    "unlocks": { "buildings": ["steam-glasshouse"] }
-  },
-  {
     "id": "sanitation",
     "name": "Sanitary Science",
     "description": "Coal smoke rots the lungs. Glasshouse herbs, brewed into tonics by an apothecary, ease the coughing in the homes around it.",
-    "tier": 4,
+    "tier": 2,
     "points": 50,
-    "requires": ["glasshouse"],
+    "requires": ["masonry"],
     "unlocks": { "buildings": ["apothecary"], "recipes": ["grow-herbs"] }
   },
   {
     "id": "engines",
     "name": "Steam Engines",
-    "description": "Coal-fired boiler houses to raise steam in quantity, the machines that drink it, and safety valves for when they drink too much.",
+    "description": "Coal-fired boiler houses fed from the water mains, booster pumps to drive steam across town, steam tractors, and safety valves for when the boilers drink too much.",
     "tier": 4,
     "points": 60,
-    "requires": ["precision"],
-    "unlocks": { "buildings": ["boiler-house", "steam-sawmill", "safety-valve"] }
+    "requires": ["precision", "hydraulics"],
+    "unlocks": { "buildings": ["boiler-house", "steam-sawmill", "safety-valve", "tractor-shed", "booster-pump"] }
+  },
+  {
+    "id": "lagging",
+    "name": "Lagged Mains",
+    "description": "Felt lagging under copper sheathing. A lagged main carries steam across the whole town with almost no loss.",
+    "tier": 5,
+    "points": 60,
+    "requires": ["engines", "copper"],
+    "unlocks": { "conduits": ["lagged-main"] }
   },
   {
     "id": "fire-brigade",
@@ -110,7 +137,7 @@
   {
     "id": "radiators",
     "name": "Steam Radiators",
-    "description": "Cast-iron radiators in every room: steam-heated tenements need no firewood at all.",
+    "description": "Cast-iron radiators and stout walls: steam tenements house twelve and need no firewood while the main reaches them.",
     "tier": 5,
     "points": 60,
     "requires": ["engines"],

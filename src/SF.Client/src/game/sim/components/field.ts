@@ -17,6 +17,37 @@ export interface FieldConfig {
 
 export type FieldPhase = 'fallow' | 'plant' | 'grow' | 'harvest'
 
+/** Steam tractor sheds: fields within reach are planted and harvested faster while the shed has steam. */
+export interface TractorConfig {
+  radius: number
+  /** Extra planting and harvesting speed at full supply. */
+  bonus: number
+}
+
+/** The best tractor bonus reaching a field (a shed's bonus times its energy supply). */
+function tractorBonus(sim: Simulation, b: Building): number {
+  let best = 0
+  for (const t of sim.buildings.values()) {
+    const cfg = sim.component<TractorConfig>(t, 'tractor')
+    if (!cfg || t.site || t.fire > 0) continue
+    // Distance from the shed to the nearest point of the field.
+    const dx = Math.max(b.x - (t.x + t.w / 2), 0, t.x + t.w / 2 - (b.x + b.w))
+    const dy = Math.max(b.y - (t.y + t.h / 2), 0, t.y + t.h / 2 - (b.y + b.h))
+    if (dx * dx + dy * dy > cfg.radius * cfg.radius) continue
+    const power = sim.def(t).components.consumer ? ((t.data.power as number | undefined) ?? 0) : 1
+    best = Math.max(best, cfg.bonus * power)
+  }
+  return best
+}
+
+registerComponent<TractorConfig>({
+  kind: 'tractor',
+  describe: (_sim, b, cfg) => {
+    const power = (b.data.power as number | undefined) ?? 0
+    return [power > 0.01 ? `Fields within ${cfg.radius} tiles planted and harvested ${Math.round(cfg.bonus * power * 100)}% faster` : 'Idle: the tractors need steam']
+  },
+})
+
 export function fieldCrop(sim: Simulation, b: Building): CropDef {
   const cfg = sim.component<FieldConfig>(b, 'field')!
   return sim.content.crops.get(b.data.crop as string) ?? sim.content.crops.get(cfg.crops[0])!
@@ -70,6 +101,12 @@ registerComponent<FieldConfig>({
     b.data.phase = sim.season.id === 'spring' ? 'plant' : 'fallow'
   },
   workers: (_sim, b, cfg) => Math.max(1, Math.ceil((b.w * b.h) / cfg.tilesPerWorker)),
+  /** `data.tractor` holds the steam tractor bonus, read by workSpeed. */
+  second: (sim, b) => {
+    const bonus = tractorBonus(sim, b)
+    if (bonus > 0) b.data.tractor = bonus
+    else delete b.data.tractor
+  },
   outputs: (sim, b) => [fieldCrop(sim, b).resource],
   month: (sim, b) => {
     const season = sim.season
@@ -138,6 +175,8 @@ registerComponent<FieldConfig>({
     const lines = [`${crop.name}: ${label}`, `Growth ${Math.round(((b.data.growth as number) ?? 0) * 100)}%`]
     const grime = grimeLevel(sim, b.x + b.w / 2, b.y + b.h / 2) * sim.rules.soot.cropPenalty
     if (grime >= 0.01) lines.push(`Soot on the soil: -${Math.round(grime * 100)}% yield`)
+    const tractor = (b.data.tractor as number | undefined) ?? 0
+    if (tractor > 0) lines.push(`Steam tractors: +${Math.round(tractor * 100)}% planting and harvesting speed`)
     return lines
   },
 })

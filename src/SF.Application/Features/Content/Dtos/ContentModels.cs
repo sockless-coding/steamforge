@@ -21,10 +21,14 @@ public sealed record SeasonDef(string Id, string Name, IReadOnlyList<int> Months
 
 public sealed record RoadDef(string Id, string Name, Dictionary<string, double> Cost, double Work, double Speed);
 
-public sealed record ConduitDef(string Name, Dictionary<string, double> Cost, double Work);
+/// <summary>One grade of conduit on a network: what it costs and how much head it loses per tile.</summary>
+public sealed record ConduitDef(string Id, string Name, Dictionary<string, double> Cost, double Work, double LossPerTile, string Style);
 
-/// <summary>An energy network (steam, galvanic power): generators and consumers joined by conduit tiles.</summary>
-public sealed record NetworkDef(string Id, string Name, string Color, ConduitDef Conduit);
+/// <summary>
+/// An energy network (feedwater, steam, galvanic power): generators and consumers joined by conduit tiles. The basic
+/// conduit is laid from the start; upgrades are better grades, usually unlocked by research.
+/// </summary>
+public sealed record NetworkDef(string Id, string Name, string Color, ConduitDef Conduit, IReadOnlyList<ConduitDef>? Upgrades);
 
 /// <summary>Day and night: the lit share of each month's day, and how fast lamplit night work goes.</summary>
 public sealed record DayRules(int DaysPerMonth, IReadOnlyList<double> Daylight, double NightWorkFactor);
@@ -109,6 +113,7 @@ public sealed record ResearchUnlocks(
     IReadOnlyList<string>? Buildings,
     IReadOnlyList<string>? Roads,
     IReadOnlyList<string>? Networks,
+    IReadOnlyList<string>? Conduits,
     IReadOnlyList<string>? Recipes);
 
 public sealed record ResearchDef(string Id, string Name, int Tier, double Points, IReadOnlyList<string> Requires, ResearchUnlocks Unlocks);

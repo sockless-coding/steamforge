@@ -356,15 +356,16 @@ function BuildBar({ hud, controller }: { hud: HudState; controller: GameControll
     { tool: { kind: 'unclear' }, label: 'Unmark', icon: 'minus', detail: 'Drag to cancel clearing orders.' },
     { tool: { kind: 'demolish' }, label: 'Demolish', icon: 'trash', detail: 'Click a building to demolish it (half its materials return).' },
   ]
+  // Each grade of conduit is its own tool; laying a better grade over an existing conduit upgrades it.
   const conduitTools: ToolCard[] = content.bundle.rules.networks.flatMap((n) => [
-    {
-      tool: { kind: 'conduit', network: n.id } as Tool,
-      label: n.conduit.name,
+    ...[n.conduit, ...(n.upgrades ?? [])].map((grade, g) => ({
+      tool: (g === 0 ? { kind: 'conduit', network: n.id } : { kind: 'conduit', network: n.id, grade: grade.id }) as Tool,
+      label: grade.name,
       icon: 'wrench' as IconName,
-      detail: `${n.conduit.description} Costs ${Object.entries(n.conduit.cost).map(([r, q]) => `${q} ${names(r).toLowerCase()}`).join(', ')} per tile.`,
-      lock: hud.locks[`network:${n.id}`],
-    },
-    { tool: { kind: 'removeConduit', network: n.id } as Tool, label: `Remove ${n.conduit.name}`, icon: 'close' as IconName, detail: `Drag over ${n.conduit.name.toLowerCase()}s to remove them.`, lock: hud.locks[`network:${n.id}`] },
+      detail: `${grade.description} Costs ${Object.entries(grade.cost).map(([r, q]) => `${q} ${names(r).toLowerCase()}`).join(', ')} per tile.`,
+      lock: g === 0 ? hud.locks[`network:${n.id}`] : hud.locks[`conduit:${grade.id}`],
+    })),
+    { tool: { kind: 'removeConduit', network: n.id } as Tool, label: `Remove ${n.name}`, icon: 'close' as IconName, detail: `Drag over ${n.name.toLowerCase()} conduits to remove them.`, lock: hud.locks[`network:${n.id}`] },
   ])
   const tools = category === 'tools' ? landTools : category === 'power' ? conduitTools : []
 

@@ -7,7 +7,8 @@ export type Tool =
   | { kind: 'build'; def: string }
   | { kind: 'road'; road: string }
   | { kind: 'removeRoad' }
-  | { kind: 'conduit'; network: string }
+  /** Lays conduit of a grade (the network's basic conduit when absent). */
+  | { kind: 'conduit'; network: string; grade?: string }
   | { kind: 'removeConduit'; network: string }
   | { kind: 'clear' }
   | { kind: 'unclear' }

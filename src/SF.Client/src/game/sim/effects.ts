@@ -1,3 +1,4 @@
+import { conduitGrades, gradeIndex } from './energy'
 import { addStock, amount, available, foodIds } from './inventory'
 import { activateBuilding, deliveredFraction, totalWork } from './placement'
 import type { Simulation } from './simulation'
@@ -113,15 +114,22 @@ registerEffect('buildConduit', (sim, c, [tile, n]) => {
   const job = sim.conduitJobs.get(key)
   const net = sim.rules.networks[n]
   if (!job || !net) return true
-  for (const res in net.conduit.cost) {
-    if (!c.carry || amount(c.carry, res) < net.conduit.cost[res]) return false
+  const at = gradeIndex(sim, job.network, job.grade)
+  if (!at) {
+    sim.conduitJobs.delete(key)
+    return true
   }
-  for (const res in net.conduit.cost) addStock(c.carry!, res, -net.conduit.cost[res])
+  const cost = conduitGrades(net)[at.g].cost
+  for (const res in cost) {
+    if (!c.carry || amount(c.carry, res) < cost[res]) return false
+  }
+  for (const res in cost) addStock(c.carry!, res, -cost[res])
   if (c.carry && Object.keys(c.carry).length === 0) c.carry = null
   sim.conduitJobs.delete(key)
   const world = sim.world
   if (world.isLand(tile) && world.building[tile] === 0) {
     world.conduit[tile] |= 1 << n
+    world.setGrade(n, tile, at.g)
     sim.energy.dirty = true
   }
   sim.emit({ type: 'conduit', tile })

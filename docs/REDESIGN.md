@@ -1,9 +1,9 @@
 # SteamForge: Identity Redesign
 
 Status:
-- **Phase 1** (soot and the industrial-amber look) is built and documented in [GAME_DESIGN.md](GAME_DESIGN.md), except
-  for the items listed as deferred under Phase 1 below.
-- Phases 2–4 are proposals.
+- **Phases 1 and 2** (soot and the industrial-amber look; pressure is life) are built and documented in
+  [GAME_DESIGN.md](GAME_DESIGN.md), except for the items listed as deferred under each phase below.
+- Phases 3 and 4 are proposals.
 
 As each phase lands, move its sections into GAME_DESIGN.md.
 
@@ -405,7 +405,43 @@ Deferred:
 - **Spoil tips:** slag heaps beside mines and smelters need a sim feature that grows over time.
 - **Sun shafts, and furnace glow lighting the smoke from below.**
 
-### Phase 2: Pressure is life (the core loop changes)
+### Phase 2: Pressure is life (built)
+
+Built:
+- conduit grades with per-tile pressure loss, the deterministic head search, and Booster Pumps
+- the pressure overlay
+- the Feedwater network, Pump House and Windpump Well, with boilers as water-to-steam converters
+- radiators on every home type
+- the coal outcrop near the founding site, with the Coal Pit available from the founding
+- the food rework: Company rations, Steam Trawler Dock, Bakehouse, Steam Cannery and Steam Tractor Shed
+- the re-tiered research tree
+- save migration v5 → v6
+- the scripted player rewritten for the new economy
+
+Changes from the plan:
+- **The basic steam duct costs a log, not stone.** Stone is the early bottleneck: stone ducts kept the first glasshouse
+  and well from ever being built.
+- **The Steam Glasshouse is available from the founding**, and the Glasshouse Horticulture research is gone. It is
+  the dependable early food that replaces the Forager's Hut, and grows 4 tomatoes a cycle (was 3).
+- **Starting stores are larger:** more rations, some coal, more stone and iron, so the first year is carried by the
+  Company's crates.
+
+Balance on 16 seeds, Engineer, over 12 years:
+
+| | Phase 1 | Phase 2 |
+|---|---|---|
+| Population at year 12 | 40.1 | 43.1 |
+| Colonies lost | 1 | 1 |
+| Starvation deaths per colony-year | 0.63 | 0.51 |
+
+On the default eight seeds, Tinkerer reaches 50.5 at year 12 (59.6 before). Ironclad stays brutal (6 of 8 lost; 5
+before).
+
+Deferred:
+- **Pneumatic Kitchen**
+- **Steam tractors driving on the fields** (for now they are parked in their shed)
+
+Original plan:
 
 1. Conduit grades with `lossPerTile`, head propagation in `energy.ts`, Booster Pump, pressure overlay.
 2. Water network, Pump House, Deep Well, boiler as water → steam converter, Steamforge cistern.

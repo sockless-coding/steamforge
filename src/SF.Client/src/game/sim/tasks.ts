@@ -142,7 +142,7 @@ export function workSpeed(sim: Simulation, c: Citizen, at?: number): number {
   }
   if (at) {
     const b = sim.buildings.get(at)
-    if (b) s *= energyFactor(sim, b)
+    if (b) s *= energyFactor(sim, b) * (1 + ((b.data.tractor as number | undefined) ?? 0))
   }
   return s
 }

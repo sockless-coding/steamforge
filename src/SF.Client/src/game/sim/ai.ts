@@ -1,4 +1,5 @@
 import { isLit } from './components/lighting'
+import { conduitGrades, gradeIndex } from './energy'
 import { amount, available, foodIds, foodIn, nearestStorageFor, nearestStorageWith } from './inventory'
 import { deliveredFraction, totalWork } from './placement'
 import type { Simulation } from './simulation'
@@ -345,10 +346,11 @@ function roadTask(sim: Simulation, c: Citizen): Task | null {
     if (sim.claimed.has(job.tile) || world.feature[job.tile] !== 0) continue
     const d = world.distance(here, job.tile)
     if (d < bestD) {
-      const n = sim.rules.networks.findIndex((x) => x.id === job.network)
-      const conduit = sim.rules.networks[n].conduit
+      const at = gradeIndex(sim, job.network, job.grade)
+      if (!at) continue
+      const conduit = conduitGrades(sim.rules.networks[at.n])[at.g]
       bestD = d
-      best = { tile: job.tile, cost: conduit.cost, work: conduit.work, name: conduit.name, effect: 'buildConduit', args: [job.tile, n] }
+      best = { tile: job.tile, cost: conduit.cost, work: conduit.work, name: conduit.name, effect: 'buildConduit', args: [job.tile, at.n] }
     }
   }
   if (!best) return null

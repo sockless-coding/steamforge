@@ -165,6 +165,8 @@ export interface RoadJob {
 export interface ConduitJob {
   tile: number
   network: string
+  /** Conduit grade id; the network's basic conduit when absent. */
+  grade?: string
 }
 
 export interface TradeOrder {
@@ -223,7 +225,8 @@ export type Action =
   | { type: 'place'; def: string; x: number; y: number; rot: Rotation; w?: number; h?: number }
   | { type: 'road'; road: string; tiles: number[] }
   | { type: 'removeRoad'; tiles: number[] }
-  | { type: 'conduit'; network: string; tiles: number[] }
+  /** Lays conduit of a grade (the network's basic one by default); laying a different grade over a conduit upgrades it. */
+  | { type: 'conduit'; network: string; tiles: number[]; grade?: string }
   | { type: 'removeConduit'; network: string; tiles: number[] }
   | { type: 'research'; tech: string }
   | { type: 'clearResearch' }

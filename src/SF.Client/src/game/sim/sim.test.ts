@@ -118,8 +118,8 @@ describe('determinism and saves', () => {
     const b = newColony({ seed: 42 })
     for (const sim of [a, b]) {
       const hall = [...sim.buildings.values()].find((x) => x.def === 'steamforge')!
-      const spot = findSpot(sim, sim.def('foragers-hut'), hall.x, hall.y + 12)!
-      sim.perform({ type: 'place', def: 'foragers-hut', x: spot.x, y: spot.y, rot: 0 })
+      const spot = findSpot(sim, sim.def('hunters-lodge'), hall.x, hall.y + 12)!
+      sim.perform({ type: 'place', def: 'hunters-lodge', x: spot.x, y: spot.y, rot: 0 })
       runMonths(sim, 4)
     }
     expect(hashOf(a)).toBe(hashOf(b))

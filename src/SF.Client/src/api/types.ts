@@ -70,21 +70,33 @@ export interface CitizenRules {
   oldAgeDeathPerMonth: number
 }
 
+/** How a conduit grade is drawn. */
+export type ConduitStyle = 'duct' | 'main' | 'lagged' | 'water' | 'wire'
+
+/** One grade of conduit on a network (a brick duct, a riveted main, a lagged main...). */
 export interface ConduitDef {
+  /** Unique across every network's grades; research unlocks grades by this id. */
+  id: string
   name: string
   description: string
   cost: Stock
   work: number
+  /** Share of a generator's head lost per tile of this conduit (building footprints carry energy without loss). */
+  lossPerTile: number
+  style: ConduitStyle
 }
 
-/** An energy network: generators and consumers joined by conduit tiles (steam pipes, copper conduits). */
+/** An energy network: generators and consumers joined by conduit tiles (water mains, steam pipes, copper conduits). */
 export interface NetworkDef {
   id: string
   name: string
   /** Short unit label for gauges, e.g. "psi" or "volts". */
   unit: string
   color: string
+  /** The basic grade, laid from the start (or once the network is unlocked). */
   conduit: ConduitDef
+  /** Better grades, usually unlocked by research. Laying one over an existing conduit upgrades it. */
+  upgrades?: ConduitDef[]
 }
 
 export interface DayRules {
@@ -328,7 +340,6 @@ export interface TerrainPresetDef {
   rivers: number
   forest: number
   rocks: number
-  berries: number
   deposits: Partial<Record<'stone' | 'iron' | 'coal' | 'copper', number>>
 }
 
@@ -343,6 +354,8 @@ export interface ResearchUnlocks {
   buildings?: string[]
   roads?: string[]
   networks?: string[]
+  /** Conduit grades by id (see NetworkDef.upgrades). */
+  conduits?: string[]
   recipes?: string[]
 }
 

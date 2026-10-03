@@ -83,10 +83,10 @@
     "id": "cottage",
     "name": "Settler's Cottage",
     "category": "housing",
-    "description": "A snug rendered cottage for one family, with a copper rain butt. Burns firewood through the winter.",
+    "description": "A snug rendered cottage for one family, with a copper rain butt. Burns firewood through the winter, unless a steam duct reaches it and its radiators take over.",
     "size": [2, 2],
     "cost": { "resources": { "logs": 16, "stone": 8 }, "work": 80 },
-    "components": { "housing": { "capacity": 5, "insulation": 1 } },
+    "components": { "housing": { "capacity": 5, "insulation": 1 }, "consumer": { "uses": { "steam": 1 }, "heatBonus": 1 } },
     "model": {
       "parts": [
         { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.8, 0.2, 1.8] },
@@ -111,10 +111,10 @@
     "id": "rowhouse",
     "name": "Brick Rowhouse",
     "category": "housing",
-    "description": "Solid brick walls hold the heat: a large family burns far less firewood.",
+    "description": "Solid brick walls hold the heat: a large family burns far less firewood, and none at all with full steam on its radiators.",
     "size": [3, 2],
     "cost": { "resources": { "stone": 24, "logs": 10, "iron": 4 }, "work": 180 },
-    "components": { "housing": { "capacity": 8, "insulation": 1.8 } },
+    "components": { "housing": { "capacity": 8, "insulation": 1.8 }, "consumer": { "uses": { "steam": 1.5 }, "heatBonus": 1 } },
     "model": {
       "parts": [
         { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [2.85, 0.22, 1.85] },
@@ -268,34 +268,6 @@
         { "shape": "cylinder", "mat": "timber", "pos": [-0.4, 0.12, -0.45], "size": [0.22, 0.9, 0.22], "axis": "x" },
         { "shape": "cylinder", "mat": "timber", "pos": [-0.4, 0.34, -0.45], "size": [0.22, 0.9, 0.22], "axis": "x" },
         { "shape": "cylinder", "mat": "timber", "pos": [-0.4, 0.12, -0.2], "size": [0.22, 0.9, 0.22], "axis": "x" }
-      ]
-    }
-  },
-  {
-    "id": "foragers-hut",
-    "name": "Forager's Hut",
-    "category": "food",
-    "description": "Foragers pick berries and mushrooms from the surrounding woods while they are in season.",
-    "size": [2, 2],
-    "cost": { "resources": { "logs": 14 }, "work": 60 },
-    "components": {
-      "workplace": { "workers": 4, "profession": "forager" },
-      "gatherer": { "features": ["berries", "mushrooms"], "radius": 16 }
-    },
-    "model": {
-      "parts": [
-        { "shape": "cylinder", "mat": "timber", "pos": [0, 0, 0], "size": [1.5, 0.9, 1.5] },
-        { "shape": "cone", "mat": "verdigris", "pos": [0, 0.9, 0], "size": [1.9, 0.95, 1.9] },
-        { "shape": "torus", "mat": "brass", "pos": [0, 0.92, 0], "size": [1.6, 0.05, 0] },
-        { "shape": "sphere", "mat": "brass", "pos": [0, 1.88, 0], "size": [0.12, 0.12, 0.12] },
-        { "shape": "box", "mat": "plank", "pos": [0, 0, 0.74], "size": [0.3, 0.58, 0.05] },
-        { "shape": "box", "mat": "darkiron", "pos": [0.32, 0.78, 0.74], "size": [0.03, 0.03, 0.14] },
-        { "shape": "sphere", "mat": "lamp", "pos": [0.32, 0.71, 0.82], "size": [0.1, 0.13, 0.1] },
-        { "shape": "cylinder", "mat": "plank", "pos": [0.65, 0, 0.6], "size": [0.34, 0.28, 0.34], "taper": 1.25 },
-        { "shape": "sphere", "mat": "berry", "pos": [0.65, 0.28, 0.6], "size": [0.32, 0.14, 0.32] },
-        { "shape": "cylinder", "mat": "plank", "pos": [-0.62, 0, 0.62], "size": [0.3, 0.24, 0.3], "taper": 1.2 },
-        { "shape": "sphere", "mat": "canvas", "pos": [-0.62, 0.24, 0.62], "size": [0.28, 0.12, 0.28] },
-        { "shape": "tank", "mat": "copperplate", "pos": [0.62, 0, -0.58], "size": [0.3, 0.5, 0.3] }
       ]
     }
   },
@@ -786,7 +758,8 @@
     "components": {
       "emitter": { "soot": 2.5, "stack": 6 },
       "workplace": { "workers": 1, "profession": "stoker" },
-      "generator": { "network": "steam", "output": 40, "fuel": { "coal": 4.5 }, "capacity": 24 }
+      "generator": { "network": "steam", "output": 40, "fuel": { "coal": 4.5 }, "capacity": 24 },
+      "consumer": { "uses": { "water": 12 }, "required": true }
     },
     "model": {
       "parts": [
@@ -1411,6 +1384,265 @@
         { "shape": "pipe", "mat": "brass", "pos": [0.55, 4.0, -0.55], "size": [0.06, 0.3, 0.06], "emit": "steam" },
         { "shape": "sphere", "mat": "lamp", "pos": [-0.5, 0.95, 0.72], "size": [0.1, 0.13, 0.1] },
         { "shape": "sphere", "mat": "lamp", "pos": [0.5, 0.95, 0.72], "size": [0.1, 0.13, 0.1] }
+      ]
+    }
+  },
+  {
+    "id": "pump-house",
+    "name": "Pump House",
+    "category": "power",
+    "description": "A coal-fired beam engine on the shore that lifts river water into the mains. Boilers make steam from the feedwater it sends them.",
+    "size": [2, 2],
+    "cost": { "resources": { "stone": 18, "logs": 8, "iron": 6 }, "work": 140 },
+    "placement": { "adjacent": { "id": "water", "min": 3 } },
+    "components": {
+      "emitter": { "soot": 0.7, "stack": 2 },
+      "workplace": { "workers": 1, "profession": "stoker" },
+      "generator": { "network": "water", "output": 40, "fuel": { "coal": 1.5, "firewood": 4 }, "capacity": 10 }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.85, 0.25, 1.85] },
+        { "shape": "box", "mat": "brick", "pos": [0, 0.25, 0.1], "size": [1.2, 1.5, 1.3] },
+        { "shape": "box", "mat": "stone", "pos": [0, 1.75, 0.1], "size": [1.3, 0.08, 1.4] },
+        { "shape": "gable", "mat": "slate", "pos": [0, 1.83, 0.1], "size": [1.32, 0.55, 1.42] },
+        { "shape": "box", "mat": "glass", "pos": [0, 0.9, 0.76], "size": [0.34, 0.6, 0.03] },
+        { "shape": "torus", "mat": "stone", "pos": [0, 1.5, 0.77], "size": [0.4, 0.06, 0], "axis": "z", "arc": 180 },
+        { "shape": "box", "mat": "plank", "pos": [-0.35, 0.25, 0.76], "size": [0.28, 0.6, 0.04] },
+        { "shape": "box", "mat": "darkiron", "pos": [0, 2.0, 0.1], "size": [0.12, 0.5, 0.12] },
+        { "shape": "box", "mat": "darkiron", "pos": [0, 2.42, -0.3], "size": [0.08, 0.1, 1.5], "bob": 0.12, "spin": 1.6 },
+        { "shape": "box", "mat": "darkiron", "pos": [0, 1.4, -0.9], "size": [0.06, 1.0, 0.06], "bob": 0.12, "spin": 1.6 },
+        { "shape": "tank", "mat": "plate", "pos": [0, 0.25, -0.75], "size": [0.4, 1.0, 0.4] },
+        { "shape": "torus", "mat": "brass", "pos": [0, 0.5, -0.75], "size": [0.44, 0.05, 0] },
+        { "shape": "pipe", "mat": "iron", "pos": [0, 0.15, -0.95], "size": [0.14, 0.5, 0.14], "axis": "z" },
+        { "shape": "pipe", "mat": "iron", "pos": [0.45, 0.6, -0.75], "size": [0.1, 0.5, 0.1], "axis": "x" },
+        { "shape": "cylinder", "mat": "redpaint", "pos": [0.72, 0.25, -0.75], "size": [0.18, 0.5, 0.18] },
+        { "shape": "gear", "mat": "brass", "pos": [0.62, 1.0, 0.1], "size": [0.5, 0.05, 0.5], "axis": "x", "spin": 1.6 },
+        { "shape": "stack", "mat": "brick", "pos": [-0.55, 1.6, -0.35], "size": [0.3, 1.5, 0.3] },
+        { "shape": "box", "mat": "glow", "pos": [-0.35, 0.3, 0.77], "size": [0.12, 0.1, 0.02], "glow": true }
+      ]
+    }
+  },
+  {
+    "id": "windpump",
+    "name": "Windpump Well",
+    "category": "power",
+    "description": "A bored well under a lattice windpump. It needs no fuel and no keeper, and can stand anywhere, but it lifts only a trickle of feedwater.",
+    "size": [2, 2],
+    "cost": { "resources": { "stone": 10, "logs": 12, "iron": 4 }, "work": 110 },
+    "components": {
+      "generator": { "network": "water", "output": 12 }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.6, 0.2, 1.6] },
+        { "shape": "cylinder", "mat": "stone", "pos": [0.35, 0.2, 0.35], "size": [0.62, 0.35, 0.62] },
+        { "shape": "cylinder", "mat": "water", "pos": [0.35, 0.5, 0.35], "size": [0.48, 0.06, 0.48] },
+        { "shape": "box", "mat": "timber", "pos": [-0.55, 0.2, -0.55], "size": [0.08, 2.9, 0.08], "rot": 4 },
+        { "shape": "box", "mat": "timber", "pos": [0.25, 0.2, -0.55], "size": [0.08, 2.9, 0.08], "rot": -4 },
+        { "shape": "box", "mat": "timber", "pos": [-0.55, 0.2, 0.25], "size": [0.08, 2.9, 0.08], "rot": -4 },
+        { "shape": "box", "mat": "timber", "pos": [0.25, 0.2, 0.25], "size": [0.08, 2.9, 0.08], "rot": 4 },
+        { "shape": "box", "mat": "timber", "pos": [-0.15, 1.0, -0.15], "size": [0.86, 0.05, 0.86] },
+        { "shape": "box", "mat": "timber", "pos": [-0.15, 2.0, -0.15], "size": [0.7, 0.05, 0.7] },
+        { "shape": "box", "mat": "darkiron", "pos": [-0.15, 3.05, -0.15], "size": [0.3, 0.16, 0.3] },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [-0.15, 3.18, 0.1], "size": [0.08, 0.3, 0.08], "axis": "z" },
+        { "shape": "gear", "mat": "plate", "pos": [-0.15, 3.18, 0.28], "size": [1.5, 0.04, 1.5], "axis": "z", "spin": 3 },
+        { "shape": "gear", "mat": "brass", "pos": [-0.15, 3.18, 0.32], "size": [0.4, 0.05, 0.4], "axis": "z", "spin": 3 },
+        { "shape": "box", "mat": "redpaint", "pos": [-0.15, 3.18, -0.75], "size": [0.03, 0.42, 0.62] },
+        { "shape": "box", "mat": "darkiron", "pos": [-0.15, 3.18, -0.4], "size": [0.04, 0.04, 0.5] },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [-0.15, 0.2, -0.15], "size": [0.04, 2.85, 0.04], "bob": 0.08, "spin": 3 },
+        { "shape": "pipe", "mat": "iron", "pos": [0.1, 0.32, -0.15], "size": [0.08, 0.5, 0.08], "axis": "x" },
+        { "shape": "torus", "mat": "brass", "pos": [0.35, 0.56, 0.35], "size": [0.66, 0.05, 0] }
+      ]
+    }
+  },
+  {
+    "id": "booster-pump",
+    "name": "Booster Pump",
+    "category": "power",
+    "description": "A steam-driven pump set into a main. Wherever pressure reaches it, it drives the steam onward at full head, so long runs of pipe can reach the far side of town.",
+    "size": [1, 1],
+    "cost": { "resources": { "stone": 4, "iron": 6, "cogs": 2 }, "work": 70 },
+    "components": {
+      "booster": { "network": "steam", "head": 0.95 },
+      "consumer": { "uses": { "steam": 3 }, "required": true }
+    },
+    "model": {
+      "parts": [
+        { "shape": "cylinder", "mat": "stone", "pos": [0, 0, 0], "size": [0.8, 0.18, 0.8] },
+        { "shape": "box", "mat": "darkiron", "pos": [0, 0.18, 0], "size": [0.62, 0.12, 0.62] },
+        { "shape": "tank", "mat": "copperplate", "pos": [0, 0.52, 0], "size": [0.4, 0.62, 0.4], "axis": "x" },
+        { "shape": "cylinder", "mat": "plate", "pos": [-0.18, 0.3, 0.12], "size": [0.2, 0.6, 0.2] },
+        { "shape": "cylinder", "mat": "brass", "pos": [-0.18, 0.78, 0.12], "size": [0.08, 0.3, 0.08], "bob": 0.08, "spin": 5 },
+        { "shape": "gear", "mat": "brass", "pos": [0.22, 0.75, 0.2], "size": [0.3, 0.04, 0.3], "axis": "z", "spin": 5 },
+        { "shape": "cylinder", "mat": "brass", "pos": [0.12, 0.62, 0.21], "size": [0.14, 0.03, 0.14], "axis": "z" },
+        { "shape": "cylinder", "mat": "dial", "pos": [0.12, 0.62, 0.225], "size": [0.1, 0.01, 0.1], "axis": "z" },
+        { "shape": "pipe", "mat": "brass", "pos": [0.05, 0.66, -0.1], "size": [0.05, 0.3, 0.05], "emit": "steam" },
+        { "shape": "torus", "mat": "brass", "pos": [0.32, 0.52, 0], "size": [0.24, 0.04, 0], "axis": "x" },
+        { "shape": "torus", "mat": "brass", "pos": [-0.32, 0.52, 0], "size": [0.24, 0.04, 0], "axis": "x" }
+      ]
+    }
+  },
+  {
+    "id": "steam-trawler",
+    "name": "Steam Trawler Dock",
+    "category": "food",
+    "description": "A jetty for a coal-fired trawler that drags its nets far out across the water. It lands three times the catch of a fishing dock, while it has steam.",
+    "size": [3, 2],
+    "cost": { "resources": { "logs": 24, "stone": 10, "iron": 10, "cogs": 2 }, "work": 160 },
+    "placement": { "adjacent": { "id": "water", "min": 4 } },
+    "components": {
+      "emitter": { "soot": 0.5, "stack": 2 },
+      "workplace": { "workers": 3, "profession": "fisher" },
+      "gatherer": {
+        "yield": { "fish": 9 },
+        "seconds": 36,
+        "scale": { "by": "terrain", "id": "water", "radius": 9, "full": 50 },
+        "sootPenalty": 0.3
+      },
+      "consumer": { "uses": { "steam": 5 }, "required": true }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "plank", "pos": [0, 0, 0], "size": [2.9, 0.12, 1.9] },
+        { "shape": "box", "mat": "brick", "pos": [-0.75, 0.12, 0.35], "size": [1.2, 1.0, 1.0] },
+        { "shape": "gable", "mat": "slate", "pos": [-0.75, 1.12, 0.35], "size": [1.35, 0.5, 1.15] },
+        { "shape": "box", "mat": "plank", "pos": [-0.75, 0.12, 0.86], "size": [0.34, 0.6, 0.04] },
+        { "shape": "box", "mat": "glass", "pos": [-1.15, 0.5, 0.86], "size": [0.26, 0.3, 0.03] },
+        { "shape": "chimney", "mat": "brick", "pos": [-1.1, 1.05, 0.15], "size": [0.2, 0.7, 0.2] },
+        { "shape": "box", "mat": "plank", "pos": [0.55, 0.02, -1.5], "size": [0.7, 0.1, 1.8] },
+        { "shape": "cylinder", "mat": "timber", "pos": [0.25, -0.6, -2.3], "size": [0.12, 0.8, 0.12] },
+        { "shape": "cylinder", "mat": "timber", "pos": [0.85, -0.6, -2.3], "size": [0.12, 0.8, 0.12] },
+        { "shape": "box", "mat": "redpaint", "pos": [1.35, -0.15, -1.6], "size": [0.6, 0.35, 1.8] },
+        { "shape": "box", "mat": "darkiron", "pos": [1.35, 0.2, -1.6], "size": [0.62, 0.05, 1.82] },
+        { "shape": "box", "mat": "redpaint", "pos": [1.35, -0.15, -2.62], "size": [0.38, 0.35, 0.28] },
+        { "shape": "box", "mat": "plank", "pos": [1.35, 0.25, -1.3], "size": [0.45, 0.4, 0.5] },
+        { "shape": "box", "mat": "glass", "pos": [1.35, 0.42, -1.56], "size": [0.36, 0.14, 0.02] },
+        { "shape": "stack", "mat": "darkiron", "pos": [1.35, 0.25, -1.8], "size": [0.16, 0.85, 0.16] },
+        { "shape": "torus", "mat": "brass", "pos": [1.35, 0.85, -1.8], "size": [0.2, 0.04, 0] },
+        { "shape": "box", "mat": "timber", "pos": [1.35, 0.25, -2.1], "size": [0.05, 0.9, 0.05] },
+        { "shape": "box", "mat": "darkiron", "pos": [1.35, 1.1, -2.3], "size": [0.04, 0.04, 0.5] },
+        { "shape": "box", "mat": "canvas", "pos": [1.35, 0.6, -2.5], "size": [0.4, 0.5, 0.03] },
+        { "shape": "gear", "mat": "brass", "pos": [0.25, 0.45, -0.8], "size": [0.34, 0.04, 0.34], "axis": "x", "spin": 2 },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [0.25, 0.12, -0.8], "size": [0.08, 0.35, 0.08] },
+        { "shape": "cylinder", "mat": "canvas", "pos": [0.3, 0.12, 0.6], "size": [0.4, 0.2, 0.4] },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [0.85, 0.12, -2.2], "size": [0.05, 0.7, 0.05] },
+        { "shape": "sphere", "mat": "lamp", "pos": [0.85, 0.9, -2.2], "size": [0.12, 0.15, 0.12] }
+      ]
+    }
+  },
+  {
+    "id": "bakehouse",
+    "name": "Bakehouse",
+    "category": "food",
+    "description": "A brick bakery with a coal oven. Bakers turn barley into bread, which keeps far longer than grain in a pantry. A steam blower on a main bakes faster.",
+    "size": [2, 2],
+    "cost": { "resources": { "stone": 16, "logs": 12, "iron": 2 }, "work": 110 },
+    "components": {
+      "emitter": { "soot": 0.6, "stack": 1 },
+      "workplace": { "workers": 2, "profession": "baker" },
+      "producer": { "recipes": ["bake-bread"] },
+      "consumer": { "uses": { "steam": 3 }, "workBonus": 0.6 }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.85, 0.2, 1.85] },
+        { "shape": "box", "mat": "brick", "pos": [-0.25, 0.2, -0.05], "size": [1.3, 1.15, 1.45] },
+        { "shape": "gable", "mat": "tile", "pos": [-0.25, 1.35, -0.05], "size": [1.45, 0.6, 1.6] },
+        { "shape": "box", "mat": "plaster", "pos": [-0.25, 0.8, 0.68], "size": [1.2, 0.22, 0.04] },
+        { "shape": "box", "mat": "brassplate", "pos": [-0.25, 0.85, 0.71], "size": [0.8, 0.12, 0.02] },
+        { "shape": "box", "mat": "glass", "pos": [-0.55, 0.3, 0.68], "size": [0.42, 0.42, 0.04] },
+        { "shape": "box", "mat": "plank", "pos": [0.12, 0.2, 0.68], "size": [0.32, 0.6, 0.04] },
+        { "shape": "box", "mat": "canvas", "pos": [-0.55, 0.78, 0.82], "size": [0.54, 0.03, 0.3] },
+        { "shape": "cylinder", "mat": "brick", "pos": [0.62, 0.2, 0.05], "size": [0.62, 0.5, 0.62] },
+        { "shape": "dome", "mat": "brick", "pos": [0.62, 0.7, 0.05], "size": [0.62, 0.3, 0.62] },
+        { "shape": "box", "mat": "glow", "pos": [0.62, 0.28, 0.36], "size": [0.22, 0.18, 0.03], "glow": true },
+        { "shape": "box", "mat": "darkiron", "pos": [0.62, 0.48, 0.37], "size": [0.3, 0.04, 0.03] },
+        { "shape": "chimney", "mat": "brick", "pos": [0.62, 0.9, 0.05], "size": [0.18, 1.0, 0.18] },
+        { "shape": "chimney", "mat": "brick", "pos": [-0.65, 1.3, -0.5], "size": [0.22, 0.85, 0.22] },
+        { "shape": "pipe", "mat": "copper", "pos": [0.55, 0.2, -0.55], "size": [0.07, 0.9, 0.07] },
+        { "shape": "tank", "mat": "copperplate", "pos": [0.62, 0.2, -0.55], "size": [0.3, 0.45, 0.3] },
+        { "shape": "gear", "mat": "brass", "pos": [0.32, 0.62, 0.7], "size": [0.18, 0.03, 0.18], "axis": "z", "spin": 3 },
+        { "shape": "sphere", "mat": "leather", "pos": [-0.66, 0.38, 0.62], "size": [0.14, 0.09, 0.1] },
+        { "shape": "sphere", "mat": "leather", "pos": [-0.46, 0.38, 0.62], "size": [0.14, 0.09, 0.1] },
+        { "shape": "sphere", "mat": "lamp", "pos": [0.34, 0.95, 0.74], "size": [0.08, 0.1, 0.08] }
+      ]
+    }
+  },
+  {
+    "id": "cannery",
+    "name": "Steam Cannery",
+    "category": "food",
+    "description": "Steam retorts seal fish, game and vegetables into iron tins that never spoil. Tinned food is the best thing to have in the stores at the end of a long winter, and the Company pays well for it.",
+    "size": [3, 2],
+    "cost": { "resources": { "stone": 26, "logs": 10, "iron": 12, "cogs": 4 }, "work": 200 },
+    "components": {
+      "emitter": { "soot": 0.8, "stack": 2 },
+      "workplace": { "workers": 3, "profession": "canner" },
+      "producer": { "recipes": ["can-fish", "can-vegetables", "can-venison"] },
+      "consumer": { "uses": { "steam": 5 }, "required": true }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [2.85, 0.2, 1.85] },
+        { "shape": "box", "mat": "brick", "pos": [-0.35, 0.2, -0.05], "size": [2.0, 1.3, 1.5] },
+        { "shape": "box", "mat": "stone", "pos": [-0.35, 1.5, -0.05], "size": [2.1, 0.08, 1.6] },
+        { "shape": "gable", "mat": "slate", "pos": [-0.35, 1.58, -0.05], "size": [2.1, 0.5, 1.6] },
+        { "shape": "box", "mat": "glassroof", "pos": [-0.35, 1.9, -0.05], "size": [1.2, 0.18, 0.5] },
+        { "shape": "box", "mat": "glass", "pos": [-0.95, 0.5, 0.71], "size": [0.4, 0.6, 0.03] },
+        { "shape": "box", "mat": "glass", "pos": [0.25, 0.5, 0.71], "size": [0.4, 0.6, 0.03] },
+        { "shape": "box", "mat": "plank", "pos": [-0.35, 0.2, 0.71], "size": [0.5, 0.75, 0.04] },
+        { "shape": "box", "mat": "brassplate", "pos": [-0.35, 1.15, 0.72], "size": [1.1, 0.14, 0.02] },
+        { "shape": "tank", "mat": "plate", "pos": [1.0, 0.45, -0.35], "size": [0.5, 1.0, 0.5], "axis": "z" },
+        { "shape": "tank", "mat": "plate", "pos": [1.0, 0.45, 0.35], "size": [0.5, 1.0, 0.5], "axis": "z" },
+        { "shape": "box", "mat": "darkiron", "pos": [1.0, 0.2, 0], "size": [0.6, 0.12, 1.5] },
+        { "shape": "cylinder", "mat": "brass", "pos": [1.0, 0.45, 0.87], "size": [0.3, 0.05, 0.3], "axis": "z" },
+        { "shape": "cylinder", "mat": "dial", "pos": [1.0, 0.75, 0.84], "size": [0.14, 0.02, 0.14], "axis": "z" },
+        { "shape": "pipe", "mat": "copper", "pos": [1.0, 0.75, 0], "size": [0.08, 0.6, 0.08], "emit": "steam" },
+        { "shape": "pipe", "mat": "copper", "pos": [0.75, 0.9, -0.35], "size": [0.07, 0.5, 0.07], "axis": "x" },
+        { "shape": "stack", "mat": "brick", "pos": [-1.15, 1.4, -0.5], "size": [0.3, 1.6, 0.3] },
+        { "shape": "box", "mat": "darkiron", "pos": [0.45, 0.2, 0.85], "size": [0.6, 0.3, 0.12] },
+        { "shape": "cylinder", "mat": "iron", "pos": [0.3, 0.5, 0.85], "size": [0.08, 0.1, 0.08] },
+        { "shape": "cylinder", "mat": "iron", "pos": [0.45, 0.5, 0.85], "size": [0.08, 0.1, 0.08] },
+        { "shape": "cylinder", "mat": "iron", "pos": [0.6, 0.5, 0.85], "size": [0.08, 0.1, 0.08] },
+        { "shape": "gear", "mat": "brass", "pos": [0.45, 0.35, 0.92], "size": [0.22, 0.03, 0.22], "axis": "z", "spin": 4 }
+      ]
+    }
+  },
+  {
+    "id": "tractor-shed",
+    "name": "Steam Tractor Shed",
+    "category": "food",
+    "description": "A shed of traction engines that drag ploughs and reapers across the fields. Fields within 12 tiles are planted and harvested much faster while the shed has steam.",
+    "size": [3, 2],
+    "cost": { "resources": { "logs": 20, "stone": 12, "iron": 14, "cogs": 6 }, "work": 170 },
+    "components": {
+      "emitter": { "soot": 0.6, "stack": 1 },
+      "tractor": { "radius": 12, "bonus": 0.8 },
+      "consumer": { "uses": { "steam": 4 }, "required": true }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [2.85, 0.15, 1.85] },
+        { "shape": "box", "mat": "timber", "pos": [-1.3, 0.15, -0.1], "size": [0.12, 1.2, 1.6] },
+        { "shape": "box", "mat": "timber", "pos": [1.3, 0.15, -0.1], "size": [0.12, 1.2, 1.6] },
+        { "shape": "box", "mat": "plank", "pos": [0, 0.15, -0.85], "size": [2.7, 1.2, 0.1] },
+        { "shape": "gable", "mat": "plate", "pos": [0, 1.35, -0.1], "size": [2.9, 0.55, 1.75] },
+        { "shape": "tank", "mat": "redpaint", "pos": [-0.3, 0.55, 0.2], "size": [0.42, 1.0, 0.42], "axis": "x" },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [0.3, 0.55, 0.62], "size": [0.75, 0.12, 0.75], "axis": "z" },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [0.3, 0.55, -0.22], "size": [0.75, 0.12, 0.75], "axis": "z" },
+        { "shape": "torus", "mat": "brass", "pos": [0.3, 0.55, 0.7], "size": [0.76, 0.05, 0], "axis": "z" },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [-0.65, 0.35, 0.5], "size": [0.4, 0.08, 0.4], "axis": "z" },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [-0.65, 0.35, -0.1], "size": [0.4, 0.08, 0.4], "axis": "z" },
+        { "shape": "stack", "mat": "darkiron", "pos": [-0.7, 0.75, 0.2], "size": [0.14, 0.7, 0.14] },
+        { "shape": "box", "mat": "brass", "pos": [0.35, 0.8, 0.2], "size": [0.3, 0.28, 0.4] },
+        { "shape": "gear", "mat": "brass", "pos": [0.1, 0.9, 0.45], "size": [0.4, 0.05, 0.4], "axis": "z", "spin": 3 },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [-0.05, 0.85, 0.2], "size": [0.04, 0.4, 0.04], "bob": 0.08, "spin": 3 },
+        { "shape": "box", "mat": "darkiron", "pos": [0.95, 0.15, 0.3], "size": [0.5, 0.06, 0.9] },
+        { "shape": "box", "mat": "iron", "pos": [0.95, 0.21, 0.0], "size": [0.04, 0.2, 0.6], "rot": 20 },
+        { "shape": "box", "mat": "iron", "pos": [0.95, 0.21, 0.35], "size": [0.04, 0.2, 0.6], "rot": 20 },
+        { "shape": "box", "mat": "iron", "pos": [0.95, 0.21, 0.7], "size": [0.04, 0.2, 0.6], "rot": 20 },
+        { "shape": "sphere", "mat": "lamp", "pos": [1.25, 1.2, 0.72], "size": [0.08, 0.1, 0.08] }
       ]
     }
   },

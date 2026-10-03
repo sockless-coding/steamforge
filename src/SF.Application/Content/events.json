@@ -100,6 +100,6 @@
     "disaster": false,
     "weight": 2,
     "minYear": 1,
-    "params": { "iron": 12, "tools": 8, "coats": 6, "cogs": 4 }
+    "params": { "iron": 12, "tools": 8, "coats": 6, "cogs": 4, "rations": 40 }
   }
 ]

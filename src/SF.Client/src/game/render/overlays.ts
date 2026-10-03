@@ -8,11 +8,21 @@ export interface TileMark {
   x: number
   y: number
   ok: boolean
+  /** Pressure (0-1): shades the mark from red through amber to green instead of using ok. */
+  head?: number
 }
 
 const OK = new THREE.Color('#8ae07a')
 const BAD = new THREE.Color('#ff5a40')
 const INFO = new THREE.Color('#f6d98a')
+const AMBER = new THREE.Color('#f0a040')
+const shade = new THREE.Color()
+
+/** Red at no pressure, amber at half, green at full. */
+function headColor(head: number): THREE.Color {
+  const h = Math.max(0, Math.min(1, head))
+  return h < 0.5 ? shade.copy(BAD).lerp(AMBER, h * 2) : shade.copy(AMBER).lerp(OK, (h - 0.5) * 2)
+}
 
 /** Tool feedback drawn over the world: build ghost, tile highlights (footprints, roads, areas) and radius ring. */
 export class OverlayLayer {
@@ -87,7 +97,7 @@ export class OverlayLayer {
       const t = marks[i]
       this.m.makeTranslation(t.x + 0.5, this.terrain.heightAt(t.x + 0.5, t.y + 0.5) + 0.06, t.y + 0.5)
       this.tiles.setMatrixAt(i, this.m)
-      this.tiles.setColorAt(i, info ? INFO : t.ok ? OK : BAD)
+      this.tiles.setColorAt(i, t.head !== undefined ? headColor(t.head) : info ? INFO : t.ok ? OK : BAD)
     }
     this.tiles.count = n
     this.tiles.instanceMatrix.needsUpdate = true

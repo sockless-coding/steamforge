@@ -108,16 +108,54 @@
   },
   "networks": [
     {
+      "id": "water",
+      "name": "Feedwater",
+      "unit": "gal",
+      "color": "#6aaed0",
+      "conduit": {
+        "id": "water-main",
+        "name": "Water Main",
+        "description": "Cast-iron water main laid along the ground. Carries feedwater from pump houses and windpumps to the boilers.",
+        "cost": { "stone": 1 },
+        "work": 5,
+        "lossPerTile": 0.01,
+        "style": "water"
+      }
+    },
+    {
       "id": "steam",
       "name": "Steam",
       "unit": "psi",
       "color": "#f0e6cf",
       "conduit": {
-        "name": "Steam Pipe",
-        "description": "Riveted iron main on trestles. Carries steam from boilers to every building it touches. Runs over roads.",
-        "cost": { "iron": 1 },
-        "work": 6
-      }
+        "id": "steam-duct",
+        "name": "Clay Steam Duct",
+        "description": "Clay pipe bedded in a timber trough at ground level. Cheap, but steam cools fast in it: pressure falls 3.5% with every tile.",
+        "cost": { "logs": 1 },
+        "work": 5,
+        "lossPerTile": 0.035,
+        "style": "duct"
+      },
+      "upgrades": [
+        {
+          "id": "iron-main",
+          "name": "Riveted Steam Main",
+          "description": "Riveted iron main on trestles. Pressure falls 1.5% per tile. Lay it over a duct to upgrade it.",
+          "cost": { "iron": 1 },
+          "work": 6,
+          "lossPerTile": 0.015,
+          "style": "main"
+        },
+        {
+          "id": "lagged-main",
+          "name": "Lagged Steam Main",
+          "description": "A riveted main lagged in felt and copper sheathing. Pressure falls only 0.5% per tile.",
+          "cost": { "iron": 1, "copper": 1 },
+          "work": 8,
+          "lossPerTile": 0.005,
+          "style": "lagged"
+        }
+      ]
     },
     {
       "id": "power",
@@ -125,10 +163,13 @@
       "unit": "volts",
       "color": "#7fd8ff",
       "conduit": {
+        "id": "copper-conduit",
         "name": "Copper Conduit",
-        "description": "Copper cable strung on insulated poles. Carries galvanic power from dynamos.",
+        "description": "Copper cable strung on insulated poles. Carries galvanic power from dynamos with very little loss.",
         "cost": { "copper": 1 },
-        "work": 6
+        "work": 6,
+        "lossPerTile": 0.004,
+        "style": "wire"
       }
     }
   ],
