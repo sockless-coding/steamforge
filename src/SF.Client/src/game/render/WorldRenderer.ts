@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import type { Simulation } from '../sim/simulation'
@@ -16,6 +17,7 @@ import { OverlayLayer } from './overlays'
 import { material, setBuildingEnvironment, setBuildingEnvironmentIntensity } from './materials'
 import { Particles } from './particles'
 import type { QualityProfile } from './quality'
+import { GradeShader } from './grade'
 import { TerrainLayer } from './terrain'
 import { TramLayer } from './tramways'
 
@@ -29,11 +31,12 @@ interface SeasonLook {
   snow: number
 }
 
+// Pale, cold northern skies over the untouched frontier; the colony's smoke turns them brass (see SMOG).
 const LOOKS: Record<string, SeasonLook> = {
-  spring: { sky: '#a8c8d8', sun: '#fff1d8', sunIntensity: 2.6, hemiSky: '#cfe2ef', hemiGround: '#4a5a32', tint: [1.04, 1.1, 0.95], snow: 0 },
-  summer: { sky: '#9ec4dc', sun: '#fff0d0', sunIntensity: 3, hemiSky: '#d4e6f2', hemiGround: '#4f5a30', tint: [1, 1, 1], snow: 0 },
-  autumn: { sky: '#c4b8a0', sun: '#ffd8a8', sunIntensity: 2.4, hemiSky: '#e0d0b8', hemiGround: '#5a4a2a', tint: [1.12, 0.98, 0.74], snow: 0 },
-  winter: { sky: '#b4c0ca', sun: '#e6eeff', sunIntensity: 1.9, hemiSky: '#d8e2ec', hemiGround: '#5a5e66', tint: [0.94, 0.96, 1.02], snow: 0.92 },
+  spring: { sky: '#aebcc4', sun: '#fff0dc', sunIntensity: 2.6, hemiSky: '#cbd8df', hemiGround: '#4a5034', tint: [1.0, 1.05, 0.97], snow: 0 },
+  summer: { sky: '#a9b8bf', sun: '#fff0d4', sunIntensity: 2.9, hemiSky: '#d0dce2', hemiGround: '#4c5232', tint: [1, 1, 1], snow: 0 },
+  autumn: { sky: '#b9b2a4', sun: '#ffd6a6', sunIntensity: 2.3, hemiSky: '#d8ccb8', hemiGround: '#54462c', tint: [1.1, 0.97, 0.78], snow: 0 },
+  winter: { sky: '#b2b9bf', sun: '#e8eefc', sunIntensity: 1.9, hemiSky: '#d6dee6', hemiGround: '#575a60', tint: [0.94, 0.96, 1.02], snow: 0.92 },
 }
 
 const SUN_DIRECTION = new THREE.Vector3(-0.55, 0.75, 0.35).normalize()
@@ -42,7 +45,10 @@ const NIGHT_SKY = new THREE.Color('#121a2e')
 const DUSK_SKY = new THREE.Color('#d0784a')
 const MOONLIGHT = new THREE.Color('#8ea8e0')
 const NIGHT_HEMI = new THREE.Color('#33405e')
-const SMOG = new THREE.Color('#8a7a62')
+/** Coal-smoke haze: thick industry turns the sky brass. */
+const SMOG = new THREE.Color('#b0884e')
+/** Night smog glows with the furnaces below it. */
+const NIGHT_SMOG = new THREE.Color('#3a2414')
 
 /** 0 in daylight, 1 at full night, with dusk and dawn in between. `sun` is the simulation's sun height (-1..1). */
 function nightFactor(sun: number): number {
@@ -71,6 +77,10 @@ export class WorldRenderer {
   private readonly hemi: THREE.HemisphereLight
   private readonly environment: THREE.Texture
   private composer: EffectComposer | null = null
+  private grade: ShaderPass | null = null
+  private grimeTimer = 0
+  private sootView = false
+  private readonly grimeLevels: Float32Array[] = []
   private quality: QualityProfile
   private time = 0
   private snow = 0
@@ -140,6 +150,14 @@ export class WorldRenderer {
     this.resize()
   }
 
+  /** Shows airborne soot as a heat map over the ground. */
+  setSootView(on: boolean): void {
+    if (on === this.sootView) return
+    this.sootView = on
+    this.terrain.setSootView(on)
+    this.grimeTimer = 0
+  }
+
   /** Shows or hides the dark of night (off holds a bright afternoon; night still passes in the simulation). */
   setDayNight(enabled: boolean): void {
     this.dayNight = enabled
@@ -163,12 +181,19 @@ export class WorldRenderer {
     }
     this.composer?.dispose()
     this.composer = null
-    if (q.bloom) {
-      this.composer = new EffectComposer(this.renderer)
+    this.grade = null
+    // Every tier but the lowest renders through a composer for the amber-and-teal grade (and bloom on high tiers);
+    // the lowest falls back to a CSS filter on the canvas.
+    if (q.tier !== 'low') {
+      const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: q.antialias ? 4 : 0 })
+      this.composer = new EffectComposer(this.renderer, target)
       this.composer.addPass(new RenderPass(this.scene, this.rig.camera))
-      this.composer.addPass(new UnrealBloomPass(new THREE.Vector2(256, 256), 0.32, 0.5, 0.88))
+      if (q.bloom) this.composer.addPass(new UnrealBloomPass(new THREE.Vector2(256, 256), 0.32, 0.5, 0.88))
       this.composer.addPass(new OutputPass())
+      this.grade = new ShaderPass(GradeShader)
+      this.composer.addPass(this.grade)
     }
+    this.renderer.domElement.classList.toggle('graded', this.grade !== null)
   }
 
   resize(): void {
@@ -229,7 +254,12 @@ export class WorldRenderer {
       this.smog += (this.smogGoal(sim) - this.smog) * 0.2
     }
     const dusk = 4 * this.night * (1 - this.night)
-    this.displaySky.copy(this.skyColor).lerp(SMOG, this.smog * 0.45).lerp(DUSK_SKY, dusk * 0.35).lerp(NIGHT_SKY, this.night)
+    this.displaySky
+      .copy(this.skyColor)
+      .lerp(SMOG, this.smog * 0.65)
+      .lerp(DUSK_SKY, dusk * 0.35)
+      .lerp(NIGHT_SKY, this.night)
+      .lerp(NIGHT_SMOG, this.night * this.smog * 0.5)
     this.scene.background = this.displaySky
     const fog = this.scene.fog as THREE.Fog
     fog.color.copy(this.displaySky)
@@ -245,6 +275,19 @@ export class WorldRenderer {
     material('glass').emissiveIntensity = 0.35 + 1.5 * this.night
     material('lamp').emissiveIntensity = 0.7 + 1.9 * this.night
     this.buildings.setNight(this.night)
+    if (this.grade) {
+      const u = this.grade.uniforms
+      u.uAmount.value = 0.75 + 0.35 * this.smog
+      u.uSmog.value = this.smog
+      u.uNight.value = this.night
+    }
+    // Plumes lean with the simulation's wind (a little exaggerated so it reads from the camera).
+    this.particles.wind.set(sim.weather.windX * 1.4, sim.weather.windY * 1.4)
+    this.grimeTimer -= dt
+    if (this.grimeTimer <= 0) {
+      this.grimeTimer = 1
+      this.uploadGrime(sim)
+    }
     setBuildingEnvironmentIntensity(0.55 * (1 - 0.8 * this.night))
 
     // The sun's shadow frustum follows the camera target and grows with zoom.
@@ -283,15 +326,52 @@ export class WorldRenderer {
     else this.renderer.render(this.scene, this.rig.camera)
   }
 
-  /** 0 for a clean sky, 1 for a town under a pall of coal smoke: from the industry working right now. */
+  /**
+   * 0 for a clean sky, 1 for a town under a pall of coal smoke: the soot in the air around the camera, and a share
+   * of the worst anywhere in the colony (a smoking town browns the whole valley's sky).
+   */
   private smogGoal(sim: Simulation): number {
-    let working = 0
-    for (const b of sim.buildings.values()) {
-      if (b.site || sim.second - b.activeAt > 2) continue
-      const c = sim.def(b).components
-      if (c.producer || c.generator || c.gatherer || c.assembler) working++
+    const f = sim.soot
+    const full = sim.rules.soot.fullSoot
+    const t = this.rig.target
+    const cx = Math.floor(t.x / f.cell)
+    const cy = Math.floor(t.z / f.cell)
+    let local = 0
+    let n = 0
+    for (let y = cy - 2; y <= cy + 2; y++) {
+      for (let x = cx - 2; x <= cx + 2; x++) {
+        if (x < 0 || y < 0 || x >= f.cols || y >= f.rows) continue
+        local += f.soot[y * f.cols + x]
+        n++
+      }
     }
-    return THREE.MathUtils.clamp((working - 4) / 24, 0, 1)
+    let peak = 0
+    for (let i = 0; i < f.soot.length; i++) peak = Math.max(peak, f.soot[i])
+    return THREE.MathUtils.clamp(Math.max((n ? local / n : 0) / full, (peak / full) * 0.45), 0, 1)
+  }
+
+  /**
+   * Shows settled grime on the ground, smoothed over a few seconds so the ground darkens gradually. The ground shows
+   * fully blackened at half the grime that fully fouls the soil, so a town's soot is visible well before it ruins
+   * its crops.
+   */
+  private uploadGrime(sim: Simulation): void {
+    const f = sim.soot
+    const full = sim.rules.soot.fullGrime * 0.5
+    let shown = this.grimeLevels[0]
+    if (!shown || shown.length !== f.grime.length) {
+      shown = new Float32Array(f.grime.length)
+      for (let i = 0; i < shown.length; i++) shown[i] = f.grime[i] / full
+      this.grimeLevels[0] = shown
+    }
+    for (let i = 0; i < shown.length; i++) shown[i] += (f.grime[i] / full - shown[i]) * 0.3
+    this.terrain.setGrime(shown, f.cols, f.rows, f.cell)
+    if (this.sootView) {
+      const full = sim.rules.soot.fullSoot
+      const exposure = new Float32Array(f.soot.length)
+      for (let i = 0; i < exposure.length; i++) exposure[i] = f.soot[i] / full
+      this.terrain.setSoot(exposure, f.cols, f.rows, sim.rules.soot.lungSafe)
+    }
   }
 
   /** Ground point under a screen position (ray-marched against the heightfield), in tile space. */

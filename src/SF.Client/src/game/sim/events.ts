@@ -7,6 +7,7 @@ import { assignHousing, createCitizen, spawnFamily } from './population'
 import { firstName, surname } from './names'
 import { removeBuilding } from './placement'
 import type { Simulation } from './simulation'
+import { sootExposure } from './soot'
 import type { Building, Citizen, Petition } from './types'
 
 /** Handler for one event kind (events.json `kind`). Returns false when it could not fire (no valid target). */
@@ -160,6 +161,41 @@ registerEvent({
       infect(sim, people.splice(sim.rng.int(people.length), 1)[0], num(def, 'months', 3), num(def, 'healthPerMonth', 0.12), num(def, 'vulnerableFactor', 1))
     }
     sim.notify('bad', `${def.name} is spreading: ${count} citizens have fallen ill.`)
+    return true
+  },
+})
+
+/** Black lung: a cough that settles on those who breathe the worst of the smoke. Needs sooty air to strike. */
+registerEvent({
+  kind: 'blackLung',
+  run: (sim, def) => {
+    const threshold = num(def, 'minExposure', 0.3)
+    const exposed = [...sim.citizens.values()].filter((c) => c.sick === 0 && !c.automaton && sootExposure(sim, c.x, c.y) >= threshold)
+    if (exposed.length === 0) return false
+    const count = Math.max(1, Math.round(exposed.length * num(def, 'fraction', 0.3)))
+    for (let n = 0; n < count && exposed.length; n++) {
+      infect(sim, exposed.splice(sim.rng.int(exposed.length), 1)[0], num(def, 'months', 3), num(def, 'healthPerMonth', 0.12), num(def, 'vulnerableFactor', 1))
+    }
+    sim.notify('bad', `${def.name}: ${count} citizens in the smokiest streets have taken to coughing. Apothecaries and cleaner air would help.`)
+    return true
+  },
+})
+
+/** A rain squall scrubs the air and washes grime off the streets. Only worth announcing when there is soot to wash. */
+registerEvent({
+  kind: 'rain',
+  run: (sim, def) => {
+    const f = sim.soot
+    let grime = 0
+    for (let i = 0; i < f.grime.length; i++) grime = Math.max(grime, f.grime[i])
+    if (grime < sim.rules.soot.fullGrime * 0.1 && f.total() < sim.rules.soot.fullSoot) return false
+    const air = 1 - num(def, 'washSoot', 0.8)
+    const ground = 1 - num(def, 'washGrime', 0.4)
+    for (let i = 0; i < f.soot.length; i++) {
+      f.soot[i] *= air
+      f.grime[i] *= ground
+    }
+    sim.notify('good', `${def.name}: a downpour has washed the soot from the air and the grime from the streets.`)
     return true
   },
 })

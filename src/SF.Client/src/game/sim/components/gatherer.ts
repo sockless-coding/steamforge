@@ -2,6 +2,7 @@ import { registerEffect } from '../effects'
 import { energyBlocked } from '../energy'
 import { addStock, nearestStorageFor } from '../inventory'
 import type { Simulation } from '../simulation'
+import { sootExposure } from '../soot'
 import { approachTile, claimTile, gotoBuilding, reserveIncoming, task } from '../tasks'
 import { TERRAIN_IDS, type Building, type Citizen, type Stock, type Task } from '../types'
 import { haulOutputTask, outputFull } from '../work'
@@ -17,6 +18,8 @@ export interface GathererConfig {
   seconds?: number
   /** On-site yield scales with surrounding features or terrain (hunting grounds, fishing waters). */
   scale?: { by: 'feature' | 'terrain'; id: string; radius: number; full: number }
+  /** Share of the yield lost in fully sooty air (game and fish shun the smoke). */
+  sootPenalty?: number
 }
 
 function centre(b: Building): [number, number] {
@@ -24,6 +27,12 @@ function centre(b: Building): [number, number] {
 }
 
 function computeScale(sim: Simulation, b: Building, cfg: GathererConfig): number {
+  const [x, y] = centre(b)
+  const smoke = cfg.sootPenalty ? 1 - cfg.sootPenalty * sootExposure(sim, x, y) : 1
+  return groundScale(sim, b, cfg) * smoke
+}
+
+function groundScale(sim: Simulation, b: Building, cfg: GathererConfig): number {
   const s = cfg.scale
   if (!s) return 1
   const world = sim.world
@@ -162,7 +171,10 @@ registerComponent<GathererConfig>({
   describe: (_sim, b, cfg) => {
     const lines: string[] = []
     if (cfg.radius) lines.push(`Works within ${cfg.radius} tiles`)
-    if (cfg.scale) lines.push(`Yield ${Math.round(((b.data.scale as number) ?? 1) * 100)}% (${cfg.scale.id} nearby)`)
+    if (cfg.scale || cfg.sootPenalty) {
+      const why = [cfg.scale ? `${cfg.scale.id} nearby` : '', cfg.sootPenalty ? 'smoke drives game away' : ''].filter(Boolean).join('; ')
+      lines.push(`Yield ${Math.round(((b.data.scale as number) ?? 1) * 100)}% (${why})`)
+    }
     return lines
   },
 })

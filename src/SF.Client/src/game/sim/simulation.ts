@@ -28,6 +28,7 @@ import { answerPetition } from './events'
 import { createFounders, fireWorker } from './population'
 import { canResearch, isUnlocked, lockedBy, researchPlan } from './research'
 import { Rng } from './rng'
+import { setWind, shiftWind, SootField, type SootSnapshot } from './soot'
 import type { StoryState } from './story'
 import { refreshRipeness, systems } from './systems'
 import type {
@@ -48,7 +49,7 @@ import type {
 } from './types'
 import { MARK_CLEAR, World, type WorldSnapshot } from './world'
 
-export const SAVE_VERSION = 4
+export const SAVE_VERSION = 5
 
 export interface ColonySnapshot {
   v: number
@@ -75,6 +76,8 @@ export interface ColonySnapshot {
   outcome: Simulation['outcome']
   petition: Petition | null
   lastDisaster: number
+  /** Airborne soot and settled grime (from version 5). */
+  soot?: SootSnapshot
 }
 
 const MAX_NOTICES = 60
@@ -121,7 +124,10 @@ export class Simulation {
   builderTarget = 0
   notices: Notice[] = []
   stats: ColonyStats = { births: 0, deaths: 0, arrivals: 0, peakPopulation: 0, deathsBy: {}, produced: {}, consumed: {} }
-  weather = { offset: 0, snapDegrees: 0, snapMonths: 0 }
+  /** Temperature jitter, cold snaps, and the wind (tiles per second, the direction it blows towards). */
+  weather = { offset: 0, snapDegrees: 0, snapMonths: 0, windX: 0, windY: 0 }
+  /** Coal smoke over the colony and the grime it leaves. */
+  readonly soot: SootField
   /** Travellers waiting at the gate for the player's answer. */
   petition: Petition | null = null
   /** Month index of the last disaster (spacing between disasters). */
@@ -152,6 +158,7 @@ export class Simulation {
     this.dt = 1 / this.tps
     this.tpm = this.rules.secondsPerMonth * this.tps
     content.bundle.features.forEach((f, i) => this.featureCodes.set(f.id, i + 1))
+    this.soot = new SootField(world.width, world.height, this.rules.soot.cellSize)
   }
 
   /** Founds a new colony: generates the map, the Guildhall, starting buildings, supplies and families. */
@@ -167,6 +174,7 @@ export class Simulation {
       if (r.defaultLimit > 0) sim.limits[r.id] = r.defaultLimit
     }
     refreshRipeness(sim)
+    shiftWind(sim)
     placeStartingBuildings(sim, map.spawnX, map.spawnY)
     createFounders(sim, map.spawnX, map.spawnY)
     for (const system of systems) system.restore?.(sim)
@@ -583,6 +591,7 @@ export class Simulation {
       outcome: this.outcome,
       petition: this.petition,
       lastDisaster: this.lastDisaster,
+      soot: this.soot.serialize(),
     }
   }
 
@@ -614,6 +623,7 @@ export class Simulation {
     sim.outcome = s.outcome
     sim.petition = s.petition
     sim.lastDisaster = s.lastDisaster
+    sim.soot.load(s.soot)
     rebuildClaims(sim)
     // Rebuild derived caches only; advancing anything here would make a loaded colony diverge.
     for (const system of systems) system.restore?.(sim)
@@ -648,7 +658,7 @@ export class Simulation {
  * Upgrades older snapshots one version at a time. Version 1 predates research, energy networks and the story: its
  * Guildhall becomes the headquarters, every research counts as done (a legacy colony keeps what it had built) and
  * every dispatch as already received. Version 2 predates airship trade. Version 3 predates day and night (40-second
- * months), petitions and disaster spacing.
+ * months), petitions and disaster spacing. Version 4 predates soot and wind.
  */
 function migrate(content: Content, s: ColonySnapshot): ColonySnapshot {
   if (s.v === SAVE_VERSION) return s
@@ -660,6 +670,16 @@ function migrate(content: Content, s: ColonySnapshot): ColonySnapshot {
     s.v = 3
   }
   if (s.v === 3) migrateV3(content, s)
+  // Version 4 predates soot: clean skies, and the season's prevailing wind at middling strength.
+  if (s.v === 4) {
+    const rules = content.bundle.rules
+    const month = Math.floor(s.tick / (rules.secondsPerMonth * rules.ticksPerSecond)) % rules.months.length
+    const season = rules.seasons.find((x) => x.months.includes(month)) ?? rules.seasons[0]
+    const probe = { weather: { ...s.weather, windX: 0, windY: 0 } } as Simulation
+    setWind(probe, rules.wind.prevailing[season.id] ?? 0, (rules.wind.speed[0] + rules.wind.speed[1]) / 2)
+    s.weather = probe.weather
+    s.v = 5
+  }
   if (s.v !== SAVE_VERSION) throw new Error(`Unsupported save version ${s.v}.`)
   return s
 }

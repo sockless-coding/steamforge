@@ -10,6 +10,8 @@
   { "id": "firewood", "name": "Firewood", "category": "fuel", "color": "#b07840", "spoilagePerYear": 0, "defaultLimit": 250, "value": 1 },
   { "id": "tools", "name": "Tools", "category": "goods", "color": "#8fa0aa", "spoilagePerYear": 0, "defaultLimit": 60, "value": 10 },
   { "id": "leather", "name": "Leather", "category": "goods", "color": "#9a6a3e", "spoilagePerYear": 0.075, "defaultLimit": 120, "value": 3 },
+  { "id": "herbs", "name": "Herbs", "category": "goods", "color": "#6a9a5a", "spoilagePerYear": 0.3, "defaultLimit": 80, "value": 2 },
+  { "id": "tonic", "name": "Lung Tonic", "category": "goods", "color": "#4a8a8a", "spoilagePerYear": 0, "defaultLimit": 60, "value": 6 },
   { "id": "coats", "name": "Coats", "category": "goods", "color": "#5a6a8a", "spoilagePerYear": 0, "defaultLimit": 60, "value": 12 },
   { "id": "berries", "name": "Berries", "category": "food", "color": "#9a2a4a", "spoilagePerYear": 0.45, "defaultLimit": 0, "value": 1 },
   { "id": "mushrooms", "name": "Mushrooms", "category": "food", "color": "#c8b090", "spoilagePerYear": 0.45, "defaultLimit": 0, "value": 1 },

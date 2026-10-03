@@ -123,3 +123,17 @@ export function foodIn(sim: Simulation, b: Building, unreservedOnly = true): num
   for (const res of foodIds(sim)) sum += unreservedOnly ? available(b, res) : amount(b.stock, res)
   return sum
 }
+
+/** Takes up to qty of a resource from storage (unreserved stock, in storage order). Returns how much was taken. */
+export function takeFromStorage(sim: Simulation, res: string, qty: number): number {
+  let taken = 0
+  for (const b of sim.storages()) {
+    if (taken >= qty) break
+    const take = Math.min(qty - taken, available(b, res))
+    if (take <= 0) continue
+    addStock(b.stock, res, -take)
+    taken += take
+  }
+  if (taken > 0) sim.recordConsumed(res, taken)
+  return taken
+}

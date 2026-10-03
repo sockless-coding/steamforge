@@ -1,11 +1,13 @@
 import { chooseTask } from './ai'
 import { amenityByHome } from './components/amenity'
+import { clinicByHome } from './components/health'
 import type { ShelterConfig } from './components/basic'
 import { solveEnergy } from './energy'
 import { rollEvents, updateFires, updatePetition } from './events'
 import { computeTotals, foodIds } from './inventory'
 import { assignHousing, assignJobs, births, killCitizen } from './population'
 import type { Simulation } from './simulation'
+import { fadeGrime, shiftWind, sootExposure, updateSoot } from './soot'
 import { checkDispatches } from './story'
 import { runCitizen } from './tasks'
 import { MARK_CLEAR } from './world'
@@ -39,6 +41,7 @@ registerSystem({
     const jitter = sim.rules.temperatureJitter
     sim.weather.offset = sim.rng.range(-jitter, jitter)
     if (sim.weather.snapMonths > 0) sim.weather.snapMonths--
+    shiftWind(sim)
   },
 })
 
@@ -61,6 +64,8 @@ registerSystem({
     const cold = sim.coldness
     const dead: [number, string][] = []
     const amenity = amenityByHome(sim)
+    const clinic = clinicByHome(sim)
+    const soot = sim.rules.soot
     for (const c of sim.citizens.values()) {
       // Automatons have no needs; their mainspring is wound monthly below.
       if (c.automaton) continue
@@ -81,18 +86,29 @@ registerSystem({
         c.warmth = Math.max(0, c.warmth - (cold * r.coldPerMonth * exposure * coat) / spm)
       }
 
+      // Coal smoke in the air they breathe, eased by an apothecary's tonics at home.
+      const home = c.home ? sim.buildings.get(c.home) : undefined
+      const breathing = sootExposure(sim, c.x, c.y)
+      const vulnerable = c.age < r.adultAge * 12 || c.age >= r.elderAge * 12
+      const lungs =
+        Math.max(0, (breathing - soot.lungSafe) / (1 - soot.lungSafe)) *
+        soot.lungDamagePerMonth *
+        (vulnerable ? soot.vulnerableFactor : 1) *
+        (1 - (home ? (clinic.get(home.id) ?? 0) : 0))
+
       let dh = 0
       if (c.hunger <= 0) dh -= r.starvationPerMonth
       if (c.warmth <= 0) dh -= r.freezingPerMonth
       if (c.sick > 0) dh -= c.sickRate
+      if (lungs > 0.002) dh -= lungs
       if (dh === 0) {
         const variety = new Set(c.diet).size
         dh = r.healthRecoveryPerMonth * (0.5 + Math.min(1, variety / 4))
       }
       c.health = Math.max(0, Math.min(1, c.health + dh / spm))
-      if (c.health <= 0) dead.push([c.id, c.hunger <= 0 ? 'starvation' : c.warmth <= 0 ? 'cold' : 'sickness'])
+      if (c.health <= 0) dead.push([c.id, c.hunger <= 0 ? 'starvation' : c.warmth <= 0 ? 'cold' : c.sick > 0 ? 'sickness' : 'soot'])
 
-      const home = c.home ? sim.buildings.get(c.home) : undefined
+      const smoke = home ? sootExposure(sim, home.x + home.w / 2, home.y + home.h / 2) : breathing
       const target =
         0.25 +
         (home ? 0.2 : 0) +
@@ -100,7 +116,8 @@ registerSystem({
         (cold <= 0 || home?.data.heated ? 0.15 : 0) +
         0.15 * c.health +
         (c.hunger > 0.2 ? 0.1 : 0) +
-        (home ? (amenity.get(home.id) ?? 0) : 0)
+        (home ? (amenity.get(home.id) ?? 0) : 0) -
+        soot.happinessPenalty * smoke
       c.happiness += (target - c.happiness) * 0.02
     }
     for (const [id, cause] of dead) {
@@ -221,6 +238,10 @@ registerSystem({
     solveEnergy(sim, false)
   },
 })
+
+// ---------------------------------------------------------------- soot and wind
+
+registerSystem({ id: 'soot', second: updateSoot, month: fadeGrime })
 
 // ---------------------------------------------------------------- storage
 

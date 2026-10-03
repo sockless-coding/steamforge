@@ -29,6 +29,23 @@ public sealed record NetworkDef(string Id, string Name, string Color, ConduitDef
 /// <summary>Day and night: the lit share of each month's day, and how fast lamplit night work goes.</summary>
 public sealed record DayRules(int DaysPerMonth, IReadOnlyList<double> Daylight, double NightWorkFactor);
 
+/// <summary>Prevailing winds per season (compass degrees the wind blows from), monthly variance and speed range.</summary>
+public sealed record WindRules(Dictionary<string, double> Prevailing, double Variance, IReadOnlyList<double> Speed);
+
+/// <summary>Coal smoke: the soot field's resolution and transport, and the thresholds for its effects.</summary>
+public sealed record SootRules(
+    int CellSize,
+    double Diffusion,
+    double DecayPerSecond,
+    double ForestDecayPerSecond,
+    double WinterDecayFactor,
+    double DepositPerSecond,
+    double GrimeFadePerMonth,
+    double FullSoot,
+    double FullGrime,
+    double LungSafe,
+    double CropPenalty);
+
 public sealed record RulesDef(
     int TicksPerSecond,
     int SecondsPerMonth,
@@ -37,7 +54,9 @@ public sealed record RulesDef(
     IReadOnlyList<SeasonDef> Seasons,
     IReadOnlyList<double> Temperature,
     IReadOnlyList<RoadDef> Roads,
-    IReadOnlyList<NetworkDef> Networks);
+    IReadOnlyList<NetworkDef> Networks,
+    WindRules? Wind,
+    SootRules? Soot);
 
 public sealed record ResourceDef(string Id, string Name, string Category, string Color, double SpoilagePerYear, int DefaultLimit);
 

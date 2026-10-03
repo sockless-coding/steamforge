@@ -47,6 +47,25 @@
     "params": { "degrees": -9, "months": 2 }
   },
   {
+    "id": "black-lung",
+    "name": "Black Lung",
+    "kind": "blackLung",
+    "disaster": true,
+    "weight": 3,
+    "minYear": 2,
+    "params": { "minExposure": 0.35, "fraction": 0.35, "months": 3, "healthPerMonth": 0.14, "vulnerableFactor": 2.2 }
+  },
+  {
+    "id": "rain-squall",
+    "name": "Rain Squall",
+    "kind": "rain",
+    "disaster": false,
+    "weight": 2,
+    "minYear": 1,
+    "seasons": ["spring", "summer", "autumn"],
+    "params": { "washSoot": 0.8, "washGrime": 0.35 }
+  },
+  {
     "id": "nomads",
     "name": "Travellers",
     "kind": "nomads",

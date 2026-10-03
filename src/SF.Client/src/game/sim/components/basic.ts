@@ -1,4 +1,5 @@
 import { amount, foodIds, total, type StorageConfig } from '../inventory'
+import { sootExposure } from '../soot'
 import { registerComponent } from './registry'
 
 registerComponent<StorageConfig>({
@@ -18,9 +19,13 @@ registerComponent<HousingConfig>({
   activate: (sim) => {
     sim.housingDirty = true
   },
-  /** Burns firewood while occupied in the cold; a home without fuel is unheated. */
+  /**
+   * Burns firewood while occupied in the cold; a home without fuel is unheated. `data.burn` holds the firewood
+   * burned this second, whose smoke the soot system adds at street level.
+   */
   second: (sim, b, cfg) => {
     const cold = sim.coldness
+    delete b.data.burn
     if (cold <= 0 || b.residents.length === 0) {
       b.data.heated = true
       return
@@ -30,7 +35,9 @@ registerComponent<HousingConfig>({
     const need = perMonth / sim.rules.secondsPerMonth
     const have = amount(b.stock, 'firewood')
     b.data.heated = have >= need || steamHeat >= 1
-    sim.recordConsumed('firewood', Math.min(have, need))
+    const burned = Math.min(have, need)
+    if (burned > 0) b.data.burn = burned
+    sim.recordConsumed('firewood', burned)
     b.stock.firewood = Math.max(0, have - need)
     if (b.stock.firewood <= 1e-6) delete b.stock.firewood
   },
@@ -42,6 +49,7 @@ registerComponent<HousingConfig>({
       `Residents ${b.residents.length} / ${cfg.capacity}`,
       `Pantry: ${Math.floor(food)} food, ${Math.floor(amount(b.stock, 'firewood'))} firewood`,
       b.data.heated === false ? 'Cold: no firewood!' : steamHeat >= 1 ? 'Warm: steam radiators' : 'Warm',
+      `Air: ${Math.round(sootExposure(sim, b.x + b.w / 2, b.y + b.h / 2) * 100)}% soot`,
     ]
   },
 })

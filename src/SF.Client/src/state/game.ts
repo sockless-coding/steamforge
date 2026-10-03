@@ -171,6 +171,21 @@ export interface HudState {
   trade: Record<string, TradeOrder>
   /** A finished airship mast stands, so trade orders take effect. */
   hasMast: boolean
+  air: AirInfo
+}
+
+/** Coal smoke over the colony, for the barometer and wind vane. */
+export interface AirInfo {
+  /** Mean soot exposure (0-1) at the colony's homes, and the worst home. */
+  homes: number
+  worst: number
+  /** Exposure past which lungs suffer. */
+  safe: number
+  /** Compass degrees the wind blows from, and its speed in tiles per second. */
+  windFrom: number
+  windSpeed: number
+  /** The soot heat map is shown over the ground. */
+  view: boolean
 }
 
 export const initialHud: HudState = {
@@ -211,6 +226,7 @@ export const initialHud: HudState = {
   credit: 0,
   trade: {},
   hasMast: false,
+  air: { homes: 0, worst: 0, safe: 0.25, windFrom: 0, windSpeed: 0, view: false },
 }
 
 /** Snapshot of the running colony for React. The GameController publishes into it; components only read. */

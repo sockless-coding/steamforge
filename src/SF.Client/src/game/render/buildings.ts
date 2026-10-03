@@ -442,13 +442,15 @@ export class BuildingLayer {
     const always = !!def.components.shelter && !def.components.generator
     const smoking = b.fire === 0 && (isHome ? homeFire : working || always)
     const venting = b.fire === 0 && (isHome ? b.data.heat !== undefined && b.residents.length > 0 : working)
-    view.emitAcc += dt * (smoking ? 2.4 : 0)
+    // Coal furnaces belch thick black smoke in proportion to their soot; stoves and small fires a grey wisp.
+    const soot = (def.components.emitter as { soot?: number } | undefined)?.soot ?? 0
+    view.emitAcc += dt * (smoking ? 2.4 * (1 + soot * 0.35) : 0)
     view.ventAcc += dt * (venting ? 1.6 : 0)
     const puff = (kind: 'smoke' | 'steam') => {
       for (const e of model.emitters) {
         if (e.kind !== kind) continue
         const p = e.pos.clone().applyEuler(view.group.rotation).add(view.group.position)
-        this.particles.emit(kind, p.x, p.y, p.z)
+        this.particles.emit(kind === 'smoke' && soot >= 1 && Math.random() < 0.4 + soot * 0.15 ? 'soot' : kind, p.x, p.y, p.z)
       }
     }
     while (view.emitAcc >= 1) {

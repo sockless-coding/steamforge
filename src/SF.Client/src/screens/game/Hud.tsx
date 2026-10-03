@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLoadedContent } from '../../api/content'
 import type { BuildingCategory, BuildingDef } from '../../api/types'
 import type { GameController } from '../../game/GameController'
-import { useHud, type HudState, type PetitionInfo, type Tool } from '../../state/game'
+import { useHud, type AirInfo, type HudState, type PetitionInfo, type Tool } from '../../state/game'
 import { useSettings } from '../../state/settings'
 import { Button } from '../../ui/components'
 import { Icon, type IconName } from '../../ui/Icon'
@@ -49,6 +49,54 @@ function MiniDial({ load, color }: { load: number; color: string }) {
       <line x1="13" y1="14" x2={nx} y2={ny} stroke="var(--parchment)" strokeWidth="1.4" strokeLinecap="round" />
       <circle cx="13" cy="14" r="1.8" fill="var(--brass-hi)" />
     </svg>
+  )
+}
+
+const COMPASS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
+
+/**
+ * The soot barometer and wind vane: a smoked-glass dial whose needle shows the smoke at the colony's homes (red past
+ * the point where lungs suffer), beside a brass vane pointing where the wind carries the smoke. Toggles the soot map.
+ */
+function AirChip({ air, onToggle }: { air: AirInfo; onToggle: () => void }) {
+  const point = (deg: number, r: number) => [13 + r * Math.sin((deg * Math.PI) / 180), 14 - r * Math.cos((deg * Math.PI) / 180)]
+  const arc = (from: number, to: number) => {
+    const [x1, y1] = point(from, 9)
+    const [x2, y2] = point(to, 9)
+    return `M ${x1} ${y1} A 9 9 0 ${to - from > 180 ? 1 : 0} 1 ${x2} ${y2}`
+  }
+  const angle = (v: number) => Math.min(1, Math.max(0, v)) * 240 - 120
+  const [nx, ny] = point(angle(air.homes), 8)
+  const [wx, wy] = point(angle(air.worst), 9.5)
+  const bad = air.homes > air.safe
+  const label = air.homes < 0.05 ? 'Clean' : air.homes < air.safe ? 'Hazy' : air.homes < 0.6 ? 'Smoky' : 'Choking'
+  // The vane points downwind: where the smoke is going.
+  const towards = (air.windFrom + 180) % 360
+  const from = COMPASS[Math.round(air.windFrom / 45) % 8]
+  const title =
+    `Air at the homes: ${label.toLowerCase()} (${Math.round(air.homes * 100)}% soot, worst home ${Math.round(air.worst * 100)}%). ` +
+    `Wind from the ${from}, carrying smoke ${COMPASS[Math.round(towards / 45) % 8]}. Click to ${air.view ? 'hide' : 'show'} the soot map.`
+  return (
+    <button type="button" className={`gauge-chip air-chip ${bad ? 'short' : ''} ${air.view ? 'active' : ''}`} onClick={onToggle} title={title}>
+      <svg className="mini-dial" viewBox="0 0 26 26" width={24} height={24} aria-hidden="true">
+        <circle cx="13" cy="14" r="11.5" fill="#1c1612" stroke="var(--brass)" strokeWidth="1.6" />
+        <path d={arc(-120, angle(air.safe))} stroke="#8aa07a" strokeWidth="2" fill="none" opacity="0.8" />
+        <path d={arc(angle(air.safe), 120)} stroke="var(--danger)" strokeWidth="2" fill="none" />
+        <circle cx={wx} cy={wy} r="1.2" fill="var(--ember)" />
+        <line x1="13" y1="14" x2={nx} y2={ny} stroke="var(--parchment)" strokeWidth="1.4" strokeLinecap="round" />
+        <circle cx="13" cy="14" r="1.8" fill="var(--brass-hi)" />
+      </svg>
+      <svg className="wind-vane" viewBox="0 0 24 24" width={20} height={20} aria-hidden="true">
+        <circle cx="12" cy="12" r="10.5" fill="none" stroke="var(--brass-lo)" strokeWidth="1" />
+        <g transform={`rotate(${towards} 12 12)`}>
+          <path d="M12 3 L15 9 L12.9 8.4 L12.9 19 L11.1 19 L11.1 8.4 L9 9 Z" fill="var(--brass-hi)" />
+          <path d="M9.5 19 L14.5 19 L12 16.5 Z" fill="var(--brass)" />
+        </g>
+      </svg>
+      <span className="gauge-text">
+        <b>{label}</b>
+      </span>
+    </button>
   )
 }
 
@@ -181,6 +229,7 @@ function TopBar({ hud, controller, onMenu, open }: { hud: HudState; controller: 
               </span>
             )
           })}
+        <AirChip air={hud.air} onToggle={() => controller.toggleSootView()} />
         {(hud.hasMast || hud.credit > 0) && (
           <button type="button" className="gauge-chip credit-chip" onClick={() => open({ kind: 'stores' })} title="Company credit (airship trade orders are in the Stores panel)">
             <Icon name="coin" size={15} />

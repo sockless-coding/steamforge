@@ -55,6 +55,12 @@
       "when": { "year": 6 }
     },
     {
+      "id": "sanitation",
+      "title": "Dispatch: On Coal Smoke",
+      "text": "Our physicians report that the smoke of {colony} can be seen from the ridge forty miles south. The Board is not sentimental about smoke; smoke is industry. But a colony that coughs does not work. Mind where your chimneys stand and which way the wind blows, keep your homes upwind of your furnaces, and do not fell every tree that stands between them.",
+      "when": { "research": "sanitation" }
+    },
+    {
       "id": "airship-mast",
       "title": "Dispatch: The Mooring Mast",
       "text": "A mooring mast at {colony}! The airship Endeavour will call on a regular schedule from now on. Send us your surplus and we will credit the colony fairly, or near enough. Mind that the winches have steam, or the captain will not risk the approach.",

@@ -83,6 +83,29 @@
   ],
   "automaton": { "windMonths": 4, "windCoal": "coal", "windAmount": 2, "lifeYears": 12, "workFactor": 0.9 },
   "trade": { "sellFactor": 1, "buyFactor": 1.6 },
+  "wind": {
+    "prevailing": { "spring": 250, "summer": 225, "autumn": 270, "winter": 315 },
+    "variance": 50,
+    "speed": [0.25, 1.0]
+  },
+  "soot": {
+    "cellSize": 4,
+    "diffusion": 0.08,
+    "decayPerSecond": 0.006,
+    "forestDecayPerSecond": 0.03,
+    "winterDecayFactor": 0.6,
+    "depositPerSecond": 0.002,
+    "grimeFadePerMonth": 0.05,
+    "stoveSootPerFirewood": 12,
+    "fireSootPerSecond": 3,
+    "fullSoot": 16,
+    "fullGrime": 40,
+    "lungSafe": 0.25,
+    "lungDamagePerMonth": 0.3,
+    "vulnerableFactor": 2,
+    "happinessPenalty": 0.2,
+    "cropPenalty": 0.5
+  },
   "networks": [
     {
       "id": "steam",

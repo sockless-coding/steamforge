@@ -17,6 +17,9 @@ Victorian-steampunk survival city builder in the spirit of Banished, rendered in
 - **New building**: add it to `buildings.json` (size, cost, components, model parts). No code needed if it uses existing component kinds. Lock it behind research by listing it in a `research.json` item's `unlocks`; make it need energy with a `consumer` component (`required`, `workBonus` or `heatBonus`).
 - **New research / dispatch**: data only (`research.json`, `story.json`); the validator checks references and requirement cycles.
 - **New energy network**: add it to `rules.json` → `networks` (max 8; a converter's input network must come first), then use it in `generator`/`consumer` components.
+- **Coal smoke**: give a building an `emitter` (`soot` per second while working, `stack` tiles downwind); `scrubber`
+  cleans the air around it and `clinic` hands out a remedy that shields nearby homes. Tuning lives in `rules.json` →
+  `soot`/`wind`, scaled per preset by `sootRate`.
 - **Other data-driven mechanics**: happiness auras (`amenity`), night-work lighting (`lighting`; day length is `rules.day`), airship trade (`airship` component plus resource `value`s and `rules.trade`), automatons (`assembler`, `rules.automaton`), tramways (a road with `needsDepot` plus a `tramDepot` building), pneumatic depots (`pneumatic`) and safety valves (`valve`).
 - **New mechanic**: write a component handler in `game/sim/components/` (`registerComponent`), import it in `components/index.ts`, add the kind to `ContentValidator.ComponentKinds`, then use it in content. Handlers can add named effects (`registerEffect`) for task steps.
 - **New global system**: `registerSystem` in `game/sim/systems.ts` (tick / second / month / restore hooks).

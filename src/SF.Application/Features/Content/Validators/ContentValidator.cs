@@ -11,18 +11,18 @@ public static class ContentValidator
 {
     public static readonly HashSet<string> ComponentKinds =
         ["storage", "housing", "shelter", "workplace", "firefighting", "gatherer", "producer", "field", "generator", "consumer", "research",
-         "amenity", "lighting", "airship", "assembler", "tramDepot", "pneumatic", "valve"];
+         "amenity", "lighting", "airship", "assembler", "tramDepot", "pneumatic", "valve", "emitter", "scrubber", "clinic"];
 
     /// <summary>Components that are worked by a building's staff; they need a workplace component.</summary>
     public static readonly HashSet<string> StaffedComponents = ["gatherer", "producer", "field", "research", "assembler"];
 
-    public static readonly HashSet<string> EventKinds = ["fire", "blight", "sickness", "coldSnap", "nomads", "bounty", "pipeBurst", "supplies"];
+    public static readonly HashSet<string> EventKinds = ["fire", "blight", "sickness", "coldSnap", "nomads", "bounty", "pipeBurst", "supplies", "blackLung", "rain"];
     public static readonly HashSet<string> Categories = ["material", "fuel", "food", "goods"];
     public static readonly HashSet<string> Terrains = ["grass", "water", "mountain", "stone", "iron", "coal", "sand", "copper"];
     public static readonly HashSet<string> Shapes = ["box", "cylinder", "cone", "sphere", "gable", "hip", "gear", "chimney", "stack", "tank", "pipe", "torus", "dome"];
     public static readonly HashSet<string> Emitters = ["smoke", "steam"];
     public static readonly HashSet<string> NatureModels = ["tree", "rock", "ironstone", "bush", "mushroom"];
-    public static readonly HashSet<string> Modifiers = ["winterSeverity", "disasterRate", "productionMultiplier", "birthRate", "spoilageRate", "wearRate", "hungerRate"];
+    public static readonly HashSet<string> Modifiers = ["winterSeverity", "disasterRate", "productionMultiplier", "birthRate", "spoilageRate", "wearRate", "hungerRate", "sootRate"];
     public static readonly HashSet<string> RequiredProfessions = ["child", "laborer", "builder"];
 
     public static IReadOnlyList<string> Validate(ContentSnapshot c)
@@ -103,6 +103,29 @@ public static class ContentValidator
         {
             CheckStock($"Network {net.Id} conduit", net.Conduit.Cost.Keys);
             Check(net.Conduit.Work > 0, $"Network {net.Id} conduit needs positive work.");
+        }
+
+        Check(r.Wind is not null, "Rules: wind settings are required.");
+        if (r.Wind is { } wind)
+        {
+            Check(r.Seasons.All(s => wind.Prevailing.ContainsKey(s.Id)) && wind.Prevailing.Keys.All(seasons.Contains),
+                "Rules: wind.prevailing needs exactly one direction per season.");
+            Check(wind.Variance is >= 0 and <= 180, "Rules: wind.variance must be 0-180 degrees.");
+            Check(wind.Speed.Count == 2 && wind.Speed[0] >= 0 && wind.Speed[1] >= wind.Speed[0] && wind.Speed[1] <= 4,
+                "Rules: wind.speed must be [min, max] tiles per second, at most 4.");
+        }
+
+        Check(r.Soot is not null, "Rules: soot settings are required.");
+        if (r.Soot is { } soot)
+        {
+            Check(soot.CellSize is >= 1 and <= 16, "Rules: soot.cellSize must be 1-16 tiles.");
+            Check(soot.Diffusion is >= 0 and <= 0.2, "Rules: soot.diffusion must be 0-0.2 (higher is unstable).");
+            Check(new[] { soot.DecayPerSecond, soot.ForestDecayPerSecond, soot.DepositPerSecond, soot.GrimeFadePerMonth }.All(v => v is >= 0 and < 1),
+                "Rules: soot decay, deposit and fade rates must be in [0, 1).");
+            Check(soot.WinterDecayFactor > 0, "Rules: soot.winterDecayFactor must be positive.");
+            Check(soot.FullSoot > 0 && soot.FullGrime > 0, "Rules: soot.fullSoot and soot.fullGrime must be positive.");
+            Check(soot.LungSafe is >= 0 and < 1, "Rules: soot.lungSafe must be in [0, 1).");
+            Check(soot.CropPenalty is >= 0 and <= 1, "Rules: soot.cropPenalty must be 0-1.");
         }
 
         foreach (var p in RequiredProfessions)
@@ -210,6 +233,11 @@ public static class ContentValidator
                         Check(by == "feature" ? features.Contains(id) : by == "terrain" && Terrains.Contains(id), $"{where} gatherer scales by unknown {by} '{id}'.");
                     }
 
+                    if (cfg.TryGetProperty("sootPenalty", out var sootPenalty))
+                    {
+                        Check(sootPenalty.GetDouble() is >= 0 and <= 1, $"{where} gatherer sootPenalty must be 0-1.");
+                    }
+
                     if (cfg.TryGetProperty("replant", out var replant))
                     {
                         Check(features.Contains(replant.GetProperty("feature").GetString() ?? string.Empty), $"{where} replants an unknown feature.");
@@ -247,6 +275,20 @@ public static class ContentValidator
                     break;
                 case "lighting":
                     Check(cfg.TryGetProperty("radius", out var lr) && lr.GetDouble() > 0, $"{where} lighting needs a positive radius.");
+                    break;
+                case "emitter":
+                    Check(cfg.TryGetProperty("soot", out var emitted) && emitted.GetDouble() >= 0, $"{where} emitter needs a soot rate of 0 or more.");
+                    Check(!cfg.TryGetProperty("stack", out var stack) || stack.GetDouble() is >= 0 and <= 20, $"{where} emitter stack must be 0-20 tiles.");
+                    break;
+                case "scrubber":
+                    Check(cfg.TryGetProperty("radius", out var sr) && sr.GetDouble() > 0, $"{where} scrubber needs a positive radius.");
+                    Check(cfg.TryGetProperty("rate", out var rate) && rate.GetDouble() is > 0 and <= 1, $"{where} scrubber rate must be in (0, 1].");
+                    break;
+                case "clinic":
+                    Check(cfg.TryGetProperty("radius", out var cr) && cr.GetDouble() > 0, $"{where} clinic needs a positive radius.");
+                    Check(cfg.TryGetProperty("protection", out var protection) && protection.GetDouble() is > 0 and <= 1, $"{where} clinic protection must be in (0, 1].");
+                    Check(Res(Str("resource") ?? string.Empty), $"{where} clinic hands out an unknown resource.");
+                    Check(cfg.TryGetProperty("perHome", out var perHome) && perHome.GetDouble() > 0, $"{where} clinic needs a positive perHome.");
                     break;
                 case "research":
                     Check(cfg.TryGetProperty("points", out var points) && points.GetDouble() > 0, $"{where} research needs positive points.");

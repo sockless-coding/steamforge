@@ -81,6 +81,15 @@
     "unlocks": { "buildings": ["steam-glasshouse"] }
   },
   {
+    "id": "sanitation",
+    "name": "Sanitary Science",
+    "description": "Coal smoke rots the lungs. Glasshouse herbs, brewed into tonics by an apothecary, ease the coughing in the homes around it.",
+    "tier": 4,
+    "points": 50,
+    "requires": ["glasshouse"],
+    "unlocks": { "buildings": ["apothecary"], "recipes": ["grow-herbs"] }
+  },
+  {
     "id": "engines",
     "name": "Steam Engines",
     "description": "Coal-fired boiler houses to raise steam in quantity, the machines that drink it, and safety valves for when they drink too much.",
@@ -124,6 +133,15 @@
     "points": 100,
     "requires": ["galvanism"],
     "unlocks": { "buildings": ["arc-furnace"] }
+  },
+  {
+    "id": "precipitation",
+    "name": "Electrostatic Precipitation",
+    "description": "Charged copper grids pull the soot out of the air. A precipitator keeps a district breathable whatever the chimneys do.",
+    "tier": 6,
+    "points": 90,
+    "requires": ["galvanism"],
+    "unlocks": { "buildings": ["galvanic-precipitator"] }
   },
   {
     "id": "analytical",

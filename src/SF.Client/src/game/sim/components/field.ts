@@ -2,6 +2,7 @@ import type { CropDef } from '../../../api/types'
 import { registerEffect } from '../effects'
 import { addStock } from '../inventory'
 import type { Simulation } from '../simulation'
+import { grimeLevel } from '../soot'
 import { claimTile, task } from '../tasks'
 import type { Building } from '../types'
 import { haulOutputTask, outputFull } from '../work'
@@ -43,8 +44,11 @@ registerEffect('harvestPlot', (sim, _c, [id, k]) => {
   if (!b || b.data.phase !== 'harvest' || plots(b)[k] !== 1) return true
   plots(b)[k] = 0
   const crop = fieldCrop(sim, b)
-  addStock(b.stock, crop.resource, crop.yieldPerTile)
-  sim.recordProduced(crop.resource, crop.yieldPerTile)
+  // Soot-fouled ground yields less.
+  const tile = plotTile(sim, b, k)
+  const qty = crop.yieldPerTile * (1 - sim.rules.soot.cropPenalty * grimeLevel(sim, sim.world.xOf(tile) + 0.5, sim.world.yOf(tile) + 0.5))
+  addStock(b.stock, crop.resource, qty)
+  sim.recordProduced(crop.resource, qty)
   if (plots(b).every((p) => p === 0)) {
     b.data.phase = 'fallow'
     b.data.growth = 0
@@ -131,6 +135,9 @@ registerComponent<FieldConfig>({
     const crop = fieldCrop(sim, b)
     const phase = b.data.phase as FieldPhase
     const label = { fallow: 'Fallow until spring', plant: 'Planting', grow: 'Growing', harvest: 'Ready to harvest' }[phase]
-    return [`${crop.name}: ${label}`, `Growth ${Math.round(((b.data.growth as number) ?? 0) * 100)}%`]
+    const lines = [`${crop.name}: ${label}`, `Growth ${Math.round(((b.data.growth as number) ?? 0) * 100)}%`]
+    const grime = grimeLevel(sim, b.x + b.w / 2, b.y + b.h / 2) * sim.rules.soot.cropPenalty
+    if (grime >= 0.01) lines.push(`Soot on the soil: -${Math.round(grime * 100)}% yield`)
+    return lines
   },
 })

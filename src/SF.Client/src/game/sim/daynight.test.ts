@@ -155,7 +155,11 @@ describe('events', () => {
 
   it('spaces disasters apart, however likely they are', () => {
     const rules = content.bundle.rules
-    const stormy = indexContent({ ...content.bundle, rules: { ...rules, events: { ...rules.events, disastersPerYear: 1000 } } })
+    // Nobody plays this colony, so nobody goes hungry: it must outlive three years of misfortune.
+    const stormy = indexContent({
+      ...content.bundle,
+      rules: { ...rules, citizen: { ...rules.citizen, hungerPerMonth: 0 }, events: { ...rules.events, disastersPerYear: 1000 } },
+    })
     const sim = Simulation.create(stormy, { seed: 5, name: 'Stormford', difficulty: 'tinkerer', mapSize: 'small', terrain: 'valley' })
     const months = new Set<number>()
     for (let m = 0; m < 12 * 3 && sim.outcome === 'playing'; m++) {

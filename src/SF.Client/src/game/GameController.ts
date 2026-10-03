@@ -25,6 +25,7 @@ import { participates, touchesGrid, type ConsumerConfig, type GeneratorConfig } 
 import { canPlace, doorTile, footprintSize, totalWork } from './sim/placement'
 import { canResearch, currentResearch, isUnlocked, lockedBy, unlockNames } from './sim/research'
 import { Simulation, type ColonySnapshot } from './sim/simulation'
+import { sootExposure, windFrom, windVector } from './sim/soot'
 import type { Action, ActionResult, Building, Citizen, NewColonyOptions, Rotation, SimEvent } from './sim/types'
 import type { TileMark } from './render/overlays'
 import { FrameGovernor, lowerTier, resolveQuality, type QualityProfile } from './render/quality'
@@ -92,6 +93,7 @@ export class GameController {
   private autosaveTimer = 0
   private lastYear: number
   private saveStatus: HudState['save'] = 'idle'
+  private sootView = false
   private destroyed = false
   private readonly cleanup: (() => void)[] = []
 
@@ -140,6 +142,7 @@ export class GameController {
       // Commands issued while paused still emit events (placements, roads, marks).
       this.handleEvents(sim.drainEvents())
     }
+    this.renderer.setSootView(this.sootView || this.placingSmoke())
     this.renderer.frame(sim, dt, this.paused ? 1 : Math.min(1, this.acc / sim.dt))
 
     if (this.governor.sample(dt) && this.options.settings.quality === 'auto') {
@@ -309,6 +312,41 @@ export class GameController {
       this.saveStatus = 'error'
     }
     if (!this.destroyed) this.publish()
+  }
+
+  /** Shows or hides the soot heat map. */
+  toggleSootView(): void {
+    this.sootView = !this.sootView
+    this.publish()
+  }
+
+  /** Placing a chimney, a home or something that cleans the air shows the soot map automatically. */
+  private placingSmoke(): boolean {
+    if (this.tool.kind !== 'build') return false
+    const c = this.sim.def(this.tool.def).components
+    return !!(c.emitter || c.housing || c.scrubber || c.clinic)
+  }
+
+  private airInfo(): HudState['air'] {
+    const sim = this.sim
+    let sum = 0
+    let worst = 0
+    let homes = 0
+    for (const b of sim.buildings.values()) {
+      if (b.site || b.residents.length === 0 || !sim.def(b).components.housing) continue
+      const e = sootExposure(sim, b.x + b.w / 2, b.y + b.h / 2)
+      sum += e
+      worst = Math.max(worst, e)
+      homes++
+    }
+    return {
+      homes: homes ? sum / homes : 0,
+      worst,
+      safe: sim.rules.soot.lungSafe,
+      windFrom: windFrom(sim),
+      windSpeed: windVector(sim).speed,
+      view: this.sootView,
+    }
   }
 
   setQualitySettings(settings: Settings): void {
@@ -628,6 +666,8 @@ export class GameController {
         sim.component<{ radius: number }>(def.id, 'firefighting')?.radius ??
         sim.component<{ radius: number }>(def.id, 'lighting')?.radius ??
         sim.component<{ radius: number }>(def.id, 'amenity')?.radius ??
+        sim.component<{ radius: number }>(def.id, 'scrubber')?.radius ??
+        sim.component<{ radius: number }>(def.id, 'clinic')?.radius ??
         0
       overlays.setRing(f.x + f.w / 2, f.y + f.h / 2, radius)
       return
@@ -782,6 +822,7 @@ export class GameController {
       credit: sim.credit,
       trade: { ...sim.trade },
       hasMast: [...sim.buildings.values()].some((b) => !b.site && !!sim.def(b).components.airship),
+      air: this.airInfo(),
     })
   }
 

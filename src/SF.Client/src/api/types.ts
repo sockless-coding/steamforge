@@ -95,6 +95,49 @@ export interface DayRules {
   nightWorkFactor: number
 }
 
+/** Prevailing winds: they carry soot across the map. Directions are compass degrees the wind blows from (0 = north). */
+export interface WindRules {
+  /** Prevailing direction per season id. */
+  prevailing: Record<string, number>
+  /** Each month the wind settles within this many degrees either side of the prevailing direction. */
+  variance: number
+  /** Range of wind speeds, in tiles per second. */
+  speed: [number, number]
+}
+
+/** Coal smoke and its consequences. Soot is a coarse field (one cell per cellSize² tiles) moved by the wind. */
+export interface SootRules {
+  cellSize: number
+  /** Share of each cell's soot exchanged with its neighbours per second. */
+  diffusion: number
+  /** Share of soot that disperses per second; forest cover adds forestDecayPerSecond, and winter air holds it longer. */
+  decayPerSecond: number
+  forestDecayPerSecond: number
+  winterDecayFactor: number
+  /** Share of soot that settles as lasting grime per second. */
+  depositPerSecond: number
+  /** Share of grime washed away each month. */
+  grimeFadePerMonth: number
+  /** Soot from each unit of firewood burned in a home stove. */
+  stoveSootPerFirewood: number
+  /** Soot per second from a burning building. */
+  fireSootPerSecond: number
+  /** Soot at which exposure counts as total (1). */
+  fullSoot: number
+  /** Grime at which the ground counts as fully fouled (1). */
+  fullGrime: number
+  /** Exposure below which lungs take no harm. */
+  lungSafe: number
+  /** Health lost per month at total exposure. */
+  lungDamagePerMonth: number
+  /** Children and elders lose health this many times faster. */
+  vulnerableFactor: number
+  /** Happiness lost at total exposure around the home. */
+  happinessPenalty: number
+  /** Crop yield lost on fully fouled ground. */
+  cropPenalty: number
+}
+
 export interface RulesDef {
   ticksPerSecond: number
   secondsPerMonth: number
@@ -113,6 +156,8 @@ export interface RulesDef {
   networks: NetworkDef[]
   automaton: AutomatonRules
   trade: TradeRules
+  wind: WindRules
+  soot: SootRules
   startingBuilders: number
   startingArea: number
 }
@@ -244,6 +289,8 @@ export interface DifficultyModifiers {
   spoilageRate: number
   wearRate: number
   hungerRate: number
+  /** Scales soot from every chimney and stove. */
+  sootRate: number
 }
 
 export interface DifficultyPreset {

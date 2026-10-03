@@ -84,6 +84,7 @@ const causeText: Record<string, string> = {
   cold: 'froze to death',
   age: 'died of old age',
   sickness: 'succumbed to fever',
+  soot: 'died of black lung',
   fire: 'perished in a fire',
   wear: 'seized up for good',
 }

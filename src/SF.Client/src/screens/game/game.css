@@ -10,10 +10,14 @@
   inset: 0;
 }
 
+.world-canvas.graded {
+  filter: none;
+}
+
 .world-canvas {
   display: block;
-  /* A touch of sepia and warmth: an old photograph of a brass-and-steam town. */
-  filter: sepia(0.14) saturate(1.06) contrast(1.04);
+  /* Low quality has no colour-grade pass: a touch of sepia and warmth stands in for it. */
+  filter: sepia(0.18) saturate(0.96) contrast(1.06);
   width: 100%;
   height: 100%;
   outline: none;
@@ -552,6 +556,23 @@ kbd {
   color: var(--parchment);
   font: inherit;
   font-size: 12px;
+}
+
+.air-chip {
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.air-chip.active {
+  box-shadow: inset 0 0 0 1px var(--brass-hi), 0 0 8px rgba(232, 184, 96, 0.35);
+}
+
+.wind-vane {
+  flex-shrink: 0;
+  margin-right: 2px;
 }
 
 .gauge-chip.short {

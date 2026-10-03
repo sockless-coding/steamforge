@@ -10,6 +10,7 @@
     "buildable": false,
     "headquarters": true,
     "components": {
+      "emitter": { "soot": 1, "stack": 3 },
       "storage": { "capacity": 400, "accepts": ["material", "fuel", "food", "goods"] },
       "shelter": { "warmUpPerMonth": 2.25 },
       "generator": { "network": "steam", "output": 12, "fuel": { "coal": 1.2, "firewood": 3 }, "capacity": 12 }
@@ -243,6 +244,7 @@
     "size": [2, 2],
     "cost": { "resources": { "logs": 18, "stone": 4 }, "work": 60 },
     "components": {
+      "emitter": { "soot": 0.3 },
       "workplace": { "workers": 2, "profession": "woodcutter" },
       "producer": { "recipes": ["split-firewood"] },
       "consumer": { "uses": { "steam": 2 }, "workBonus": 0.5 }
@@ -309,7 +311,8 @@
       "gatherer": {
         "yield": { "venison": 4, "leather": 1 },
         "seconds": 36,
-        "scale": { "by": "feature", "id": "tree", "radius": 12, "full": 70 }
+        "scale": { "by": "feature", "id": "tree", "radius": 12, "full": 70 },
+        "sootPenalty": 0.6
       }
     },
     "model": {
@@ -343,7 +346,8 @@
       "gatherer": {
         "yield": { "fish": 3 },
         "seconds": 36,
-        "scale": { "by": "terrain", "id": "water", "radius": 6, "full": 30 }
+        "scale": { "by": "terrain", "id": "water", "radius": 6, "full": 30 },
+        "sootPenalty": 0.3
       }
     },
     "model": {
@@ -402,6 +406,7 @@
     "cost": { "resources": { "logs": 24 }, "work": 120 },
     "placement": { "terrain": { "id": "stone", "min": 6 } },
     "components": {
+      "emitter": { "soot": 0.3 },
       "workplace": { "workers": 5, "profession": "quarryman" },
       "gatherer": { "yield": { "stone": 4 }, "seconds": 36 },
       "consumer": { "uses": { "steam": 4 }, "workBonus": 0.4 }
@@ -442,6 +447,7 @@
     "cost": { "resources": { "logs": 30, "stone": 20 }, "work": 160 },
     "placement": { "terrain": { "id": "iron", "min": 4 } },
     "components": {
+      "emitter": { "soot": 0.4 },
       "workplace": { "workers": 5, "profession": "miner" },
       "gatherer": { "yield": { "ironOre": 3 }, "seconds": 40 },
       "consumer": { "uses": { "steam": 4 }, "workBonus": 0.4 }
@@ -485,6 +491,7 @@
     "cost": { "resources": { "logs": 30, "stone": 16 }, "work": 140 },
     "placement": { "terrain": { "id": "coal", "min": 4 } },
     "components": {
+      "emitter": { "soot": 0.8 },
       "workplace": { "workers": 5, "profession": "miner" },
       "gatherer": { "yield": { "coal": 3 }, "seconds": 40 },
       "consumer": { "uses": { "steam": 4 }, "workBonus": 0.4 }
@@ -535,6 +542,7 @@
     "cost": { "resources": { "logs": 30, "stone": 20, "iron": 4 }, "work": 160 },
     "placement": { "terrain": { "id": "copper", "min": 4 } },
     "components": {
+      "emitter": { "soot": 0.4 },
       "workplace": { "workers": 5, "profession": "miner" },
       "gatherer": { "yield": { "copperOre": 3 }, "seconds": 40 },
       "consumer": { "uses": { "steam": 4 }, "workBonus": 0.4 }
@@ -624,6 +632,7 @@
     "size": [3, 2],
     "cost": { "resources": { "stone": 30, "logs": 10 }, "work": 160 },
     "components": {
+      "emitter": { "soot": 3, "stack": 2 },
       "workplace": { "workers": 2, "profession": "smelter" },
       "producer": { "recipes": ["smelt-iron", "smelt-copper"] },
       "consumer": { "uses": { "steam": 4 }, "workBonus": 0.5 }
@@ -657,6 +666,7 @@
     "size": [2, 2],
     "cost": { "resources": { "stone": 20, "logs": 12 }, "work": 120 },
     "components": {
+      "emitter": { "soot": 1.2, "stack": 1 },
       "workplace": { "workers": 2, "profession": "smith" },
       "producer": { "recipes": ["forge-tools"] },
       "consumer": { "uses": { "steam": 3 }, "workBonus": 0.5 }
@@ -727,6 +737,7 @@
     "size": [3, 2],
     "cost": { "resources": { "stone": 24, "iron": 10, "logs": 10 }, "work": 200 },
     "components": {
+      "emitter": { "soot": 1, "stack": 2 },
       "workplace": { "workers": 2, "profession": "machinist" },
       "producer": { "recipes": ["machine-cogs"] },
       "consumer": { "uses": { "steam": 8 }, "required": true }
@@ -773,6 +784,7 @@
     "size": [2, 2],
     "cost": { "resources": { "stone": 20, "iron": 8, "cogs": 6 }, "work": 180 },
     "components": {
+      "emitter": { "soot": 2.5, "stack": 6 },
       "workplace": { "workers": 1, "profession": "stoker" },
       "generator": { "network": "steam", "output": 40, "fuel": { "coal": 4.5 }, "capacity": 24 }
     },
@@ -802,6 +814,7 @@
     "size": [3, 2],
     "cost": { "resources": { "logs": 20, "stone": 10, "cogs": 8 }, "work": 180 },
     "components": {
+      "emitter": { "soot": 0.6, "stack": 1 },
       "workplace": { "workers": 2, "profession": "woodcutter" },
       "producer": { "recipes": ["steam-firewood"] },
       "consumer": { "uses": { "steam": 8 }, "required": true }
@@ -924,7 +937,7 @@
     "cost": { "resources": { "stone": 20, "logs": 16, "iron": 8 }, "work": 180 },
     "components": {
       "workplace": { "workers": 3, "profession": "gardener" },
-      "producer": { "recipes": ["grow-tomatoes"] },
+      "producer": { "recipes": ["grow-tomatoes", "grow-herbs"] },
       "consumer": { "uses": { "steam": 6 }, "required": true }
     },
     "model": {
@@ -1218,6 +1231,105 @@
     }
   },
   {
+    "id": "apothecary",
+    "name": "Apothecary",
+    "category": "civic",
+    "description": "A chemist's shop with a copper still on the roof. The apothecary brews glasshouse herbs into lung tonic, and homes within reach that are supplied with it suffer far less from the smoke.",
+    "size": [2, 2],
+    "cost": { "resources": { "logs": 14, "stone": 18, "iron": 2 }, "work": 100 },
+    "components": {
+      "workplace": { "workers": 1, "profession": "apothecary" },
+      "producer": { "recipes": ["brew-tonic"] },
+      "clinic": { "radius": 16, "protection": 0.6, "resource": "tonic", "perHome": 0.4 }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.85, 0.2, 1.85] },
+        { "shape": "box", "mat": "brick", "pos": [0, 0.2, -0.1], "size": [1.6, 1.3, 1.4] },
+        { "shape": "box", "mat": "stone", "pos": [0, 1.5, -0.1], "size": [1.7, 0.08, 1.5] },
+        { "shape": "hip", "mat": "slate", "pos": [0, 1.58, -0.1], "size": [1.72, 0.55, 1.52] },
+        { "shape": "box", "mat": "verdigris", "pos": [-0.36, 0.2, 0.62], "size": [0.76, 0.2, 0.1] },
+        { "shape": "box", "mat": "glass", "pos": [-0.36, 0.4, 0.62], "size": [0.68, 0.52, 0.06] },
+        { "shape": "box", "mat": "verdigris", "pos": [-0.36, 0.64, 0.66], "size": [0.68, 0.025, 0.03] },
+        { "shape": "box", "mat": "verdigris", "pos": [-0.36, 0.4, 0.66], "size": [0.025, 0.52, 0.03] },
+        { "shape": "box", "mat": "verdigris", "pos": [-0.76, 0.2, 0.64], "size": [0.08, 0.86, 0.08] },
+        { "shape": "box", "mat": "verdigris", "pos": [0.04, 0.2, 0.64], "size": [0.08, 0.86, 0.08] },
+        { "shape": "box", "mat": "verdigris", "pos": [0.76, 0.2, 0.64], "size": [0.08, 0.86, 0.08] },
+        { "shape": "sphere", "mat": "malachite", "pos": [-0.58, 0.42, 0.67], "size": [0.13, 0.2, 0.13] },
+        { "shape": "sphere", "mat": "arc", "pos": [-0.36, 0.42, 0.67], "size": [0.12, 0.18, 0.12] },
+        { "shape": "sphere", "mat": "copper", "pos": [-0.14, 0.42, 0.67], "size": [0.13, 0.2, 0.13] },
+        { "shape": "box", "mat": "plank", "pos": [0.4, 0.2, 0.64], "size": [0.4, 0.78, 0.04] },
+        { "shape": "box", "mat": "glass", "pos": [0.4, 0.74, 0.665], "size": [0.28, 0.16, 0.02] },
+        { "shape": "box", "mat": "verdigris", "pos": [0, 0.98, 0.64], "size": [1.6, 0.24, 0.08] },
+        { "shape": "box", "mat": "brassplate", "pos": [0, 1.04, 0.69], "size": [1.3, 0.13, 0.03] },
+        { "shape": "box", "mat": "darkiron", "pos": [0.74, 1.06, 0.78], "size": [0.03, 0.03, 0.16] },
+        { "shape": "sphere", "mat": "lamp", "pos": [0.74, 0.98, 0.84], "size": [0.08, 0.11, 0.08] },
+        { "shape": "box", "mat": "darkiron", "pos": [-0.86, 1.2, 0.5], "size": [0.03, 0.03, 0.34] },
+        { "shape": "box", "mat": "verdigris", "pos": [-0.86, 0.94, 0.62], "size": [0.03, 0.24, 0.22] },
+        { "shape": "torus", "mat": "brass", "pos": [-0.88, 1.06, 0.62], "size": [0.07, 0.015, 0], "axis": "x" },
+        { "shape": "chimney", "mat": "brick", "pos": [-0.5, 1.5, -0.55], "size": [0.24, 0.9, 0.24] },
+        { "shape": "box", "mat": "darkiron", "pos": [0.42, 1.62, -0.42], "size": [0.5, 0.06, 0.5] },
+        { "shape": "box", "mat": "glow", "pos": [0.42, 1.68, -0.2], "size": [0.16, 0.08, 0.03], "glow": true },
+        { "shape": "tank", "mat": "copperplate", "pos": [0.42, 1.68, -0.42], "size": [0.4, 0.42, 0.4] },
+        { "shape": "dome", "mat": "copper", "pos": [0.42, 2.1, -0.42], "size": [0.4, 0.2, 0.4] },
+        { "shape": "pipe", "mat": "copper", "pos": [0.42, 2.26, -0.42], "size": [0.05, 0.22, 0.05], "emit": "steam" },
+        { "shape": "torus", "mat": "copper", "pos": [0.1, 1.9, -0.42], "size": [0.2, 0.04, 0] },
+        { "shape": "torus", "mat": "copper", "pos": [0.1, 1.82, -0.42], "size": [0.2, 0.04, 0] },
+        { "shape": "torus", "mat": "copper", "pos": [0.1, 1.74, -0.42], "size": [0.2, 0.04, 0] },
+        { "shape": "gear", "mat": "brass", "pos": [0.42, 1.9, -0.2], "size": [0.16, 0.025, 0.16], "axis": "z", "spin": 3 }
+      ]
+    }
+  },
+  {
+    "id": "galvanic-precipitator",
+    "name": "Galvanic Precipitator",
+    "category": "civic",
+    "description": "A riveted tower of charged copper grids. While it has power it pulls the soot out of the air within 12 tiles.",
+    "size": [2, 2],
+    "cost": { "resources": { "stone": 16, "iron": 10, "copper": 14, "cogs": 4 }, "work": 130 },
+    "components": {
+      "scrubber": { "radius": 12, "rate": 0.12 },
+      "consumer": { "uses": { "power": 6 }, "required": true }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.85, 0.22, 1.85] },
+        { "shape": "box", "mat": "darkiron", "pos": [0, 0.22, -0.1], "size": [1.3, 0.3, 1.3] },
+        { "shape": "tank", "mat": "plate", "pos": [0, 0.52, -0.1], "size": [1.0, 1.9, 1.0] },
+        { "shape": "torus", "mat": "copper", "pos": [0, 0.85, -0.1], "size": [1.1, 0.07, 0] },
+        { "shape": "torus", "mat": "copper", "pos": [0, 1.75, -0.1], "size": [1.1, 0.07, 0] },
+        { "shape": "torus", "mat": "copper", "pos": [0, 2.2, -0.1], "size": [1.1, 0.07, 0] },
+        { "shape": "cylinder", "mat": "arc", "pos": [0, 1.3, 0.4], "size": [0.36, 0.06, 0.36], "axis": "z", "glow": true },
+        { "shape": "torus", "mat": "brass", "pos": [0, 1.3, 0.43], "size": [0.46, 0.07, 0], "axis": "z" },
+        { "shape": "box", "mat": "darkiron", "pos": [0, 1.27, 0.46], "size": [0.4, 0.035, 0.02] },
+        { "shape": "dome", "mat": "copperplate", "pos": [0, 2.42, -0.1], "size": [1.04, 0.36, 1.04] },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [0, 2.7, -0.1], "size": [0.08, 0.6, 0.08] },
+        { "shape": "torus", "mat": "dial", "pos": [0, 2.88, -0.1], "size": [0.26, 0.06, 0] },
+        { "shape": "torus", "mat": "dial", "pos": [0, 3.0, -0.1], "size": [0.22, 0.06, 0] },
+        { "shape": "torus", "mat": "dial", "pos": [0, 3.12, -0.1], "size": [0.18, 0.06, 0] },
+        { "shape": "sphere", "mat": "arc", "pos": [0, 3.32, -0.1], "size": [0.17, 0.17, 0.17], "glow": true },
+        { "shape": "pipe", "mat": "plate", "pos": [-0.5, 1.55, -0.1], "size": [0.22, 0.42, 0.22], "axis": "x" },
+        { "shape": "box", "mat": "darkiron", "pos": [-0.8, 1.3, -0.1], "size": [0.18, 0.5, 0.5] },
+        { "shape": "box", "mat": "soot", "pos": [-0.9, 1.36, -0.1], "size": [0.02, 0.38, 0.4] },
+        { "shape": "pipe", "mat": "copper", "pos": [0.55, 2.0, -0.45], "size": [0.12, 0.5, 0.12], "emit": "steam" },
+        { "shape": "box", "mat": "brassplate", "pos": [0.6, 0.22, 0.58], "size": [0.45, 0.6, 0.32] },
+        { "shape": "cylinder", "mat": "dial", "pos": [0.6, 0.6, 0.74], "size": [0.22, 0.03, 0.22], "axis": "z" },
+        { "shape": "gear", "mat": "brass", "pos": [0.6, 0.38, 0.75], "size": [0.18, 0.025, 0.18], "axis": "z", "spin": 2 },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [-0.62, 0.22, 0.62], "size": [0.05, 0.5, 0.05] },
+        { "shape": "torus", "mat": "dial", "pos": [-0.62, 0.36, 0.62], "size": [0.2, 0.06, 0] },
+        { "shape": "torus", "mat": "dial", "pos": [-0.62, 0.46, 0.62], "size": [0.17, 0.06, 0] },
+        { "shape": "torus", "mat": "dial", "pos": [-0.62, 0.56, 0.62], "size": [0.14, 0.06, 0] },
+        { "shape": "sphere", "mat": "arc", "pos": [-0.62, 0.76, 0.62], "size": [0.1, 0.1, 0.1], "glow": true },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [-0.3, 0.22, 0.62], "size": [0.05, 0.5, 0.05] },
+        { "shape": "torus", "mat": "dial", "pos": [-0.3, 0.36, 0.62], "size": [0.2, 0.06, 0] },
+        { "shape": "torus", "mat": "dial", "pos": [-0.3, 0.46, 0.62], "size": [0.17, 0.06, 0] },
+        { "shape": "torus", "mat": "dial", "pos": [-0.3, 0.56, 0.62], "size": [0.14, 0.06, 0] },
+        { "shape": "sphere", "mat": "arc", "pos": [-0.3, 0.76, 0.62], "size": [0.1, 0.1, 0.1], "glow": true },
+        { "shape": "box", "mat": "copper", "pos": [-0.46, 0.75, 0.62], "size": [0.32, 0.02, 0.02] }
+      ]
+    }
+  },
+  {
     "id": "arc-lamp",
     "name": "Galvanic Arc Lamp",
     "category": "civic",
@@ -1434,6 +1546,7 @@
     "size": [3, 2],
     "cost": { "resources": { "stone": 30, "iron": 16, "copper": 10, "cogs": 10 }, "work": 300 },
     "components": {
+      "emitter": { "soot": 0.8, "stack": 2 },
       "workplace": { "workers": 2, "profession": "engineer" },
       "assembler": { "inputs": { "cogs": 6, "copper": 4, "iron": 2 }, "seconds": 80 },
       "consumer": { "uses": { "steam": 6 }, "required": true }

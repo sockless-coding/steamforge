@@ -2,9 +2,10 @@
 
 ## Pitch
 
-SteamForge is a survival city builder in the spirit of Banished, set in a Victorian-steampunk world. You lead a few
-families into untouched land and keep them alive. Citizens are the only real resource, winter is the main antagonist,
-and steam is what turns a frontier camp into an industrial town.
+SteamForge is a survival city builder set in a Victorian-steampunk world. You lead a few families into untouched
+northern land and keep them alive. Citizens are the only real resource, and winter is the first antagonist. Steam turns
+a frontier camp into an industrial town, and the town's own coal smoke becomes the second antagonist. The identity
+redesign in progress is in [REDESIGN.md](REDESIGN.md).
 
 ## Backstory (`story.json`)
 
@@ -29,6 +30,8 @@ ledger. The charter counts as fulfilled when an Analytical Engine stands in the 
    - forge tools and machine cogs
    - pipe steam to workshops
    - turn steam into galvanic power
+8. Breathe: every chimney and stove puts out soot that the wind carries over the colony. Site homes upwind, keep
+   forest belts, and answer it with apothecaries and precipitators.
 
 ## Time
 
@@ -125,6 +128,8 @@ All values live in content JSON.
 | Storage | Steamforge (all goods), Stockyard (materials, fuel), Warehouse (food, goods) |
 | Housing | Settler's Cottage, Brick Rowhouse, Steam Tenement (steam radiators replace firewood) |
 | Safety | Pump Well (radius 14) and Steam Fire Station (radius 24, puts fires out in seconds; needs steam). Otherwise a burning building is lost and the fire spreads |
+| Health | Apothecary (brews glasshouse herbs into lung tonic; homes within 16 tiles take 60% less soot damage while tonic lasts) |
+| Clean air | Galvanic Precipitator (clears 12% of the soot within 12 tiles each second; needs power) |
 | Amenities | Gas Lamp (+6% happiness within 7 tiles), Galvanic Arc Lamp (+5% within 9; needs power), Clock Tower (+12% within 18; needs steam). Homes take at most +25% from amenities |
 | Lighting | Gas Lamp (radius 7), Galvanic Arc Lamp (radius 12; needs power): night work goes on in their light |
 | Trade | Airship Mast (see below) |
@@ -202,14 +207,62 @@ A colony with only automatons left is still lost.
 
 **Food spoils** at a per-resource yearly rate, scaled by `spoilageRate`.
 
+## Soot and wind
+
+Coal smoke is simulated (`soot.ts`, settings in `rules.json` → `soot` and `wind`).
+
+- **Wind** blows from a prevailing direction for each season (`wind.prevailing`, compass degrees; spring 250°, summer
+  225°, autumn 270°, winter 315°), within `variance` (50°) of it, at 0.25–1 tiles per second. It changes each month,
+  drawn from a generator seeded by the colony and the month, so it needs no saved state.
+- **The soot field** is a grid with one cell per 4×4 tiles. Every second:
+  1. Sources add soot:
+     - working buildings with an `emitter` component (`soot` per second, laid down `stack` tiles downwind)
+     - lit generators, scaled by their load, with banked fires at a quarter
+     - home stoves, by the firewood they burn (`stoveSootPerFirewood`)
+     - burning buildings
+  2. Powered precipitators (`scrubber`) clean the cells around them.
+  3. The wind carries the soot, which spreads to neighbouring cells. Soot blown off the map is gone.
+  4. The soot disperses (faster over forest, slower in winter) and settles as **grime**. A twentieth of the grime
+     washes away each month.
+- **Exposure** is soot ÷ `fullSoot` (16), capped at 1:
+  - Above `lungSafe` (0.25), people lose up to 0.3 health a month, and children and elders twice as fast. The damage
+    also stops health recovering. Death by soot is recorded as black lung.
+  - Smoke at the home lowers the happiness target by up to 0.2.
+  - A Hunter's Lodge loses up to 60% of its catch in sooty air, a Fishing Dock 30%.
+- **Grime** ÷ `fullGrime` (40) cuts field yields by up to half.
+- **Emitters** (soot per second at full work, and stack height in tiles):
+
+  | Building | Soot | Stack |
+  |---|---|---|
+  | Smelter | 3 | 2 |
+  | Boiler House | 2.5 | 6 |
+  | Toolworks | 1.2 | 1 |
+  | Steamforge | 1 | 3 |
+  | Machine Works | 1 | 2 |
+  | Coal Pit | 0.8 | 0 |
+  | Automaton Works | 0.8 | 2 |
+  | Steam Sawmill | 0.6 | 1 |
+  | Iron Mine, Copper Mine | 0.4 | 0 |
+  | Woodcutter's Shed, Quarry | 0.3 | 0 |
+
+  The galvanic dynamo and the arc furnace are clean.
+- **Answers:**
+  - put homes upwind of furnaces
+  - keep forest belts
+  - build tall stacks such as the boiler house's
+  - heat homes by steam rather than with stoves
+  - build an Apothecary (Sanitary Science) and a Galvanic Precipitator (Electrostatic Precipitation)
+- **Calibration:** four heavy workshops running nonstop beside 16 cottages give the nearest homes 0.6–1.0 exposure and
+  the median home 0.2–0.3. Wood stoves alone stay below the lung threshold.
+
 ## Difficulty presets (`difficulty.json`)
 
-| Preset | Families | Start | Winters | Disasters | Production |
-|---|---|---|---|---|---|
-| Tinkerer | 6 | Large stores, 4 cottages, a stockyard, a warehouse; Masonry and Tailoring researched | ×0.6 | ×0.4 | ×1.2 |
-| Engineer | 5 | Modest stores and a stockyard | ×1 | ×1 | ×1 |
-| Ironclad | 4 | Thin stores | ×1.35 | ×1.6 | ×0.95 |
-| Brass Inferno | 3 | Scraps | ×1.7 | ×2.4 | ×0.85 |
+| Preset | Families | Start | Winters | Disasters | Production | Soot |
+|---|---|---|---|---|---|---|
+| Tinkerer | 6 | Large stores, 4 cottages, a stockyard, a warehouse; Masonry and Tailoring researched | ×0.6 | ×0.4 | ×1.2 | ×0.6 |
+| Engineer | 5 | Modest stores and a stockyard | ×1 | ×1 | ×1 | ×1 |
+| Ironclad | 4 | Thin stores | ×1.35 | ×1.6 | ×0.95 | ×1.3 |
+| Brass Inferno | 3 | Scraps | ×1.7 | ×2.4 | ×0.85 | ×1.6 |
 
 Presets also scale `birthRate`, `spoilageRate`, `wearRate` and `hungerRate`.
 
@@ -227,6 +280,10 @@ crop in the ground) is set aside and another is drawn, so the configured rates h
 - **Fever**: a share of citizens fall ill and lose health. Children and elders lose health `vulnerableFactor` (2.2)
   times faster, which can kill them if they were already weak.
 - **Cold snap**: −9 °C for two months.
+- **Black lung**: 35% of the people breathing sooty air (exposure 0.35 or more) fall ill for three months. It cannot
+  strike a clean colony.
+- **Rain squall** (blessing, spring to autumn): washes 80% of the soot from the air and 35% of the grime from the
+  ground. It is only drawn when there is soot to wash.
 - **Travellers** (blessing): a group of 3–7 asks to join and waits at the Steamforge for the player to welcome or turn
   them away (`answerPetition`). Only one group waits at a time, and it moves on after `waitMonths` if nobody answers.
   They bring no tools. Some groups (`feverChance`) carry fever, which the petition card warns about. Welcoming them
@@ -249,8 +306,16 @@ builds the land in layers:
 ## Rendering
 
 - Three.js WebGL renderer.
-- Terrain: chunked heightfield with a per-tile colour texture (terrain, roads). A shader adds slope rock, seasonal tint
-  and snow.
+- Terrain:
+  - a chunked heightfield with a per-tile colour texture (terrain, roads)
+  - a cold moor palette with patches of heather and bracken
+  - a shader that adds slope rock, seasonal tint and snow
+  - grime from the soot field (one texel per cell, eased over a few seconds), which dulls grass to ash-brown, heavy
+    grime to cinder, and snow to grey slush. The ground looks fully blackened at half the grime that fully fouls
+    the soil.
+  - water downstream of industry that turns oily brown
+  - the **soot map**, a heat map of airborne soot that is clear below the lung threshold and red-black above it,
+    toggled from the HUD and shown automatically while placing homes, emitters, apothecaries or precipitators
 - Instanced nature, citizens and crops.
 - Buildings built from JSON part lists, merged per material. Shapes include boxes, roofs, gears, banded stacks,
   riveted tanks, flanged pipes, tori and domes. Materials are procedural (brick, slate, clay tile, riveted plate,
@@ -259,23 +324,40 @@ builds the land in layers:
 - Conduits: copper steam mains on iron trestles with brass flanges and valve wheels, and copper power lines on
   insulated poles.
 - Particles: chimney smoke, steam vents and valve hiss, fire and snowfall.
-- Atmosphere: the light follows the simulation's sun, with dusk tints and moonlight (the "Night darkness" setting
-  hides the dark but night still passes). Windows and lamps brighten at night, and lamps cast pools of light. A coal-smoke haze browns the sky and draws the fog in as more
-  industry works. The canvas has a light sepia grade.
+  - Coal-burning buildings belch thick black smoke in proportion to their soot, and stoves give off a grey wisp.
+  - Plumes leave the chimney upright and lean with the simulation's wind.
+- Atmosphere:
+  - The light follows the simulation's sun, with dusk tints and moonlight. The "Night darkness" setting hides the
+    dark, but night still passes.
+  - Windows and lamps brighten at night, and lamps cast pools of light.
+  - Skies over the untouched frontier are pale and cold.
+  - The airborne soot around the camera, and a share of the worst in the colony, turns the sky brass-amber and draws
+    the fog in. At night the haze glows with the furnaces.
+  - Above the low tier, a grade pass gives amber highlights, teal shadows, a little contrast and a vignette. Smog
+    warms it, and night cools the shadows. The low tier uses a CSS sepia filter instead.
 - Airships: Company dirigibles approach, moor at and leave each airship mast, and cosmetic dirigibles drift over the
   valley. Automatons are brass-barrel figures with a glowing eye. Steam trams run on iron rails.
 - HUD energy gauges are small brass pressure dials (red past full load).
+- The soot barometer and wind vane HUD chip shows:
+  - a dial needle for the mean exposure at homes, red past the lung threshold, with a dot for the worst home
+  - a brass vane pointing where the smoke is carried
+  - a label: Clean, Hazy, Smoky or Choking
+
+  Clicking the chip toggles the soot map.
 - Seasonal light and fog, with a shadow frustum that follows the camera.
 - Quality tiers (low, medium, high, ultra) adapt automatically.
 
 ## Persistence and backend
 
-- Saves are full snapshots (gzip + base64), currently version 4, migrated one version at a time:
+- Saves are full snapshots (gzip + base64), currently version 5, migrated one version at a time:
   - Version 1: the Guildhall becomes the Steamforge, all research counts as done and all dispatches as received.
   - Version 2: gains empty trade orders and no credit.
   - Version 3: the clock is rescaled from 40- to 120-second months so the colony keeps its date. It gains no waiting
-    travellers and no recent disaster. Local slots and an autosave (every 3 minutes, on pause and on exit) live in
-  IndexedDB. Six cloud slots are available per account (`/api/saves`).
+    travellers and no recent disaster.
+  - Version 4: gains clean air (no soot or grime) and the season's prevailing wind at middling strength.
+- Snapshots hold the soot and grime fields as base64 `Float32Array`s, and the wind in `weather`.
+- Local slots and an autosave (every 3 minutes, on pause and on exit) live in IndexedDB. Six cloud slots are
+  available per account (`/api/saves`).
 - Accounts: a silent guest account is created on first founding and can be upgraded to a registered one. JWT access
   tokens with rotating refresh tokens.
 - Colony records (`/api/stats`): colonies founded, best years survived and peak population per difficulty. These are
@@ -283,9 +365,12 @@ builds the land in layers:
 
 ## Future work
 
+The planned identity redesign (pressure, soot, guilds, the Lost Forges and an industrial-amber look) is in
+[REDESIGN.md](REDESIGN.md).
+
 - Schools and education, a market and trade airships to order, pastures and orchards.
-- More power consumers, smog that affects health, and dispatches that set charter goals.
-- Taverns and chapels for happiness, an apothecary and herbs for health.
+- More power consumers and dispatches that set charter goals.
+- Taverns and chapels for happiness.
 - Production graphs.
 - Traveller arrivals that depend on how attractive the colony is (free homes, food, happiness).
 

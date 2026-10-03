@@ -7,8 +7,9 @@ const CHUNK = 32
 /** Texels per tile in the ground colour map (crisp roads, soft terrain borders). */
 const TEXELS = 4
 
+// A cold northern frontier: olive moor grass, grey stone, peaty water. Industry fouls it (see the grime layer).
 const TERRAIN_COLORS: Record<number, [number, number, number]> = {
-  [Terrain.Grass]: [0.36, 0.48, 0.22],
+  [Terrain.Grass]: [0.34, 0.42, 0.25],
   [Terrain.Water]: [0.22, 0.27, 0.2],
   [Terrain.Mountain]: [0.42, 0.4, 0.37],
   [Terrain.Stone]: [0.56, 0.54, 0.5],
@@ -17,6 +18,10 @@ const TERRAIN_COLORS: Record<number, [number, number, number]> = {
   [Terrain.Sand]: [0.74, 0.67, 0.5],
   [Terrain.Copper]: [0.24, 0.46, 0.38],
 }
+
+/** Patches of frost-burnt heather and bracken break up the moor. */
+const HEATHER: [number, number, number] = [0.4, 0.33, 0.3]
+const BRACKEN: [number, number, number] = [0.46, 0.38, 0.24]
 
 const ROAD_COLORS: [number, number, number][] = [
   [0.5, 0.39, 0.27],
@@ -37,11 +42,23 @@ export class TerrainLayer {
   private readonly colorData: Uint8Array
   private readonly colorTex: THREE.DataTexture
   private readonly chunks = new Map<number, THREE.Mesh>()
+  /** Settled soot, one texel per soot cell (0 clean to 255 fully fouled), sampled by the ground and water shaders. */
+  private grimeData: Uint8Array = new Uint8Array(4)
+  private grimeTex = new THREE.DataTexture(this.grimeData, 1, 1, THREE.RGBAFormat)
   private readonly uniforms = {
     uSnow: { value: 0 },
     uTint: { value: new THREE.Color(1, 1, 1) },
     uTime: { value: 0 },
+    uGrime: { value: this.grimeTex as THREE.Texture },
+    uGrimeScale: { value: new THREE.Vector2(1, 1) },
+    uMapSize: { value: new THREE.Vector2(1, 1) },
+    /** Soot view: airborne soot as exposure (0-1), shown as a heat map over the ground when uSootView is 1. */
+    uSoot: { value: this.grimeTex as THREE.Texture },
+    uSootView: { value: 0 },
+    uSootSafe: { value: 0.25 },
   }
+  private sootData: Uint8Array = new Uint8Array(4)
+  private sootTex: THREE.DataTexture | null = null
   private dirtyColors = false
 
   constructor(world: World) {
@@ -55,6 +72,7 @@ export class TerrainLayer {
     this.colorTex.minFilter = THREE.LinearMipmapLinearFilter
     this.colorTex.generateMipmaps = true
     this.colorTex.anisotropy = 4
+    this.uniforms.uMapSize.value.set(world.width, world.height)
 
     this.material = new THREE.MeshStandardMaterial({ map: this.colorTex, roughness: 0.95, metalness: 0 })
     this.material.onBeforeCompile = (shader) => {
@@ -65,7 +83,7 @@ export class TerrainLayer {
       shader.fragmentShader = shader.fragmentShader
         .replace(
           '#include <common>',
-          '#include <common>\nvarying vec3 vWorldN;\nvarying float vHeight;\nuniform float uSnow;\nuniform vec3 uTint;',
+          '#include <common>\nvarying vec3 vWorldN;\nvarying float vHeight;\nuniform float uSnow;\nuniform vec3 uTint;\nuniform sampler2D uGrime;\nuniform vec2 uGrimeScale;\nuniform sampler2D uSoot;\nuniform float uSootView;\nuniform float uSootSafe;',
         )
         .replace(
           '#include <map_fragment>',
@@ -73,9 +91,25 @@ export class TerrainLayer {
           float slope = 1.0 - clamp(vWorldN.y, 0.0, 1.0);
           vec3 rock = vec3(0.36, 0.34, 0.31) * (0.85 + 0.3 * fract(sin(dot(floor(vMapUv * 512.0), vec2(12.9898, 78.233))) * 43758.5453));
           diffuseColor.rgb = mix(diffuseColor.rgb * uTint, rock, smoothstep(0.35, 0.6, slope));
+          // Soot settles downwind of the chimneys: grass dulls to ash-brown, heavy grime to cinder, snow to slush.
+          float grime = texture2D(uGrime, vMapUv * uGrimeScale).r;
+          float lum = dot(diffuseColor.rgb, vec3(0.3, 0.55, 0.15));
+          vec3 ash = mix(vec3(0.3, 0.26, 0.21), vec3(0.11, 0.1, 0.09), smoothstep(0.45, 1.0, grime)) * (0.75 + 0.5 * lum);
+          diffuseColor.rgb = mix(diffuseColor.rgb, ash, clamp(grime * 1.5, 0.0, 1.0) * 0.85);
           float snow = uSnow * smoothstep(0.55, 0.25, slope);
           snow = max(snow, smoothstep(9.0, 12.0, vHeight) * smoothstep(0.75, 0.3, slope));
-          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.92, 0.94, 0.97), clamp(snow, 0.0, 0.95));`,
+          vec3 snowColor = mix(vec3(0.92, 0.94, 0.97), vec3(0.36, 0.34, 0.32), clamp(grime * 0.9, 0.0, 0.85));
+          diffuseColor.rgb = mix(diffuseColor.rgb, snowColor, clamp(snow, 0.0, 0.95));
+          if (uSootView > 0.5) {
+            // Soot view: clean air stays clear, haze turns ochre, harmful smoke (past the lung threshold) red-black.
+            float s = texture2D(uSoot, vMapUv * uGrimeScale).r;
+            vec3 heat = s < uSootSafe
+              ? mix(vec3(0.55, 0.7, 0.45), vec3(0.95, 0.72, 0.3), s / uSootSafe)
+              : mix(vec3(0.85, 0.3, 0.12), vec3(0.18, 0.04, 0.03), (s - uSootSafe) / (1.0 - uSootSafe));
+            float band = smoothstep(0.92, 1.0, fract(s * 8.0)) * step(0.02, s);
+            diffuseColor.rgb = mix(diffuseColor.rgb * 0.7, heat, 0.18 + 0.5 * smoothstep(0.0, 0.25, s));
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.1, 0.07, 0.05), band * 0.6);
+          }`,
         )
     }
 
@@ -87,11 +121,26 @@ export class TerrainLayer {
 
     const waterGeo = new THREE.PlaneGeometry(world.width + 200, world.height + 200, 1, 1)
     waterGeo.rotateX(-Math.PI / 2)
-    const waterMat = new THREE.MeshStandardMaterial({ color: '#2c5866', roughness: 0.08, metalness: 0.35, transparent: true, opacity: 0.86 })
+    const waterMat = new THREE.MeshStandardMaterial({ color: '#2a4a52', roughness: 0.08, metalness: 0.35, transparent: true, opacity: 0.86 })
     waterMat.onBeforeCompile = (shader) => {
       shader.uniforms.uTime = this.uniforms.uTime
+      shader.uniforms.uGrime = this.uniforms.uGrime
+      shader.uniforms.uGrimeScale = this.uniforms.uGrimeScale
+      shader.uniforms.uMapSize = this.uniforms.uMapSize
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying vec2 vGround;')
+        .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvGround = (modelMatrix * vec4(transformed, 1.0)).xz;')
       shader.fragmentShader = shader.fragmentShader
-        .replace('#include <common>', '#include <common>\nuniform float uTime;')
+        .replace('#include <common>', '#include <common>\nuniform float uTime;\nuniform sampler2D uGrime;\nuniform vec2 uGrimeScale;\nuniform vec2 uMapSize;\nvarying vec2 vGround;')
+        .replace(
+          '#include <color_fragment>',
+          `#include <color_fragment>
+          // Water downstream of industry turns oily and brown.
+          vec2 guv = vGround / uMapSize;
+          float inside = step(0.0, guv.x) * step(0.0, guv.y) * step(guv.x, 1.0) * step(guv.y, 1.0);
+          float foul = texture2D(uGrime, guv * uGrimeScale).r * inside;
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.2, 0.18, 0.11), clamp(foul * 0.8, 0.0, 0.7));`,
+        )
         .replace(
           '#include <normal_fragment_maps>',
           `#include <normal_fragment_maps>
@@ -219,6 +268,13 @@ export class TerrainLayer {
         let c: [number, number, number] = [0, 1, 2].map(
           (k) => c00[k] * (1 - ax) * (1 - ay) + c10[k] * ax * (1 - ay) + c01[k] * (1 - ax) * ay + c11[k] * ax * ay,
         ) as [number, number, number]
+        if (w.terrain[i] === Terrain.Grass) {
+          // Low-frequency patches of heather and bracken over the moor grass.
+          const patch = fbm(px / 46, py / 46, 11, 3)
+          const heather = Math.max(0, Math.min(1, (patch - 0.56) * 5)) * 0.7
+          const bracken = Math.max(0, Math.min(1, (0.4 - patch) * 5)) * 0.5
+          c = c.map((v, k) => v + (HEATHER[k] - v) * heather + (BRACKEN[k] - v) * bracken) as [number, number, number]
+        }
         if (road) {
           // Roads fill the tile but leave a soft verge where the neighbour has no road.
           const edge = Math.min(tx, ty, TEXELS - 1 - tx, TEXELS - 1 - ty) === 0
@@ -280,6 +336,52 @@ export class TerrainLayer {
     return d + (c - d) * (1 - tx) + (b - d) * (1 - ty)
   }
 
+  /**
+   * Uploads the settled grime (one value per soot cell, already normalised to 0-1). Reallocates the texture when
+   * the grid size changes; otherwise only refreshes its data.
+   */
+  setGrime(grime: ArrayLike<number>, cols: number, rows: number, cell: number): void {
+    if (this.grimeTex.image.width !== cols || this.grimeTex.image.height !== rows) {
+      this.grimeTex.dispose()
+      this.grimeData = new Uint8Array(cols * rows * 4)
+      this.grimeTex = new THREE.DataTexture(this.grimeData, cols, rows, THREE.RGBAFormat)
+      this.grimeTex.magFilter = THREE.LinearFilter
+      this.grimeTex.minFilter = THREE.LinearFilter
+      this.grimeTex.wrapS = this.grimeTex.wrapT = THREE.ClampToEdgeWrapping
+      this.uniforms.uGrime.value = this.grimeTex
+      this.uniforms.uGrimeScale.value.set(this.world.width / (cols * cell), this.world.height / (rows * cell))
+    }
+    for (let i = 0; i < cols * rows; i++) {
+      const v = Math.round(Math.max(0, Math.min(1, grime[i])) * 255)
+      this.grimeData[i * 4] = v
+      this.grimeData[i * 4 + 3] = 255
+    }
+    this.grimeTex.needsUpdate = true
+  }
+
+  /** Uploads airborne soot as exposure (0-1 per soot cell) for the soot view. */
+  setSoot(exposure: ArrayLike<number>, cols: number, rows: number, safe: number): void {
+    if (!this.sootTex || this.sootTex.image.width !== cols || this.sootTex.image.height !== rows) {
+      this.sootTex?.dispose()
+      this.sootData = new Uint8Array(cols * rows * 4)
+      this.sootTex = new THREE.DataTexture(this.sootData, cols, rows, THREE.RGBAFormat)
+      this.sootTex.magFilter = THREE.LinearFilter
+      this.sootTex.minFilter = THREE.LinearFilter
+      this.sootTex.wrapS = this.sootTex.wrapT = THREE.ClampToEdgeWrapping
+      this.uniforms.uSoot.value = this.sootTex
+    }
+    for (let i = 0; i < cols * rows; i++) {
+      this.sootData[i * 4] = Math.round(Math.max(0, Math.min(1, exposure[i])) * 255)
+      this.sootData[i * 4 + 3] = 255
+    }
+    this.sootTex.needsUpdate = true
+    this.uniforms.uSootSafe.value = safe
+  }
+
+  setSootView(on: boolean): void {
+    this.uniforms.uSootView.value = on ? 1 : 0
+  }
+
   setSeason(snow: number, tint: THREE.Color): void {
     this.uniforms.uSnow.value = snow
     this.uniforms.uTint.value.copy(tint)
@@ -297,6 +399,8 @@ export class TerrainLayer {
     for (const m of this.chunks.values()) m.geometry.dispose()
     this.material.dispose()
     this.colorTex.dispose()
+    this.grimeTex.dispose()
+    this.sootTex?.dispose()
     this.water.geometry.dispose()
     ;(this.water.material as THREE.Material).dispose()
   }

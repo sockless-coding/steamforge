@@ -1,13 +1,27 @@
 import * as THREE from 'three'
 
-export type ParticleKind = 'smoke' | 'steam' | 'fire' | 'dust' | 'snow'
+export type ParticleKind = 'smoke' | 'soot' | 'steam' | 'fire' | 'dust' | 'snow'
 
-const KIND: Record<ParticleKind, { color: [number, number, number]; life: number; size: number; rise: number; grow: number; alpha: number }> = {
-  smoke: { color: [0.34, 0.32, 0.3], life: 4.5, size: 0.5, rise: 0.7, grow: 1.4, alpha: 0.55 },
-  steam: { color: [0.92, 0.92, 0.9], life: 2.6, size: 0.45, rise: 1.2, grow: 1.6, alpha: 0.5 },
-  fire: { color: [1, 0.55, 0.18], life: 0.9, size: 0.45, rise: 1.8, grow: -0.3, alpha: 0.9 },
-  dust: { color: [0.62, 0.52, 0.38], life: 1.2, size: 0.35, rise: 0.3, grow: 0.8, alpha: 0.4 },
-  snow: { color: [0.95, 0.97, 1], life: 6, size: 0.12, rise: -0.6, grow: 0, alpha: 0.85 },
+interface KindSpec {
+  color: [number, number, number]
+  life: number
+  size: number
+  rise: number
+  grow: number
+  alpha: number
+  /** How readily the particle is carried by the wind (0 = not at all, 1 = at wind speed). */
+  drift: number
+}
+
+const KIND: Record<ParticleKind, KindSpec> = {
+  /** Wood smoke from cottage stoves. */
+  smoke: { color: [0.4, 0.38, 0.36], life: 4.5, size: 0.5, rise: 0.7, grow: 1.4, alpha: 0.5, drift: 1 },
+  /** Thick coal smoke from furnaces and boilers: dark, long-lived, and it spreads into a pall. */
+  soot: { color: [0.12, 0.11, 0.1], life: 8, size: 0.9, rise: 0.9, grow: 3, alpha: 0.78, drift: 1 },
+  steam: { color: [0.92, 0.92, 0.9], life: 2.6, size: 0.45, rise: 1.2, grow: 1.6, alpha: 0.5, drift: 0.7 },
+  fire: { color: [1, 0.55, 0.18], life: 0.9, size: 0.45, rise: 1.8, grow: -0.3, alpha: 0.9, drift: 0.2 },
+  dust: { color: [0.62, 0.52, 0.38], life: 1.2, size: 0.35, rise: 0.3, grow: 0.8, alpha: 0.4, drift: 0.4 },
+  snow: { color: [0.95, 0.97, 1], life: 6, size: 0.12, rise: -0.6, grow: 0, alpha: 0.85, drift: 0.5 },
 }
 
 /**
@@ -28,6 +42,8 @@ export class Particles {
   private next = 0
   private readonly kinds = Object.keys(KIND) as ParticleKind[]
   scale = 1
+  /** Wind in world units per second (x and z); plumes lean with it as they rise. */
+  readonly wind = new THREE.Vector2()
 
   constructor(capacity: number) {
     this.capacity = capacity
@@ -87,7 +103,7 @@ export class Particles {
     this.pos[i * 3] = x + (Math.random() - 0.5) * spread
     this.pos[i * 3 + 1] = y
     this.pos[i * 3 + 2] = z + (Math.random() - 0.5) * spread
-    this.vel[i * 3] = (Math.random() - 0.5) * 0.25 + 0.15
+    this.vel[i * 3] = (Math.random() - 0.5) * 0.25
     this.vel[i * 3 + 1] = k.rise * (0.7 + Math.random() * 0.6)
     this.vel[i * 3 + 2] = (Math.random() - 0.5) * 0.25
     this.maxLife[i] = this.life[i] = k.life * (0.7 + Math.random() * 0.6)
@@ -103,6 +119,10 @@ export class Particles {
       this.life[i] -= dt
       const k = KIND[this.kinds[this.kind[i]]]
       const t = 1 - this.life[i] / this.maxLife[i]
+      // Plumes leave the chimney upright and bend over as the wind takes them.
+      const take = Math.min(1, dt * 0.7 * k.drift)
+      this.vel[i * 3] += (this.wind.x * k.drift - this.vel[i * 3]) * take
+      this.vel[i * 3 + 2] += (this.wind.y * k.drift - this.vel[i * 3 + 2]) * take
       this.pos[i * 3] += this.vel[i * 3] * dt
       this.pos[i * 3 + 1] += this.vel[i * 3 + 1] * dt
       this.pos[i * 3 + 2] += this.vel[i * 3 + 2] * dt

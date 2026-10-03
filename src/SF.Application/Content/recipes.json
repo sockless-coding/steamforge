@@ -7,6 +7,8 @@
   { "id": "sew-coats", "name": "Sew coats", "inputs": { "leather": 2 }, "outputs": { "coats": 1 }, "seconds": 28 },
   { "id": "machine-cogs", "name": "Machine cogs", "inputs": { "iron": 1 }, "outputs": { "cogs": 2 }, "seconds": 24 },
   { "id": "grow-tomatoes", "name": "Grow tomatoes", "inputs": {}, "outputs": { "tomatoes": 3 }, "seconds": 32 },
+  { "id": "grow-herbs", "name": "Grow herbs", "inputs": {}, "outputs": { "herbs": 3 }, "seconds": 32 },
+  { "id": "brew-tonic", "name": "Brew lung tonic", "inputs": { "herbs": 2 }, "outputs": { "tonic": 2 }, "seconds": 24 },
   { "id": "arc-iron", "name": "Arc-smelt iron", "inputs": { "ironOre": 2 }, "outputs": { "iron": 2 }, "seconds": 20 },
   { "id": "arc-copper", "name": "Arc-smelt copper", "inputs": { "copperOre": 2 }, "outputs": { "copper": 2 }, "seconds": 20 }
 ]
