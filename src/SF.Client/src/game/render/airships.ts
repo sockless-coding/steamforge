@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import type { AirshipConfig, ShipPhase } from '../sim/components/airship'
+import { airshipYard, chart } from '../sim/saga'
 import type { Simulation } from '../sim/simulation'
 import { material } from './materials'
 import type { Particles } from './particles'
@@ -62,6 +63,16 @@ interface MastView {
   t: number
 }
 
+/** An expedition airship lifting off the yard for a forge, or coming home to it. */
+interface Voyager {
+  ship: Ship
+  /** Yard position on the ground, and the unit bearing of the forge on the chart. */
+  home: THREE.Vector3
+  dir: THREE.Vector2
+  outbound: boolean
+  t: number
+}
+
 interface Drifter {
   ship: Ship
   x: number
@@ -84,6 +95,8 @@ export class AirshipLayer {
   private width = 0
   private height = 0
   private smokeAcc = 0
+  private readonly voyagers: Voyager[] = []
+  private readonly pending: { forge: string; outbound: boolean }[] = []
 
   constructor(terrain: TerrainLayer, particles: Particles, width: number, height: number) {
     this.terrain = terrain
@@ -97,7 +110,49 @@ export class AirshipLayer {
     }
   }
 
+  /** An expedition left or came home: queued until the next frame, when the yard and the chart can be read. */
+  expedition(forge: string, outbound: boolean): void {
+    this.pending.push({ forge, outbound })
+  }
+
+  private syncVoyagers(sim: Simulation, dt: number): void {
+    for (const p of this.pending.splice(0)) {
+      const yard = airshipYard(sim) ?? sim.headquarters()
+      const point = chart(sim).find((c) => c.id === p.forge)
+      if (!yard || !point) continue
+      const ship = buildShip(1)
+      this.group.add(ship.group)
+      const x = yard.x + yard.w / 2
+      const z = yard.y + yard.h / 2
+      const dir = new THREE.Vector2(point.x, point.y)
+      if (dir.lengthSq() < 1e-6) dir.set(1, 0)
+      dir.normalize()
+      this.voyagers.push({ ship, home: new THREE.Vector3(x, this.terrain.heightAt(x, z), z), dir, outbound: p.outbound, t: 0 })
+    }
+    // Lift off (or settle) over 10 seconds, then fly 140 tiles along the bearing in 40 more.
+    for (const v of [...this.voyagers]) {
+      v.t += dt
+      const total = 50
+      const s = Math.min(1, v.t / total)
+      const k = v.outbound ? s : 1 - s
+      const climb = Math.min(1, (k * total) / 10)
+      const travel = Math.max(0, k * total - 10) / 40
+      const dist = travel * travel * 140
+      v.ship.group.position.set(v.home.x + v.dir.x * dist, v.home.y + 3.2 + climb * 22, v.home.z + v.dir.y * dist)
+      v.ship.group.rotation.y = Math.atan2(-v.dir.y, v.dir.x) + (v.outbound ? 0 : Math.PI)
+      for (const p of v.ship.props) p.rotation.z += dt * 12
+      if (s >= 1) {
+        this.group.remove(v.ship.group)
+        v.ship.group.traverse((o) => {
+          if (o instanceof THREE.Mesh) o.geometry.dispose()
+        })
+        this.voyagers.splice(this.voyagers.indexOf(v), 1)
+      }
+    }
+  }
+
   update(sim: Simulation, dt: number, time: number): void {
+    this.syncVoyagers(sim, dt)
     for (const d of this.drifters) {
       d.heading += Math.sin(time * 0.05 + d.y) * 0.002
       d.x += Math.cos(d.heading) * d.speed * dt

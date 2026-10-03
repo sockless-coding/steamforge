@@ -8,11 +8,13 @@ import type {
   DifficultyPreset,
   EventDef,
   FeatureDef,
+  ForgeDef,
   GuildDef,
   PetitionDef,
   ProfessionDef,
   RecipeDef,
   ResearchDef,
+  RelicDef,
   ResourceDef,
 } from './types'
 
@@ -32,6 +34,8 @@ export interface Content {
   research: Map<string, ResearchDef>
   guilds: Map<string, GuildDef>
   petitions: Map<string, PetitionDef>
+  forges: Map<string, ForgeDef>
+  relics: Map<string, RelicDef>
   /** Profession id -> its guild. */
   guildOf: Map<string, GuildDef>
   /** The headquarters building (the Steamforge). */
@@ -53,6 +57,8 @@ export function indexContent(bundle: ContentBundle): Content {
     research: byId(bundle.research),
     guilds: byId(bundle.guilds ?? []),
     petitions: byId(bundle.petitions ?? []),
+    forges: byId(bundle.forges?.forges ?? []),
+    relics: byId(bundle.forges?.relics ?? []),
     guildOf: new Map(
       bundle.professions.flatMap((p) => {
         const guild = p.guild ? (bundle.guilds ?? []).find((g) => g.id === p.guild) : undefined

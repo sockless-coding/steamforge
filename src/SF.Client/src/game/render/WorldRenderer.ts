@@ -225,6 +225,9 @@ export class WorldRenderer {
         case 'conduit':
           this.conduits.markDirty()
           break
+        case 'expedition':
+          this.airships.expedition(e.forge, e.change === 'departed')
+          break
         case 'building':
           // Pipes reach into the buildings they serve, so finished or removed buildings reshape the mains.
           if (e.change !== 'changed') this.conduits.markDirty()

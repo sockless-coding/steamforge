@@ -12,6 +12,7 @@ const STATUS_LABEL: Record<ResearchRow['status'], string> = {
   queued: 'Planned',
   available: 'Available',
   locked: 'Needs earlier research',
+  salvage: 'Salvage only: an expedition must find the plans',
 }
 
 /** The research tree, one column per tier. Clicking a project plans it (with any missing requirements first). */
@@ -80,7 +81,7 @@ export function ResearchPanel({ hud, controller, onClose }: { hud: HudState; con
               <b>{selected.unlocks.join(', ') || 'Nothing new'}</b>
             </li>
           </ul>
-          {selected.status !== 'done' && (
+          {selected.status !== 'done' && selected.status !== 'salvage' && (
             <div className="row">
               <Button size="sm" icon="flask" disabled={selected.status === 'current'} onClick={() => controller.perform({ type: 'research', tech: selected.id })}>
                 {selected.status === 'current' ? 'Researching' : 'Research this'}
@@ -118,6 +119,12 @@ export function DispatchPanel({ hud, initial, onClose }: { hud: HudState; initia
   const received = hud.dispatches.map((id) => story.dispatches.find((d) => d.id === id)).filter((d) => d !== undefined)
   const [open, setOpen] = useState<string>(initial ?? received.at(-1)?.id ?? 'charter')
   const letter = received.find((d) => d.id === open)
+  // Three volumes: the Board's dispatches, telegrams from the answering forges, and the papers found in the ruins.
+  const volumes: [string, typeof received][] = [
+    ['From the Board', received.filter((d) => (d.volume ?? 'board') === 'board')],
+    ['Telegrams', received.filter((d) => d.volume === 'telegrams')],
+    ['The Forge Papers', received.filter((d) => d.volume === 'papers')],
+  ]
 
   return (
     <Modal title="Dispatches from the Company" onClose={onClose} wide>
@@ -128,16 +135,25 @@ export function DispatchPanel({ hud, initial, onClose }: { hud: HudState; initia
               <Icon name="book" size={14} /> {story.intro.title}
             </button>
           </li>
-          {received.map((d) => (
-            <li key={d.id}>
-              <button type="button" className={open === d.id ? 'active' : ''} onClick={() => setOpen(d.id)}>
-                <Icon name="book" size={14} /> {d.title.replace(/^Dispatch: /, '')}
-              </button>
-            </li>
-          ))}
+          {volumes.map(([volume, letters]) =>
+            letters.length === 0 ? null : (
+              <li key={volume} className="dispatch-volume">
+                <span className="dispatch-volume-title">{volume}</span>
+                <ul>
+                  {letters.map((d) => (
+                    <li key={d.id}>
+                      <button type="button" className={open === d.id ? 'active' : ''} onClick={() => setOpen(d.id)}>
+                        <Icon name="book" size={14} /> {d.title.replace(/^(Dispatch|Telegram from|Telegram|The Forge Papers): ?/, '')}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ),
+          )}
         </ul>
         {letter ? (
-          <Letter title={letter.title} paragraphs={[storyText(letter.text, hud.colonyName)]} signature="The Board, Meridian Steam Company" />
+          <Letter title={letter.title} paragraphs={[storyText(letter.text, hud.colonyName)]} signature={letter.from ?? 'The Board, Meridian Steam Company'} />
         ) : (
           <Letter title={story.intro.title} paragraphs={story.intro.paragraphs.map((p) => storyText(p, hud.colonyName))} signature={story.intro.signature} />
         )}

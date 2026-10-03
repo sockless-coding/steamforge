@@ -677,7 +677,7 @@
     "description": "A treadle sewing machine stitches leather into warm greatcoats. Coated citizens lose heat far more slowly outdoors.",
     "size": [2, 2],
     "cost": { "resources": { "logs": 20, "stone": 8 }, "work": 100 },
-    "components": { "workplace": { "workers": 2, "profession": "tailor" }, "producer": { "recipes": ["sew-coats"] } },
+    "components": { "workplace": { "workers": 2, "profession": "tailor" }, "producer": { "recipes": ["sew-coats", "sew-envelope"] } },
     "model": {
       "parts": [
         { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.8, 0.2, 1.8] },
@@ -1683,6 +1683,94 @@
         { "shape": "chimney", "mat": "brick", "pos": [-0.9, 1.75, -0.6], "size": [0.24, 0.7, 0.24] },
         { "shape": "sphere", "mat": "lamp", "pos": [-0.32, 1.15, 0.75], "size": [0.08, 0.1, 0.08] },
         { "shape": "sphere", "mat": "lamp", "pos": [0.32, 1.15, 0.75], "size": [0.08, 0.1, 0.08] }
+      ]
+    }
+  },
+  {
+    "id": "telegraph-office",
+    "name": "Telegraph Office",
+    "category": "civic",
+    "description": "A brick office under a tall wire mast that keeps the colony in touch with the forges that still answer. They will ask for help, and pay for it. Open the Hollowmere chart to read their telegrams.",
+    "size": [2, 2],
+    "cost": { "resources": { "stone": 20, "logs": 10, "copper": 10, "iron": 4 }, "work": 150 },
+    "limit": 1,
+    "components": {
+      "telegraph": {},
+      "consumer": { "uses": { "power": 2 }, "workBonus": 0.5 }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.85, 0.2, 1.85] },
+        { "shape": "box", "mat": "brick", "pos": [-0.2, 0.2, 0], "size": [1.3, 1.1, 1.4] },
+        { "shape": "box", "mat": "stone", "pos": [-0.2, 1.3, 0], "size": [1.4, 0.08, 1.5] },
+        { "shape": "hip", "mat": "slate", "pos": [-0.2, 1.38, 0], "size": [1.42, 0.45, 1.52] },
+        { "shape": "box", "mat": "plank", "pos": [-0.45, 0.2, 0.71], "size": [0.32, 0.62, 0.04] },
+        { "shape": "box", "mat": "glass", "pos": [0.1, 0.45, 0.71], "size": [0.4, 0.42, 0.03] },
+        { "shape": "box", "mat": "brassplate", "pos": [-0.2, 0.95, 0.72], "size": [1.0, 0.13, 0.02] },
+        { "shape": "box", "mat": "brick", "pos": [-0.2, 1.38, 0.55], "size": [0.42, 0.42, 0.2] },
+        { "shape": "gable", "mat": "slate", "pos": [-0.2, 1.8, 0.55], "size": [0.26, 0.22, 0.46], "rot": 90 },
+        { "shape": "cylinder", "mat": "brass", "pos": [-0.2, 1.58, 0.66], "size": [0.3, 0.04, 0.3], "axis": "z" },
+        { "shape": "cylinder", "mat": "dial", "pos": [-0.2, 1.58, 0.68], "size": [0.24, 0.02, 0.24], "axis": "z" },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [0.72, 0.2, -0.45], "size": [0.1, 3.0, 0.1], "taper": 0.6 },
+        { "shape": "box", "mat": "darkiron", "pos": [0.72, 2.7, -0.45], "size": [0.8, 0.04, 0.04] },
+        { "shape": "box", "mat": "darkiron", "pos": [0.72, 2.3, -0.45], "size": [0.6, 0.04, 0.04] },
+        { "shape": "cylinder", "mat": "dial", "pos": [0.4, 2.74, -0.45], "size": [0.06, 0.1, 0.06] },
+        { "shape": "cylinder", "mat": "dial", "pos": [1.04, 2.74, -0.45], "size": [0.06, 0.1, 0.06] },
+        { "shape": "cylinder", "mat": "dial", "pos": [0.5, 2.34, -0.45], "size": [0.06, 0.1, 0.06] },
+        { "shape": "cylinder", "mat": "dial", "pos": [0.94, 2.34, -0.45], "size": [0.06, 0.1, 0.06] },
+        { "shape": "sphere", "mat": "arc", "pos": [0.72, 3.25, -0.45], "size": [0.1, 0.1, 0.1], "glow": true },
+        { "shape": "box", "mat": "darkiron", "pos": [0.55, 0.2, 0.55], "size": [0.3, 0.55, 0.3] },
+        { "shape": "gear", "mat": "brass", "pos": [0.55, 0.55, 0.71], "size": [0.2, 0.03, 0.2], "axis": "z", "spin": 6 },
+        { "shape": "sphere", "mat": "lamp", "pos": [-0.75, 0.9, 0.78], "size": [0.08, 0.1, 0.08] },
+        { "shape": "chimney", "mat": "brick", "pos": [-0.6, 1.4, -0.4], "size": [0.2, 0.6, 0.2] }
+      ]
+    }
+  },
+  {
+    "id": "airship-yard",
+    "name": "Airship Yard",
+    "category": "civic",
+    "description": "A gantry and gasworks that fit out expedition airships. Send crews from here to the silent forges on the Hollowmere chart: they bring back salvage, survivors, the forges' papers, and sometimes plans and relics found nowhere else. Every voyage costs cogs, copper, envelope cloth and coal.",
+    "size": [4, 3],
+    "cost": { "resources": { "stone": 30, "logs": 30, "iron": 20, "copper": 10, "cogs": 8 }, "work": 320 },
+    "limit": 1,
+    "components": {
+      "airshipYard": {},
+      "consumer": { "uses": { "steam": 4 }, "required": true }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [3.85, 0.2, 2.85] },
+        { "shape": "box", "mat": "plank", "pos": [0, 0.2, 0], "size": [3.6, 0.06, 2.6] },
+        { "shape": "box", "mat": "darkiron", "pos": [-1.6, 0.26, -1.15], "size": [0.12, 3.2, 0.12] },
+        { "shape": "box", "mat": "darkiron", "pos": [-1.6, 0.26, 1.15], "size": [0.12, 3.2, 0.12] },
+        { "shape": "box", "mat": "darkiron", "pos": [1.6, 0.26, -1.15], "size": [0.12, 3.2, 0.12] },
+        { "shape": "box", "mat": "darkiron", "pos": [1.6, 0.26, 1.15], "size": [0.12, 3.2, 0.12] },
+        { "shape": "box", "mat": "darkiron", "pos": [-1.6, 3.42, 0], "size": [0.12, 0.12, 2.42] },
+        { "shape": "box", "mat": "darkiron", "pos": [1.6, 3.42, 0], "size": [0.12, 0.12, 2.42] },
+        { "shape": "box", "mat": "darkiron", "pos": [0, 3.42, -1.15], "size": [3.32, 0.12, 0.12] },
+        { "shape": "box", "mat": "darkiron", "pos": [0, 3.42, 1.15], "size": [3.32, 0.12, 0.12] },
+        { "shape": "box", "mat": "darkiron", "pos": [-1.6, 1.8, 0], "size": [0.06, 0.06, 2.3] },
+        { "shape": "box", "mat": "darkiron", "pos": [1.6, 1.8, 0], "size": [0.06, 0.06, 2.3] },
+        { "shape": "sphere", "mat": "envelope", "pos": [0, 2.25, 0], "size": [3.0, 1.15, 1.25] },
+        { "shape": "torus", "mat": "brass", "pos": [-0.6, 2.25, 0], "size": [1.24, 0.04, 0], "axis": "x" },
+        { "shape": "torus", "mat": "brass", "pos": [0.6, 2.25, 0], "size": [1.24, 0.04, 0], "axis": "x" },
+        { "shape": "box", "mat": "plank", "pos": [0, 1.2, 0], "size": [1.0, 0.36, 0.42] },
+        { "shape": "box", "mat": "glass", "pos": [0, 1.32, 0.22], "size": [0.7, 0.14, 0.02] },
+        { "shape": "box", "mat": "brass", "pos": [0, 1.56, 0], "size": [1.0, 0.04, 0.42] },
+        { "shape": "gear", "mat": "brass", "pos": [-0.6, 1.38, 0], "size": [0.3, 0.04, 0.3], "axis": "x", "spin": 4 },
+        { "shape": "cylinder", "mat": "canvas", "pos": [-0.9, 0.26, 1.0], "size": [0.5, 0.4, 0.5] },
+        { "shape": "tank", "mat": "copperplate", "pos": [1.25, 0.26, 0.9], "size": [0.5, 0.8, 0.5] },
+        { "shape": "tank", "mat": "copperplate", "pos": [1.25, 0.26, -0.3], "size": [0.5, 0.8, 0.5] },
+        { "shape": "pipe", "mat": "copper", "pos": [1.25, 1.06, 0.3], "size": [0.06, 1.2, 0.06], "axis": "z" },
+        { "shape": "box", "mat": "brick", "pos": [-1.0, 0.26, -0.9], "size": [0.9, 0.7, 0.7] },
+        { "shape": "box", "mat": "slate", "pos": [-1.0, 0.96, -0.9], "size": [1.0, 0.08, 0.8] },
+        { "shape": "chimney", "mat": "brick", "pos": [-1.25, 0.96, -1.05], "size": [0.18, 0.6, 0.18] },
+        { "shape": "box", "mat": "glow", "pos": [-1.0, 0.4, -0.54], "size": [0.2, 0.15, 0.02], "glow": true },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [0.4, 0.26, 0.9], "size": [0.04, 1.0, 0.04] },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [-0.4, 0.26, -0.9], "size": [0.04, 1.0, 0.04] },
+        { "shape": "sphere", "mat": "lamp", "pos": [1.6, 3.6, 1.15], "size": [0.1, 0.12, 0.1] },
+        { "shape": "sphere", "mat": "lamp", "pos": [-1.6, 3.6, -1.15], "size": [0.1, 0.12, 0.1] }
       ]
     }
   },

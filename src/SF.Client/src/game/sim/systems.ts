@@ -1,3 +1,4 @@
+import { updateSaga } from './saga'
 import { chooseTask } from './ai'
 import { amenityByHome } from './components/amenity'
 import { clinicByHome } from './components/health'
@@ -318,6 +319,7 @@ registerSystem({ id: 'fire', second: updateFires })
 registerSystem({ id: 'events', second: updatePetition, month: rollEvents })
 registerSystem({ id: 'story', month: (sim) => checkDispatches(sim, {}) })
 registerSystem({ id: 'guilds', second: updateGuildPetition, month: updateGuilds })
+registerSystem({ id: 'saga', month: updateSaga })
 
 // ---------------------------------------------------------------- outcome and warnings
 

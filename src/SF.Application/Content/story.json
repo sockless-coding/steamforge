@@ -95,6 +95,135 @@
       "title": "Dispatch: The Charter Fulfilled",
       "text": "The telegraph from {colony} was confirmed this morning: an analytical engine stands in the north, driven by galvanic power from steam raised in a colony that did not exist a few years ago. The Board declares the Brass Charter fulfilled. The colony is yours, Chief Engineer. Keep it burning.",
       "when": { "building": "analytical-engine" }
+    },
+    {
+      "id": "act-2",
+      "title": "Dispatch: The Silent Forges",
+      "text": "Chief Engineer, the Board has decided you may know what it has not said in print. Of the eleven forges sent north before yours, four still answer: Saltmarsh, Brassmoor, Frostgate and Gearholt. The rest fell silent one by one. A telegraph office would put you in touch with the four; an airship yard would let you learn what became of the others. The Board would be grateful for news of either. It would be more grateful still for whatever can be salvaged.",
+      "when": { "act": 2 }
+    },
+    {
+      "id": "act-3",
+      "title": "Dispatch: The Matter of Pressure",
+      "text": "You have read the papers, so there is no use pretending. The sealed engines creep. After a decade at work, a Steamforge's core gains pressure on its own, a little more each month, until it is either let out or lets itself out. Cinderholm and Blackwater are what the second looks like. The Board required self-sufficiency within the decade because it needed every colony able to live without its Steamforge before the Steamforge failed. Yours has begun to creep. You may enjoy the free steam for a while; you may not enjoy it for ever. Retrofit it if you have the plans and the engineers, or vent it and seal it cold. The Board will not tell you which. It is your colony now.",
+      "when": { "act": 3 }
+    },
+    {
+      "id": "epilogue-retrofitted",
+      "title": "Telegram: No. 9 Unsealed",
+      "text": "Ashcombe has heard that Steamforge No. 9 has been opened, refitted and lit again under a governor of the colony's own making, and that it runs at more than twice its old head with no creep at all. Not one of the twelve engines has ever been tamed before. The Board sends its compliments, and a request for the drawings. {colony} may name its price.",
+      "when": { "manual": true },
+      "from": "Cornelius Vane, Secretary to the Board"
+    },
+    {
+      "id": "epilogue-decommissioned",
+      "title": "Telegram: No. 9 Sealed Cold",
+      "text": "The Board notes that Steamforge No. 9 has been vented and sealed, and that {colony} now raises every ounce of its steam from boilers of its own. It is the first colony to outlive its engine. Some on the Board call it a waste of a fine machine. The rest of us have seen the crater at Cinderholm.",
+      "when": { "manual": true },
+      "from": "Cornelius Vane, Secretary to the Board"
+    },
+    {
+      "id": "epilogue-ruptured",
+      "title": "Telegram: The Rupture",
+      "text": "We have the news from {colony}. The Board offers its condolences for those lost, and its admiration that the colony still stands. Cinderholm did not. Raise your boilers, Chief Engineer, and keep the telegraph open: you are not the only colony with a Steamforge, and the others will want to know how you lived.",
+      "when": { "manual": true },
+      "from": "Cornelius Vane, Secretary to the Board"
+    },
+    {
+      "id": "telegram-saltmarsh",
+      "title": "Telegram from Saltmarsh",
+      "text": "Saltmarsh to {colony}. Glad to hear another voice on the wire. We are seven years in, forty souls, and you cannot see the sun for our smoke. The coughing never stops. We will trade what we can for what we need. Stop. Hesketh Moss.",
+      "when": { "manual": true },
+      "volume": "telegrams",
+      "from": "Hesketh Moss, Engineer, Forge No. 3"
+    },
+    {
+      "id": "telegram-brassmoor",
+      "title": "Telegram from Brassmoor",
+      "text": "Brassmoor sends its greetings to its little sister colony! We are ninety souls, three boiler halls and a Steamforge that runs hotter every season, which is to say free steam for the taking. We have no need of the Company and shall soon have no need of anyone. Still, we are generous. Write when you need advice. Augusta Pell.",
+      "when": { "manual": true },
+      "volume": "telegrams",
+      "from": "Augusta Pell, Chief Engineer, Forge No. 5"
+    },
+    {
+      "id": "telegram-brassmoor-silence",
+      "title": "Telegram from Brassmoor (incomplete)",
+      "text": "Brassmoor to {colony}. The core gauge has gone past its last mark and the valves will not hold it. Pell says it is a fault in the gauge. Stop. We are evacuating the west streets as a precaution. Stop. If you have any notion how to bleed a sealed engine, wire it now, we",
+      "when": { "manual": true },
+      "volume": "telegrams",
+      "from": "Brassmoor telegraph office, Forge No. 5"
+    },
+    {
+      "id": "telegram-frostgate",
+      "title": "Telegram from Frostgate",
+      "text": "Frostgate to {colony}. Twenty-two living. Coal runs short every winter. We keep a log of the dead. We would rather not add to it. Elspeth Crane.",
+      "when": { "manual": true },
+      "volume": "telegrams",
+      "from": "Elspeth Crane, Matron, Forge No. 7"
+    },
+    {
+      "id": "telegram-gearholt",
+      "title": "Telegram from Gearholt",
+      "text": "Gearholt to {colony}. Forgive the brevity. The Brotherhood has broken our automatons and blocked the pits, and the Institute has locked itself in the drafting office. I have perhaps two months before this town tears itself apart. Do not build too many machines, Chief Engineer, and do not ignore your guilds. Jonas Grieve.",
+      "when": { "manual": true },
+      "volume": "telegrams",
+      "from": "Jonas Grieve, Overseer, Forge No. 11"
+    },
+    {
+      "id": "papers-glimmerdeep",
+      "title": "The Forge Papers: Glimmerdeep",
+      "text": "From the last page of the Glimmerdeep weather log, in a careful hand: 'Minus thirty-one. The coal is gone and the Steamforge banked for the last time this morning. We have burned the drafting tables. Forty years of readings are in this chest, for whoever comes. You will know the winter better than we did.'",
+      "when": { "manual": true },
+      "volume": "papers",
+      "from": "Found at Forge No. 1"
+    },
+    {
+      "id": "papers-cinderholm",
+      "title": "The Forge Papers: Cinderholm",
+      "text": "A gauge log from the Cinderholm boiler office, scorched at the edges. Core pressure rises by a few pounds every month from the eleventh year, with no load to explain it. The last entries: 'Valves at full. Core still rising. Engineer Tull says it cannot be opened without the retrofit drawings, and those are in Ashcombe.' Folded inside is a copy of those drawings: the Forge Core Retrofit.",
+      "when": { "manual": true },
+      "volume": "papers",
+      "from": "Found at Forge No. 2"
+    },
+    {
+      "id": "papers-ironhollow",
+      "title": "The Forge Papers: Ironhollow",
+      "text": "A broadsheet nailed to the burnt guild hall: 'BROTHERS! The Overseer has put a clockwork man in every stokehold. Tonight we take the stokeholds back.' Beneath it, in pencil: 'We did. Then there was no one left who knew how to run the Steamforge, and we left.' The governor from the Steamforge lies in the hall, still bright.",
+      "when": { "manual": true },
+      "volume": "papers",
+      "from": "Found at Forge No. 4"
+    },
+    {
+      "id": "papers-wending",
+      "title": "The Forge Papers: Wending",
+      "text": "A letter left on the Chief Engineer's desk: 'To whoever comes. In our tenth year the core began to creep. The Company told us it was a gauge fault. We did not believe them, and we did not wait to find out. Wending has gone south with everything it could carry. If your gauge begins to climb, do not let anyone tell you it is a fault.'",
+      "when": { "manual": true },
+      "volume": "papers",
+      "from": "Found at Forge No. 6"
+    },
+    {
+      "id": "papers-blackwater",
+      "title": "The Forge Papers: Blackwater",
+      "text": "From the Blackwater engineer's notebook, recovered from the crater's edge: 'Core up again. Twelfth month running. The valves bleed it and it climbs anyway. We have run high-pressure mains to every corner of town to use the extra steam, and the town has never been warmer. I think we are spending the Steamforge's last years like a legacy.' The notebook also holds the plans for those mains.",
+      "when": { "manual": true },
+      "volume": "papers",
+      "from": "Found at Forge No. 8"
+    },
+    {
+      "id": "papers-reach",
+      "title": "The Forge Papers: Hollowmere Reach",
+      "text": "The Reach answered nobody for six years, and now we know why. Its people never left: they live in the hills above the town, which they gave over to the automatons when the guilds would not work beside them. The machines ran down one by one. In the clockworks lies the master mainspring, still wound.",
+      "when": { "manual": true },
+      "volume": "papers",
+      "from": "Found at Forge No. 10"
+    },
+    {
+      "id": "papers-lastlight",
+      "title": "The Forge Papers: Lastlight",
+      "text": "Lastlight's apothecary kept a ledger of coughs. It runs for nine years and grows longer every page, until the town fitted copper gauze to its chimneys and the entries thin out. The last page reads: 'Too late for most of us. Take the filters.'",
+      "when": { "manual": true },
+      "volume": "papers",
+      "from": "Found at Forge No. 12"
     }
   ]
 }

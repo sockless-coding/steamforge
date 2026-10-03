@@ -42,7 +42,7 @@ export function isResearched(sim: Simulation, tech: string): boolean {
 
 /** Not yet done, with every requirement done. */
 export function canResearch(sim: Simulation, tech: ResearchDef): boolean {
-  return !isResearched(sim, tech.id) && tech.requires.every((r) => isResearched(sim, r))
+  return !tech.salvage && !isResearched(sim, tech.id) && tech.requires.every((r) => isResearched(sim, r))
 }
 
 /** The research itself preceded by every unfinished requirement, requirements first. */

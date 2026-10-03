@@ -218,6 +218,58 @@ export interface GuildState {
   effects: { kind: 'mood' | 'work'; value: number; until: number }[]
 }
 
+/** An answering forge's standing with the colony, or what the colony knows of a silent one. */
+export interface ForgeState {
+  /** Current fate (forges.json fate id): an answering forge that is failed falls silent with its failFate. */
+  fate: string
+  /** An expedition has reached it. */
+  visited: boolean
+  /** The colony knows its fate. */
+  revealed: boolean
+  /** Answering forges: goodwill (0 = it falls silent), the open request, and when the next one comes. */
+  relation?: number
+  request?: { id: string; expires: number } | null
+  nextRequest?: number
+  cursor?: number
+  /** The first telegram has arrived. */
+  greeted?: boolean
+}
+
+/** An airship crew away on the Hollowmere chart. Its crew are kept here, off the map, until they come home. */
+export interface Expedition {
+  id: number
+  forge: string
+  crew: Citizen[]
+  departed: number
+  /** Month indices of arrival at the forge and of the return home. */
+  arrives: number
+  returns: number
+  stage: 'outbound' | 'returning'
+  /** Found at the forge, handed over on the return: salvage, survivors, and finds ('relic:id', 'blueprint:id', 'papers:id', 'lost:name'). */
+  loot: Stock
+  survivors: number
+  finds: string[]
+  /** The airship went down with all hands (learned when it fails to return). */
+  lost: boolean
+}
+
+export type FinaleState = 'none' | 'pending' | 'retrofitting' | 'retrofitted' | 'decommissioned' | 'ruptured'
+
+/** The three-act story beyond the charter: the silent forges, their papers and relics, and the creeping core. */
+export interface SagaState {
+  act: number
+  relics: string[]
+  forges: Record<string, ForgeState>
+  expeditions: Expedition[]
+  nextExpedition: number
+  /** Act III: the Steamforge's core pressure (rupture at 1), and how many warnings have been given. */
+  creep: number
+  warned: number
+  finale: FinaleState
+  /** Month index the retrofit completes. */
+  finaleUntil: number
+}
+
 /** A guild petition waiting for the player's answer. */
 export interface GuildPetition {
   /** petitions.json id. */
@@ -264,6 +316,12 @@ export type Action =
   | { type: 'answerGuildPetition'; choice: number }
   /** Allows or forbids automatons in a guild's trades (those already working them are let go). */
   | { type: 'setGuildPolicy'; guild: string; mechanise: boolean }
+  /** Sends an expedition airship from the yard to a silent forge. */
+  | { type: 'launchExpedition'; forge: string; crew: number }
+  /** Sends an answering forge the goods it asked for by telegraph. */
+  | { type: 'fulfilRequest'; forge: string }
+  /** Act III: retrofit the creeping Steamforge, or vent and seal it. */
+  | { type: 'finale'; choice: 'retrofit' | 'vent' }
 
 export type ActionResult = { ok: true; building?: number } | { ok: false; reason: string }
 
@@ -276,6 +334,7 @@ export type SimEvent =
   | { type: 'research'; tech: string }
   | { type: 'terrain'; x: number; y: number; w: number; h: number }
   | { type: 'citizen'; id: number; change: 'born' | 'arrived' | 'died' | 'built' | 'left'; cause?: string }
+  | { type: 'expedition'; id: number; forge: string; change: 'departed' | 'returned' }
   | { type: 'month'; month: number; year: number }
   | { type: 'fire'; building: number; active: boolean }
   | { type: 'outcome'; outcome: 'lost' }

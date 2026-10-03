@@ -12,6 +12,7 @@
   { "id": "leather", "name": "Leather", "category": "goods", "color": "#9a6a3e", "spoilagePerYear": 0.075, "defaultLimit": 120, "value": 3 },
   { "id": "herbs", "name": "Herbs", "category": "goods", "color": "#6a9a5a", "spoilagePerYear": 0.3, "defaultLimit": 80, "value": 2 },
   { "id": "tonic", "name": "Lung Tonic", "category": "goods", "color": "#4a8a8a", "spoilagePerYear": 0, "defaultLimit": 60, "value": 6 },
+  { "id": "envelope", "name": "Envelope Cloth", "category": "goods", "color": "#d8c8a0", "spoilagePerYear": 0, "defaultLimit": 40, "value": 6 },
   { "id": "coats", "name": "Coats", "category": "goods", "color": "#5a6a8a", "spoilagePerYear": 0, "defaultLimit": 60, "value": 12 },
   { "id": "rations", "name": "Company Rations", "category": "food", "color": "#8a7a5a", "spoilagePerYear": 0, "defaultLimit": 0, "value": 2 },
   { "id": "venison", "name": "Venison", "category": "food", "color": "#9a3a2a", "spoilagePerYear": 0.375, "defaultLimit": 0, "value": 2 },

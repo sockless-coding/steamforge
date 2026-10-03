@@ -89,6 +89,7 @@ const causeText: Record<string, string> = {
   fire: 'perished in a fire',
   wear: 'seized up for good',
   sabotage: 'was smashed by saboteurs',
+  rupture: 'was killed when the Steamforge ruptured',
 }
 
 export function killCitizen(sim: Simulation, c: Citizen, cause: string): void {
@@ -106,18 +107,40 @@ export function killCitizen(sim: Simulation, c: Citizen, cause: string): void {
   sim.notify(cause === 'age' || cause === 'wear' ? 'info' : 'bad', `${c.name} ${causeText[cause] ?? 'died'}.`, sim.world.index(Math.floor(c.x), Math.floor(c.y)))
 }
 
-/** A citizen leaves the colony for good (not a death): their job, home and partner are given up. */
-export function emigrate(sim: Simulation, c: Citizen): void {
+/**
+ * A citizen leaves the map: their job and home are given up and their partner is freed. For good (emigration, a
+ * departure) or, with `voyage`, for an expedition: they keep their own partner link so the couple can be reunited.
+ */
+export function emigrate(sim: Simulation, c: Citizen, voyage = false): void {
   abortTask(sim, c)
   if (c.workplace) fireWorker(sim, c.id)
   leaveHome(sim, c)
   const partner = sim.citizens.get(c.partner)
   if (partner) partner.partner = 0
+  if (!voyage) c.partner = 0
   sim.citizens.delete(c.id)
-  sim.stats.departures = (sim.stats.departures ?? 0) + 1
+  if (!voyage) sim.stats.departures = (sim.stats.departures ?? 0) + 1
   sim.jobsDirty = true
   sim.housingDirty = true
   sim.emit({ type: 'citizen', id: c.id, change: 'left' })
+}
+
+/** A returning crew member steps off the airship at a tile, homeless and jobless, and is reunited with their partner if still free. */
+export function placeReturning(sim: Simulation, c: Citizen, tile: number): void {
+  c.x = c.px = sim.world.xOf(tile) + 0.5
+  c.y = c.py = sim.world.yOf(tile) + 0.5
+  c.task = null
+  c.path = null
+  c.carry = null
+  c.inside = 0
+  c.home = 0
+  c.workplace = 0
+  if (c.profession !== 'child') c.profession = 'laborer'
+  const partner = sim.citizens.get(c.partner)
+  if (partner && partner.partner === 0) partner.partner = c.id
+  else c.partner = 0
+  sim.citizens.set(c.id, c)
+  sim.emit({ type: 'citizen', id: c.id, change: 'arrived' })
 }
 
 function leaveHome(sim: Simulation, c: Citizen): void {

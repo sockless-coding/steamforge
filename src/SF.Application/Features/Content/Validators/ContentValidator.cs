@@ -12,7 +12,7 @@ public static class ContentValidator
     public static readonly HashSet<string> ComponentKinds =
         ["storage", "housing", "shelter", "workplace", "firefighting", "gatherer", "producer", "field", "generator", "consumer", "research",
          "amenity", "lighting", "airship", "assembler", "tramDepot", "pneumatic", "valve", "emitter", "scrubber", "clinic",
-         "booster", "tractor", "guildHall"];
+         "booster", "tractor", "guildHall", "airshipYard", "telegraph"];
 
     /// <summary>Components that are worked by a building's staff; they need a workplace component.</summary>
     public static readonly HashSet<string> StaffedComponents = ["gatherer", "producer", "field", "research", "assembler"];
@@ -24,6 +24,8 @@ public static class ContentValidator
     public static readonly HashSet<string> Emitters = ["smoke", "steam"];
     public static readonly HashSet<string> ConduitStyles = ["duct", "main", "lagged", "water", "wire"];
     public static readonly HashSet<string> PetitionEffects = ["standing", "mood", "workFactor", "mechanise", "noAutomatons", "resource", "credit", "happiness"];
+    public static readonly HashSet<string> RelicKinds = ["winterSeverity", "hqOutput", "research", "automatonWork", "soot"];
+    public static readonly HashSet<string> DispatchVolumes = ["board", "telegrams", "papers"];
     public static readonly HashSet<string> GuildFactors = ["fed", "warm", "health", "happiness", "soot", "nightShift", "hall"];
     public static readonly HashSet<string> NatureModels = ["tree", "rock", "ironstone", "bush", "mushroom"];
     public static readonly HashSet<string> Modifiers = ["winterSeverity", "disasterRate", "productionMultiplier", "birthRate", "spoilageRate", "wearRate", "hungerRate", "sootRate"];
@@ -474,10 +476,71 @@ public static class ContentValidator
         foreach (var d in c.Story.Dispatches)
         {
             var w = d.When;
-            var triggers = new object?[] { w.Research, w.Building, w.Year, w.Population }.Count(x => x is not null);
+            var triggers = new object?[] { w.Research, w.Building, w.Year, w.Population, w.Act, w.Manual == true ? true : null }.Count(x => x is not null);
+            Check(d.Volume is null || DispatchVolumes.Contains(d.Volume), $"Dispatch {d.Id} has unknown volume '{d.Volume}'.");
+            Check(w.Act is null or (>= 2 and <= 3), $"Dispatch {d.Id} waits for an act other than 2 or 3.");
             Check(triggers == 1, $"Dispatch {d.Id} needs exactly one trigger.");
             Check(w.Research is null || techs.Contains(w.Research), $"Dispatch {d.Id} waits for unknown research '{w.Research}'.");
             Check(w.Building is null || buildings.Contains(w.Building), $"Dispatch {d.Id} waits for unknown building '{w.Building}'.");
+        }
+
+        // The Hollowmere chart
+        var chartDef = c.Forges;
+        var dispatches = c.Story.Dispatches.Select(d => d.Id).ToHashSet();
+        var fates = chartDef.Fates.Select(x => x.Id).ToHashSet();
+        var relics = chartDef.Relics.Select(x => x.Id).ToHashSet();
+        Unique("forge", chartDef.Forges, x => x.Id);
+        Unique("fate", chartDef.Fates, x => x.Id);
+        Unique("relic", chartDef.Relics, x => x.Id);
+        Check(fates.Contains("answering"), "Forges: an 'answering' fate is required.");
+        Check(chartDef.Chart.LeaguesPerMonth > 0 && chartDef.Chart.MaxExpeditions >= 1, "Forges: chart needs positive leaguesPerMonth and maxExpeditions.");
+        Check(chartDef.Chart.Crew.Count == 2 && chartDef.Chart.Crew[0] >= 1 && chartDef.Chart.Crew[1] >= chartDef.Chart.Crew[0], "Forges: chart crew must be [min, max].");
+        CheckStock("Forges chart launchCost", chartDef.Chart.LaunchCost.Keys);
+        foreach (var fate in chartDef.Fates)
+        {
+            Check(fate.Danger is >= 0 and < 1, $"Fate {fate.Id} danger must be in [0, 1).");
+            CheckStock($"Fate {fate.Id} salvage", fate.Salvage.Keys);
+            Check(fate.Salvage.Values.All(v => v.Count == 2 && v[0] >= 0 && v[1] >= v[0]) && fate.Survivors.Count == 2, $"Fate {fate.Id} ranges must be [min, max].");
+        }
+
+        foreach (var forge in chartDef.Forges)
+        {
+            var where = $"Forge {forge.Id}";
+            Check(fates.Contains(forge.Fate), $"{where} has unknown fate '{forge.Fate}'.");
+            Check(forge.FailFate is null || fates.Contains(forge.FailFate), $"{where} fails to an unknown fate.");
+            Check(forge.Leagues.Count == 2 && forge.Leagues[0] >= 1 && forge.Leagues[1] >= forge.Leagues[0], $"{where} leagues must be [min, max].");
+            Check(forge.Relic is null || relics.Contains(forge.Relic), $"{where} holds an unknown relic.");
+            Check(forge.Blueprint is null || c.Research.Any(t => t.Id == forge.Blueprint && t.Salvage == true), $"{where} holds plans that are not salvage research.");
+            foreach (var id in (forge.Papers ?? []).Append(forge.Greeting).Append(forge.SilencedInAct3).OfType<string>())
+            {
+                Check(dispatches.Contains(id), $"{where} refers to unknown dispatch '{id}'.");
+            }
+
+            foreach (var req in forge.Requests ?? [])
+            {
+                CheckStock($"{where} request {req.Id}", req.Wants.Keys.Concat(req.Gives.Keys));
+                Check(req.Months > 0, $"{where} request {req.Id} needs positive months.");
+            }
+
+            Check(forge.Fate != "answering" || forge.Requests is { Count: > 0 }, $"{where} answers the telegraph but asks for nothing.");
+        }
+
+        foreach (var relic in chartDef.Relics)
+        {
+            Check(RelicKinds.Contains(relic.Effect.Kind) && relic.Effect.Factor > 0, $"Relic {relic.Id} has an invalid effect.");
+        }
+
+        foreach (var paper in chartDef.Saga.CreepPapers)
+        {
+            Check(dispatches.Contains(paper), $"Forges: creep paper '{paper}' is not a dispatch.");
+        }
+
+        Check(chartDef.Saga.Act2Year < chartDef.Saga.Act3Year, "Forges: act 2 must come before act 3.");
+        Check(chartDef.Saga.Creep.PerMonth > 0 && chartDef.Saga.Creep.RetrofitMonths > 0 && chartDef.Saga.Creep.RetrofitOutput > 0, "Forges: creep rates must be positive.");
+        foreach (var t in c.Research.Where(t => t.Salvage == true))
+        {
+            Check(chartDef.Forges.Any(x => x.Blueprint == t.Id), $"Salvage research {t.Id} is found at no forge.");
+            Check(!c.Research.Any(o => o.Requires.Contains(t.Id)), $"Salvage research {t.Id} cannot be required by other research.");
         }
 
         // Difficulty

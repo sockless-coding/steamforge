@@ -1,3 +1,4 @@
+import { relicFactor } from '../saga'
 import { registerEffect } from '../effects'
 import { energyBlocked } from '../energy'
 import { addResearchPoints, currentResearch } from '../research'
@@ -15,7 +16,7 @@ registerEffect('research', (sim, _c, [id]) => {
   const b = sim.buildings.get(id)
   const cfg = b ? sim.component<ResearchConfig>(b, 'research') : undefined
   if (!b || !cfg) return false
-  addResearchPoints(sim, cfg.points)
+  addResearchPoints(sim, cfg.points * relicFactor(sim, 'research'))
   return true
 })
 

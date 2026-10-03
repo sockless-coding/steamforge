@@ -13,5 +13,6 @@ import './logistics'
 import './health'
 import './soot'
 import './guild'
+import './saga'
 
 export { componentHandler, knownComponents, registerComponent, type ComponentHandler } from './registry'

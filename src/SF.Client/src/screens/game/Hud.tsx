@@ -7,6 +7,7 @@ import { useSettings } from '../../state/settings'
 import { Button } from '../../ui/components'
 import { Icon, type IconName } from '../../ui/Icon'
 import { GameMenu, GuildPanel, Outcome, StoresPanel } from './Panels'
+import { ChartPanel, FinaleCard } from './Chart'
 import { Inspector } from './Inspector'
 import { Charter, DispatchPanel, ResearchPanel } from './Progression'
 
@@ -127,7 +128,7 @@ function GuildBadge({ guild }: { guild: GuildRow }) {
   )
 }
 
-type PanelKind = { kind: 'guild' } | { kind: 'stores' } | { kind: 'research' } | { kind: 'dispatches'; letter?: string }
+type PanelKind = { kind: 'chart' } | { kind: 'guild' } | { kind: 'stores' } | { kind: 'research' } | { kind: 'dispatches'; letter?: string }
 
 export function Hud({ controller, menu, setMenu }: HudProps) {
   const hud = useHud()
@@ -160,6 +161,7 @@ export function Hud({ controller, menu, setMenu }: HudProps) {
         </div>
       )}
       {panel?.kind === 'guild' && <GuildPanel hud={hud} controller={controller} onClose={close} />}
+      {panel?.kind === 'chart' && hud.saga && <ChartPanel hud={hud} controller={controller} onClose={close} />}
       {panel?.kind === 'stores' && <StoresPanel hud={hud} controller={controller} onClose={close} />}
       {panel?.kind === 'research' && <ResearchPanel hud={hud} controller={controller} onClose={close} />}
       {panel?.kind === 'dispatches' && <DispatchPanel hud={hud} initial={panel.letter} onClose={close} />}
@@ -279,6 +281,17 @@ function TopBar({ hud, controller, onMenu, open }: { hud: HudState; controller: 
       </div>
 
       <div className="top-right">
+        {hud.saga && (
+          <Button
+            size="sm"
+            variant="iron"
+            icon="map"
+            className={hud.saga.forges.some((f) => f.request) ? 'chart-alerting' : ''}
+            onClick={() => open({ kind: 'chart' })}
+            title="The Hollowmere chart: the other forges, telegrams and expeditions"
+            aria-label="Hollowmere chart"
+          />
+        )}
         <Button size="sm" variant="iron" icon="book" onClick={() => open({ kind: 'dispatches' })} title="Dispatches from the Company" aria-label="Dispatches" />
         {hud.guilds.length > 0 ? (
           <button type="button" className="guild-badges" onClick={() => open({ kind: 'guild' })} title="Guilds and professions">
@@ -314,6 +327,7 @@ function Notices({ hud, controller, openLetter }: { hud: HudState; controller: G
     <ul className="notices">
       {hud.petition && <PetitionCard petition={hud.petition} controller={controller} />}
       {hud.guildPetition && <GuildPetitionCard petition={hud.guildPetition} controller={controller} />}
+      {hud.saga?.finale && <FinaleCard finale={hud.saga.finale} controller={controller} />}
       {recent.map((n) => (
         <li key={n.id} className={`notice notice-${n.level}`}>
           {n.dispatch ? (

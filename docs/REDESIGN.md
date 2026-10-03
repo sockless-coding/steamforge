@@ -1,9 +1,8 @@
 # SteamForge: Identity Redesign
 
 Status:
-- **Phases 1–3** (soot and the industrial-amber look; pressure is life; clockwork society) are built and documented
-  in [GAME_DESIGN.md](GAME_DESIGN.md), except for the items listed as deferred under each phase below.
-- Phase 4 is a proposal.
+- **All four phases** are built and documented in [GAME_DESIGN.md](GAME_DESIGN.md), except for the items listed as
+  deferred under each phase below.
 
 As each phase lands, move its sections into GAME_DESIGN.md.
 
@@ -488,7 +487,37 @@ Original plan:
 4. `petitions.json` and generalise the petition UI from travellers to guild petitions.
 5. HUD guild badges and striker gatherings.
 
-### Phase 4: The Lost Forges
+### Phase 4: The Lost Forges (built)
+
+Built:
+- `forges.json` (a new content kind, validated on the server): fates, the eleven forges, personas, telegraph
+  requests, relics and the saga rules
+- the seeded chart
+- expeditions from an Airship Yard, with crews kept in the save
+- envelope cloth sewn by tailors
+- salvage-only research (High-Pressure Mains, Forge Core Retrofit)
+- five relics
+- the Telegraph Office with requests, goodwill and forges falling silent
+- the three acts, with dispatch triggers `act` and `manual` and ledger volumes for telegrams and forge papers
+- Act III pressure creep with safety valves, warnings, rupture, retrofit and venting, and an epilogue for each ending
+- the Hollowmere chart panel, the finale card, and expedition airships departing and returning in the world
+- save version 8
+
+Changes from the plan:
+- **Expeditions are only for silent forges.** Answering forges are reached by telegraph.
+- **The telegraph's contracts are paid on delivery.** The return goods arrive at once rather than by a scheduled
+  airship.
+
+Balance: the scripted player builds neither a yard nor a telegraph. Act II begins at year 4 with a dispatch and Act
+III at year 12. Over 12 years the report is unchanged (42.9 at year 12, one colony lost), apart from the creep's free
+steam in the last year.
+
+Deferred:
+- The Aether Condenser, and any salvage plans beyond the two
+- Forges whose fates evolve beyond falling silent, such as recovering or growing
+- An expedition airship that is shown docked at the yard while away
+
+Original plan:
 
 1. `forges.json` (names, personas, fates, rewards), a seeded world chart, a `world` system for voyages.
 2. Airship Yard, envelope silk, expedition crews (citizens away from the map but kept in the save).

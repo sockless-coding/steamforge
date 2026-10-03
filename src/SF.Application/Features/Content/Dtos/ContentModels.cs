@@ -161,14 +161,45 @@ public sealed record ResearchUnlocks(
     IReadOnlyList<string>? Conduits,
     IReadOnlyList<string>? Recipes);
 
-public sealed record ResearchDef(string Id, string Name, int Tier, double Points, IReadOnlyList<string> Requires, ResearchUnlocks Unlocks);
+public sealed record ResearchDef(string Id, string Name, int Tier, double Points, IReadOnlyList<string> Requires, ResearchUnlocks Unlocks, bool? Salvage);
 
 public sealed record StoryIntro(string Title, IReadOnlyList<string> Paragraphs, string Signature);
 
-/// <summary>When a dispatch arrives: exactly one of the fields is set.</summary>
-public sealed record DispatchTrigger(string? Research, string? Building, int? Year, int? Population);
+/// <summary>When a dispatch arrives: exactly one of the fields is set (manual: sent by the simulation itself).</summary>
+public sealed record DispatchTrigger(string? Research, string? Building, int? Year, int? Population, int? Act, bool? Manual);
 
-public sealed record DispatchDef(string Id, string Title, string Text, DispatchTrigger When);
+public sealed record DispatchDef(string Id, string Title, string Text, DispatchTrigger When, string? Volume, string? From);
+
+public sealed record ForgeChart(double LeaguesPerMonth, IReadOnlyList<int> Crew, Dictionary<string, double> LaunchCost, int MaxExpeditions, double ShipLossFactor, double RevisitSalvage);
+
+public sealed record ForgeFateDef(string Id, string Name, double Danger, Dictionary<string, IReadOnlyList<int>> Salvage, IReadOnlyList<int> Survivors);
+
+public sealed record ForgeRequestDef(string Id, Dictionary<string, double> Wants, Dictionary<string, double> Gives, int Months);
+
+public sealed record ForgeDef(
+    string Id,
+    int Number,
+    string Name,
+    string Fate,
+    IReadOnlyList<int> Leagues,
+    string? Relic,
+    string? Blueprint,
+    IReadOnlyList<string>? Papers,
+    string? Greeting,
+    IReadOnlyList<ForgeRequestDef>? Requests,
+    string? FailFate,
+    string? SilencedInAct3);
+
+public sealed record RelicEffect(string Kind, double Factor);
+
+public sealed record RelicDef(string Id, string Name, RelicEffect Effect);
+
+public sealed record CreepRules(double PerMonth, double ValveFactor, double RetrofitMonths, double RetrofitOutput, double RetrofitStanding, double RuptureRadius);
+
+public sealed record SagaRules(int Act2Year, int Act3Year, int PapersForAct3, IReadOnlyList<string> CreepPapers, IReadOnlyList<int> RequestEveryMonths, CreepRules Creep);
+
+/// <summary>The Hollowmere chart: the other forges, their fates and relics, and the rules of the saga.</summary>
+public sealed record ForgesDef(ForgeChart Chart, IReadOnlyList<ForgeFateDef> Fates, IReadOnlyList<ForgeDef> Forges, IReadOnlyList<RelicDef> Relics, SagaRules Saga);
 
 public sealed record StoryDef(StoryIntro Intro, IReadOnlyList<DispatchDef> Dispatches);
 
@@ -217,6 +248,7 @@ public sealed class ContentSnapshot
         Story = Read<StoryDef>("story");
         Guilds = Read<List<GuildDef>>("guilds");
         Petitions = Read<List<PetitionDef>>("petitions");
+        Forges = Read<ForgesDef>("forges");
 
         // Assemble the bundle once: {"version": ..., "<kind>": <document>, ...}.
         using var stream = new MemoryStream();
@@ -255,6 +287,7 @@ public sealed class ContentSnapshot
     public StoryDef Story { get; }
     public IReadOnlyList<GuildDef> Guilds { get; }
     public IReadOnlyList<PetitionDef> Petitions { get; }
+    public ForgesDef Forges { get; }
 
     public bool HasPreset(string id) => Difficulty.Presets.Any(p => p.Id == id);
 }
@@ -262,5 +295,5 @@ public sealed class ContentSnapshot
 public static class ContentKinds
 {
     /// <summary>Every content document, in bundle order. Each maps to <c>Content/&lt;kind&gt;.json</c>.</summary>
-    public static readonly string[] All = ["rules", "resources", "features", "buildings", "recipes", "crops", "professions", "events", "difficulty", "mapgen", "research", "story", "guilds", "petitions"];
+    public static readonly string[] All = ["rules", "resources", "features", "buildings", "recipes", "crops", "professions", "events", "difficulty", "mapgen", "research", "story", "guilds", "petitions", "forges"];
 }

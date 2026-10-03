@@ -25,6 +25,7 @@ import { conduitGrades, gradeIndex, networkIndex, participates, touchesGrid, typ
 import { canPlace, doorTile, footprintSize, totalWork } from './sim/placement'
 import { canResearch, currentResearch, isUnlocked, lockedBy, unlockNames } from './sim/research'
 import { guildFactors, guildMood, guildOfCitizen, guildState, guildTarget } from './sim/guilds'
+import { airshipYard, chart, fateOf, finaleBlocker, launchBlocker, telegraphOnline, voyageMonths } from './sim/saga'
 import { Simulation, type ColonySnapshot } from './sim/simulation'
 import { sootExposure, windFrom, windVector } from './sim/soot'
 import type { Action, ActionResult, Building, Citizen, NewColonyOptions, Rotation, SimEvent } from './sim/types'
@@ -839,6 +840,7 @@ export class GameController {
       guilds: this.guildRows(),
       guildPetition: this.guildPetitionInfo(),
       automatonPledge: Math.max(0, sim.noAutomatonsUntil - sim.monthIndex),
+      saga: this.sagaInfo(),
     })
   }
 
@@ -854,7 +856,7 @@ export class GameController {
       progress: r.done.includes(t.id) ? t.points : (r.progress[t.id] ?? 0),
       requires: t.requires,
       unlocks: unlockNames(sim, t),
-      status: r.done.includes(t.id) ? 'done' : r.queue[0] === t.id ? 'current' : r.queue.includes(t.id) ? 'queued' : canResearch(sim, t) ? 'available' : 'locked',
+      status: r.done.includes(t.id) ? 'done' : t.salvage ? 'salvage' : r.queue[0] === t.id ? 'current' : r.queue.includes(t.id) ? 'queued' : canResearch(sim, t) ? 'available' : 'locked',
     }))
   }
 
@@ -970,6 +972,79 @@ export class GameController {
         const g = guildOfCitizen(sim, c)
         return g ? { name: g.name, color: g.color, striking: sim.guilds[g.id]?.striking === true } : null
       })(),
+    }
+  }
+
+  private sagaInfo(): HudState['saga'] {
+    const sim = this.sim
+    const def = sim.content.bundle.forges
+    if (!def) return null
+    const points = new Map(chart(sim).map((p) => [p.id, p]))
+    const res = (id: string) => sim.resource(id)?.name.toLowerCase() ?? id
+    const forges = def.forges.map((f) => {
+      const state = sim.saga.forges[f.id]
+      const fate = state?.revealed ? fateOf(sim, state.fate) : undefined
+      const p = points.get(f.id)!
+      const months = voyageMonths(sim, f.id)
+      const exp = sim.saga.expeditions.find((e) => e.forge === f.id)
+      const req = state?.request ? f.requests?.find((r) => r.id === state.request!.id) : undefined
+      const status: 'answering' | 'silent' | 'visited' = state?.fate === 'answering' ? 'answering' : state?.visited ? 'visited' : 'silent'
+      const rumours = state?.visited ? [] : [f.relic ? 'a relic' : '', f.blueprint ? 'plans' : '', f.papers?.length ? 'papers' : ''].filter(Boolean)
+      return {
+        id: f.id,
+        number: f.number,
+        name: f.name,
+        x: p.x,
+        y: p.y,
+        leagues: p.leagues,
+        months,
+        status,
+        fate: fate?.name ?? null,
+        fateText: fate?.description ?? null,
+        persona: f.persona ?? null,
+        relation: state?.fate === 'answering' && state.greeted ? Math.round(state.relation ?? 0) : null,
+        request: req && state?.request
+          ? {
+              text: req.text,
+              wants: Object.entries(req.wants).map(([r, q]) => ({ name: res(r), qty: q, have: Math.floor(sim.totals[r] ?? 0) })),
+              gives: Object.entries(req.gives).map(([r, q]) => `${q} ${res(r)}`).join(', '),
+              monthsLeft: Math.max(0, state.request.expires - sim.monthIndex),
+            }
+          : null,
+        launchBlocked: launchBlocker(sim, f.id, def.chart.crew[0]),
+        expedition: exp
+          ? {
+              stage: exp.stage,
+              progress: Math.min(1, (sim.monthIndex + sim.monthProgress - exp.departed) / Math.max(1, exp.returns - exp.departed)),
+              crew: exp.crew.length,
+              monthsLeft: Math.max(0, exp.returns - sim.monthIndex),
+            }
+          : null,
+        rumour: rumours.length ? `Said to hold ${rumours.join(', ')}` : null,
+      }
+    })
+    const f = sim.saga.finale
+    return {
+      act: sim.saga.act,
+      chartName: def.chart.name,
+      maxLeagues: Math.max(...def.forges.map((x) => x.leagues[1]), 1),
+      forges,
+      yard: !!airshipYard(sim),
+      telegraph: telegraphOnline(sim),
+      crew: def.chart.crew,
+      launchCost: Object.entries(def.chart.launchCost).map(([r, q]) => `${q} ${res(r)}`).join(', '),
+      relics: sim.saga.relics.map((id) => sim.content.relics.get(id)).filter((r) => r !== undefined).map((r) => ({ name: r.name, description: r.description })),
+      papers: sim.story.sent.filter((id) => sim.content.bundle.story.dispatches.find((d) => d.id === id)?.volume === 'papers').length,
+      finale:
+        f === 'none'
+          ? null
+          : {
+              state: f,
+              creep: sim.saga.creep,
+              retrofitBlocked: finaleBlocker(sim, 'retrofit'),
+              ventBlocked: finaleBlocker(sim, 'vent'),
+              monthsLeft: Math.max(0, sim.saga.finaleUntil - sim.monthIndex),
+            },
     }
   }
 

@@ -1,3 +1,4 @@
+import { hqOutputFactor } from '../saga'
 import { gridOf, headOf, type BoosterConfig, type ConsumerConfig, type GeneratorConfig } from '../energy'
 import { amount, available, nearestStorageWith } from '../inventory'
 import type { Simulation } from '../simulation'
@@ -53,7 +54,9 @@ registerComponent<GeneratorConfig>({
   second: (sim, b, cfg) => {
     const staffed = !sim.def(b).components.workplace || b.workers.length > 0
     const fuel = cfg.fuel ? fuelOnHand(b, cfg) : null
-    b.data.lit = b.fire === 0 && staffed && (!cfg.fuel || fuel !== null)
+    // A Steamforge under retrofit, sealed cold or ruptured raises nothing and burns nothing.
+    const silenced = !!sim.def(b).headquarters && hqOutputFactor(sim) === 0
+    b.data.lit = b.fire === 0 && staffed && !silenced && (!cfg.fuel || fuel !== null)
     if (fuel) b.data.fuel = fuel
     else delete b.data.fuel
     if (b.data.lit) b.activeAt = sim.second

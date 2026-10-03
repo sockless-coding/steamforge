@@ -24,6 +24,14 @@ export function checkDispatches(sim: Simulation, trigger: { research?: string; b
   }
 }
 
+/** Sends a dispatch the simulation chooses itself (forge papers, telegrams, acts, epilogues), once. */
+export function sendDispatch(sim: Simulation, id: string): void {
+  const d = sim.content.bundle.story.dispatches.find((x) => x.id === id)
+  if (!d || sim.story.sent.includes(id)) return
+  sim.story.sent.push(id)
+  sim.notify('story', d.title, undefined, id)
+}
+
 /** Replaces {colony} with the colony's name. */
 export function storyText(text: string, colony: string): string {
   return text.replaceAll('{colony}', colony)

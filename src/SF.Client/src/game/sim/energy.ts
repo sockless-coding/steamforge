@@ -1,3 +1,4 @@
+import { hqOutputFactor } from './saga'
 import type { ConduitDef, NetworkDef } from '../../api/types'
 import { amount } from './inventory'
 import type { Simulation } from './simulation'
@@ -337,7 +338,11 @@ export function solveEnergy(sim: Simulation, write: boolean): void {
       const b = sim.buildings.get(id)
       if (!b) continue
       const gen = generatorOf(sim, b)
-      if (gen?.network === net.id && b.data.lit === true) status[grid].supply += gen.output * inputSatisfaction(sim, b, satisfied)
+      if (gen?.network === net.id && b.data.lit === true) {
+        // The Steamforge's output answers to its relics and, in the last act, to its creeping core.
+        const boost = sim.def(b).headquarters ? hqOutputFactor(sim) : 1
+        status[grid].supply += gen.output * boost * inputSatisfaction(sim, b, satisfied)
+      }
       const consumer = consumerOf(sim, b)
       const use = consumer?.uses[net.id]
       if (consumer && use && demanding(sim, b, consumer)) status[grid].demand += use

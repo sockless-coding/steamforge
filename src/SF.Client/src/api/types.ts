@@ -462,6 +462,8 @@ export interface ResearchDef {
   points: number
   requires: string[]
   unlocks: ResearchUnlocks
+  /** Cannot be researched: only an expedition can bring the plans home (see forges.json blueprints). */
+  salvage?: boolean
 }
 
 export interface DispatchDef {
@@ -469,7 +471,15 @@ export interface DispatchDef {
   title: string
   /** May contain {colony}, replaced by the colony's name. */
   text: string
-  when: { research?: string; building?: string; year?: number; population?: number }
+  /**
+   * Exactly one trigger: research completed, a building finished, a year or population reached, an act of the saga
+   * begun, or `manual` for letters the simulation sends itself (forge papers, telegrams, epilogues).
+   */
+  when: { research?: string; building?: string; year?: number; population?: number; act?: number; manual?: boolean }
+  /** Ledger volume: the Board's dispatches (default), telegrams from the answering forges, or the forge papers. */
+  volume?: 'board' | 'telegrams' | 'papers'
+  /** Signature; the Board's when absent. */
+  from?: string
 }
 
 export interface StoryDef {
@@ -493,6 +503,110 @@ export interface ContentBundle {
   story: StoryDef
   guilds: GuildDef[]
   petitions: PetitionDef[]
+  forges: ForgesDef
+}
+
+/** What an expedition may find at a forge of this fate, and how dangerous the voyage is. */
+export interface ForgeFateDef {
+  id: string
+  name: string
+  description: string
+  /** Chance each crew member is lost on the voyage; the whole ship is lost at danger × chart.shipLossFactor. */
+  danger: number
+  /** Salvage per resource as [min, max]. */
+  salvage: Record<string, [number, number]>
+  survivors: [number, number]
+}
+
+/** A telegraph request from an answering forge: send these goods before the deadline and it sends something back. */
+export interface ForgeRequestDef {
+  id: string
+  text: string
+  wants: Stock
+  gives: Stock
+  months: number
+}
+
+/** One of the eleven forges sent north before the colony's own. */
+export interface ForgeDef {
+  id: string
+  number: number
+  name: string
+  fate: string
+  /** The fate stays unknown until an expedition arrives. */
+  hidden?: boolean
+  /** Voyage distance range in leagues; the colony's seed places the forge within it. */
+  leagues: [number, number]
+  /** Found by the first expedition: a relic, salvage-only research, and forge papers (story dispatch ids). */
+  relic?: string
+  blueprint?: string
+  papers?: string[]
+  /** Answering forges: who writes, the first telegram, requests, and what becomes of them if they are failed. */
+  persona?: string
+  greeting?: string
+  requests?: ForgeRequestDef[]
+  failFate?: string
+  /** Telegram sent as the forge falls silent when the creep begins (Act III). */
+  silencedInAct3?: string
+}
+
+export type RelicEffect = { kind: 'winterSeverity' | 'hqOutput' | 'research' | 'automatonWork' | 'soot'; factor: number }
+
+export interface RelicDef {
+  id: string
+  name: string
+  description: string
+  effect: RelicEffect
+}
+
+/** The Steamforge's pressure creep in Act III, and the finale's two answers to it. */
+export interface CreepRules {
+  /** Core pressure gained per month (rupture at 1). */
+  perMonth: number
+  /** A safety valve on the Steamforge's grid slows the creep by this factor. */
+  valveFactor: number
+  /** Extra Steamforge output per unit of creep. */
+  outputBonus: number
+  warnings: number[]
+  retrofitMonths: number
+  /** Steamforge output multiplier once retrofitted. */
+  retrofitOutput: number
+  /** Engineers' Institute standing needed to begin the retrofit. */
+  retrofitStanding: number
+  /** Monthly chance of a rupture during the retrofit while the Brotherhood works to rule. */
+  retrofitSabotageChance: number
+  ruptureRadius: number
+  ruptureKillRadius: number
+}
+
+export interface SagaRules {
+  act2Year: number
+  act3Year: number
+  papersForAct3: number
+  creepPapers: string[]
+  relationStart: number
+  relationHelp: number
+  relationMissed: number
+  relationDecayPerYear: number
+  requestEveryMonths: [number, number]
+  creep: CreepRules
+}
+
+export interface ForgesDef {
+  chart: {
+    name: string
+    leaguesPerMonth: number
+    crew: [number, number]
+    launchCost: Stock
+    maxExpeditions: number
+    shipLossFactor: number
+    /** Salvage from a forge already visited, as a share of a first visit. */
+    revisitSalvage: number
+  }
+  fates: ForgeFateDef[]
+  forges: ForgeDef[]
+  relics: RelicDef[]
+  saga: SagaRules
 }
 
 export interface AuthResponse {

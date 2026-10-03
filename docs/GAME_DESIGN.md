@@ -14,8 +14,19 @@ Steamforge No. 9, a sealed pressure engine. Eleven forges went before yours; fou
 **Brass Charter** (shown when a colony is founded) asks for a self-sufficient colony within the decade.
 
 **Dispatches** from the Company's Board arrive on milestones: a research completed, a building finished, a year
-reached or a population passed. Each trigger fires once. Dispatches appear as notices and are kept in the Dispatches
-ledger. The charter counts as fulfilled when an Analytical Engine stands in the colony.
+reached or a population passed, or an act of the saga begun (`when.act`). Each trigger fires once. Dispatches appear
+as notices and are kept in the Dispatches ledger. The charter counts as fulfilled when an Analytical Engine stands in
+the colony.
+
+Letters with `when.manual` are sent by the simulation itself: telegrams from the answering forges, the forge papers
+found by expeditions, and the epilogues. The ledger keeps three volumes (`volume`): the Board's dispatches,
+telegrams, and the Forge Papers. Each letter signs with `from` (the Board's signature by default).
+
+**The saga** (see The Hollowmere chart) runs in three acts:
+
+1. **The Brass Charter.**
+2. **The Silent Forges.** Begins once a Telegraph Office stands, or at year 4.
+3. **Pressure Creep.** Begins once three forge papers that mention the creep have been recovered, or at year 12.
 
 ## Core loop
 
@@ -137,6 +148,7 @@ All values live in content JSON.
 | Amenities | Gas Lamp (+6% happiness within 7 tiles), Galvanic Arc Lamp (+5% within 9; needs power), Clock Tower (+12% within 18; needs steam). Homes take at most +25% from amenities |
 | Lighting | Gas Lamp (radius 7), Galvanic Arc Lamp (radius 12; needs power): night work goes on in their light |
 | Trade | Airship Mast (see below) |
+| The other forges | Telegraph Office (Telegraphy), Airship Yard (Expeditionary Airships; envelope cloth sewn by the Tailor's Shop from leather). See The Hollowmere chart |
 | Logistics | Steam Tram Depot, Pneumatic Depot, Safety Valve (see below) |
 | Automatons | Automaton Works (see below) |
 | Guilds | Guild Hall (one guild meets there; see Guilds) |
@@ -248,6 +260,91 @@ laborers and take a place in any trade whose guild allows them. Unlike people, a
 - seize up for good after about 12 years of service (`rules.json` → `automaton`)
 
 A colony with only automatons left is still lost.
+
+## The Hollowmere chart (`forges.json`)
+
+Eleven forges went north before the colony's own No. 9. They are placed on a parchment chart by the colony's seed:
+each lies within its league range, spread around the compass, and is derived, not saved. Voyages take
+`leagues / leaguesPerMonth` months each way.
+
+| Forge | Fate | Holds |
+|---|---|---|
+| 1 Glimmerdeep | Frozen | Frost Charts (winters bite 15% less) |
+| 2 Cinderholm | Overpressure | the Forge Core Retrofit plans |
+| 3 Saltmarsh | Answering (choking on its smoke; fails to Abandoned) | |
+| 4 Ironhollow | Revolt | Ironhollow's Governor (Steamforge +35%) |
+| 5 Brassmoor | Answering (thriving; falls silent in Act III) | |
+| 6 Wending | Abandoned | Survey Lens (research +20%) |
+| 7 Frostgate | Answering (losing its winters; fails to Frozen) | |
+| 8 Blackwater | Overpressure | High-Pressure Mains plans |
+| 10 Hollowmere Reach | Revolt, unknown until visited | The Brass Heart (automatons +15%) |
+| 11 Gearholt | Answering (on the edge of revolt; fails to Revolt) | |
+| 12 Lastlight | Abandoned | Flue Filters (soot −20%) |
+
+Every silent forge also holds its papers: Forge Papers dispatches, three of which reveal the creep.
+
+**Expeditions** leave from a powered Airship Yard for a silent forge.
+- **Cost:** 6 cogs, 4 copper, 4 envelope cloth and 20 coal.
+- **Crew:** 2–5 fit adults, laborers first, always leaving two at home. The crew leave their homes and jobs and are
+  kept in the save while away.
+- At most two are away at once, one per forge.
+- **At the forge**, rolled from `sim.rng`:
+  - The airship is lost with all hands at the fate's `danger` × 0.35, reported when it fails to return.
+  - Otherwise each crew member is lost at `danger`.
+  - Salvage is rolled per the fate's ranges (30% on a revisit).
+  - A first visit also finds survivors, the forge's relic, its plans (salvage-only research, marked done) and its
+    papers.
+- **At home:** everything is handed over, crew rejoin as laborers and are reunited with partners who are still free,
+  and the forge's fate is revealed.
+
+| Fate | Danger | Salvage | Survivors |
+|---|---|---|---|
+| Frozen | 15% | iron, tools, coats | none |
+| Overpressure | 30% | iron, copper, cogs | none |
+| Revolt | 20% | cogs, iron | 2–5 |
+| Abandoned | 10% | logs, stone, tools | 0–1 |
+
+**Salvage research** (`research.json` → `salvage: true`) cannot be researched, and nothing may require it. The
+research tree shows it as found, not studied.
+
+**Relics** (`relics`) are named colony-wide factors: `winterSeverity`, `hqOutput`, `research`, `automatonWork`,
+`soot`.
+
+**The telegraph.**
+- With a Telegraph Office standing, each answering forge sends a greeting telegram. Then, every 5–9 months, it sends
+  a request: goods wanted by a deadline, and goods it sends back by return airship.
+- **Goodwill** starts at 50:
+  - +15 for each request fulfilled (`fulfilRequest`)
+  - −25 for each request missed
+  - −6 a year
+- At 0 the forge falls silent with its `failFate`. Its fate is then unknown until an expedition goes.
+- In Act III, Brassmoor's last telegram breaks off mid-sentence and it falls silent (overpressure).
+
+**Pressure creep** (Act III, `saga.creep`):
+- Steamforge No. 9's core gains 4% a month (2% with a Safety Valve on its grid). Its steam output rises with it, by
+  up to double.
+- Warnings sound at 50%, 75% and 90%. At 100% it **ruptures**:
+  - every building within 8 tiles catches fire
+  - everyone within 4 dies
+  - a pall of soot falls
+  - the Steamforge never raises steam again
+- A finale card offers two answers:
+  - **Unseal and retrofit.** Needs the Forge Core Retrofit plans and the Engineers' Institute at 60+. The Steamforge
+    is offline for 4 months, then raises 2.2× its steam with no creep. If the Brotherhood works to rule during the
+    retrofit, each month there is a 15% chance of a rupture.
+  - **Vent and seal it cold.** The Steamforge raises no steam again. The Brotherhood gains 20 standing and the
+    Institute loses 20.
+- Each ending sends its own epilogue telegram from the Board.
+
+**Display.**
+- The **Hollowmere chart** (HUD map button) shows:
+  - the forges, coloured by fate (silent ones as "?"; a crater for overpressure)
+  - league rings and a compass rose
+  - routes, with an airship marker for each expedition in flight
+- For the selected forge, the side panel shows its telegram and a send button, or an expedition launcher. It also
+  lists relics found and papers recovered.
+- In the world, an expedition airship lifts off the yard and flies out on the forge's bearing, and comes home the
+  same way.
 
 ## Guilds (`guilds.json`, `petitions.json`)
 
@@ -478,7 +575,7 @@ builds the land in layers:
 
 ## Persistence and backend
 
-- Saves are full snapshots (gzip + base64), currently version 7, migrated one version at a time:
+- Saves are full snapshots (gzip + base64), currently version 8, migrated one version at a time:
   - Version 1: the Guildhall becomes the Steamforge, all research counts as done and all dispatches as received.
   - Version 2: gains empty trade orders and no credit.
   - Version 3: the clock is rescaled from 40- to 120-second months so the colony keeps its date. It gains no waiting
@@ -493,6 +590,7 @@ builds the land in layers:
     - Removed research is dropped. A colony with Steam Engines gains Hydraulics, with a notice that boilers now need
       feedwater.
   - Version 6: gains guilds at the preset's starting standing, all mechanised, with no petition waiting.
+  - Version 7: gains the saga at Act I, with every forge as the Company knew it and no expeditions.
 - Snapshots hold the soot and grime fields as base64 `Float32Array`s, and the wind in `weather`.
 - Local slots and an autosave (every 3 minutes, on pause and on exit) live in IndexedDB. Six cloud slots are
   available per account (`/api/saves`).

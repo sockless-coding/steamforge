@@ -1,3 +1,4 @@
+import { chooseFinale, foundSaga, fulfilRequest, launchExpedition, relicFactor } from './saga'
 import type { Content } from '../../api/content'
 import type {
   BuildingDef,
@@ -43,6 +44,7 @@ import type {
   Notice,
   GuildPetition,
   GuildState,
+  SagaState,
   Petition,
   ResearchState,
   RoadJob,
@@ -52,7 +54,7 @@ import type {
 } from './types'
 import { MARK_CLEAR, World, type WorldSnapshot } from './world'
 
-export const SAVE_VERSION = 7
+export const SAVE_VERSION = 8
 
 export interface ColonySnapshot {
   v: number
@@ -85,6 +87,8 @@ export interface ColonySnapshot {
   guilds: Record<string, GuildState>
   guildPetition: GuildPetition | null
   noAutomatonsUntil: number
+  /** The silent forges, expeditions, relics and the creeping core (from version 8). */
+  saga: SagaState
 }
 
 const MAX_NOTICES = 60
@@ -143,6 +147,8 @@ export class Simulation {
   guildPetition: GuildPetition | null = null
   /** No automaton is assembled before this month index (a pledge to the guilds). */
   noAutomatonsUntil = 0
+  /** The story beyond the charter: forges, expeditions, relics, the creeping core. */
+  saga: SagaState
   /** Month index of the last disaster (spacing between disasters). */
   lastDisaster = -1000
   outcome: 'playing' | 'lost' = 'playing'
@@ -172,6 +178,7 @@ export class Simulation {
     this.tpm = this.rules.secondsPerMonth * this.tps
     content.bundle.features.forEach((f, i) => this.featureCodes.set(f.id, i + 1))
     this.soot = new SootField(world.width, world.height, this.rules.soot.cellSize)
+    this.saga = foundSaga(content)
   }
 
   /** Founds a new colony: generates the map, the Guildhall, starting buildings, supplies and families. */
@@ -323,7 +330,7 @@ export class Simulation {
   get temperature(): number {
     const comfort = this.rules.citizen.comfortTemperature
     let t = this.rules.temperature[this.month] + this.weather.offset + (this.weather.snapMonths > 0 ? this.weather.snapDegrees : 0)
-    if (t < comfort) t = comfort - (comfort - t) * this.mods.winterSeverity
+    if (t < comfort) t = comfort - (comfort - t) * this.mods.winterSeverity * relicFactor(this, 'winterSeverity')
     return t
   }
 
@@ -448,6 +455,7 @@ export class Simulation {
         const tech = this.content.research.get(action.tech)
         if (!tech) return { ok: false, reason: 'Unknown research.' }
         if (this.research.done.includes(tech.id)) return { ok: false, reason: `${tech.name} is already researched.` }
+        if (tech.salvage) return { ok: false, reason: `${tech.name} cannot be researched: an expedition must find the plans.` }
         this.research.queue = researchPlan(this, tech.id)
         return { ok: true }
       }
@@ -519,6 +527,18 @@ export class Simulation {
       case 'answerGuildPetition': {
         if (!this.guildPetition) return { ok: false, reason: 'No guild is waiting for an answer.' }
         return answerGuildPetition(this, action.choice) ? { ok: true } : { ok: false, reason: 'No such answer.' }
+      }
+      case 'launchExpedition': {
+        const reason = launchExpedition(this, action.forge, Math.round(action.crew))
+        return reason ? { ok: false, reason } : { ok: true }
+      }
+      case 'fulfilRequest': {
+        const reason = fulfilRequest(this, action.forge)
+        return reason ? { ok: false, reason } : { ok: true }
+      }
+      case 'finale': {
+        const reason = chooseFinale(this, action.choice)
+        return reason ? { ok: false, reason } : { ok: true }
       }
       case 'setGuildPolicy': {
         const guild = this.content.guilds.get(action.guild)
@@ -625,6 +645,7 @@ export class Simulation {
       guilds: this.guilds,
       guildPetition: this.guildPetition,
       noAutomatonsUntil: this.noAutomatonsUntil,
+      saga: this.saga,
     }
   }
 
@@ -660,6 +681,7 @@ export class Simulation {
     sim.guilds = s.guilds
     sim.guildPetition = s.guildPetition
     sim.noAutomatonsUntil = s.noAutomatonsUntil
+    sim.saga = s.saga
     rebuildClaims(sim)
     // Rebuild derived caches only; advancing anything here would make a loaded colony diverge.
     for (const system of systems) system.restore?.(sim)
@@ -695,7 +717,7 @@ export class Simulation {
  * Guildhall becomes the headquarters, every research counts as done (a legacy colony keeps what it had built) and
  * every dispatch as already received. Version 2 predates airship trade. Version 3 predates day and night (40-second
  * months), petitions and disaster spacing. Version 4 predates soot and wind. Version 5 predates feedwater, conduit
- * grades and the food rework (see migrateV5). Version 6 predates the guilds.
+ * grades and the food rework (see migrateV5). Version 6 predates the guilds, version 7 the Hollowmere chart.
  */
 function migrate(content: Content, s: ColonySnapshot): ColonySnapshot {
   if (s.v === SAVE_VERSION) return s
@@ -725,6 +747,11 @@ function migrate(content: Content, s: ColonySnapshot): ColonySnapshot {
     s.guildPetition = null
     s.noAutomatonsUntil = 0
     s.v = 7
+  }
+  // Version 7 predates the Hollowmere chart: Act I, every forge as the Company knew it, no expeditions.
+  if (s.v === 7) {
+    s.saga = foundSaga(content)
+    s.v = 8
   }
   if (s.v !== SAVE_VERSION) throw new Error(`Unsupported save version ${s.v}.`)
   return s

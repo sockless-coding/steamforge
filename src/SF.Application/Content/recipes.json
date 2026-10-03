@@ -5,6 +5,7 @@
   { "id": "smelt-copper", "name": "Smelt copper", "inputs": { "copperOre": 2, "coal": 1 }, "outputs": { "copper": 1 }, "seconds": 24 },
   { "id": "forge-tools", "name": "Forge tools", "inputs": { "iron": 1, "logs": 1 }, "outputs": { "tools": 1 }, "seconds": 32 },
   { "id": "sew-coats", "name": "Sew coats", "inputs": { "leather": 2 }, "outputs": { "coats": 1 }, "seconds": 28 },
+  { "id": "sew-envelope", "name": "Sew envelope cloth", "inputs": { "leather": 2 }, "outputs": { "envelope": 1 }, "seconds": 30 },
   { "id": "machine-cogs", "name": "Machine cogs", "inputs": { "iron": 1 }, "outputs": { "cogs": 2 }, "seconds": 24 },
   { "id": "grow-tomatoes", "name": "Grow tomatoes", "inputs": {}, "outputs": { "tomatoes": 4 }, "seconds": 32 },
   { "id": "grow-herbs", "name": "Grow herbs", "inputs": {}, "outputs": { "herbs": 3 }, "seconds": 32 },

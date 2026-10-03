@@ -1,0 +1,118 @@
+{
+  "chart": {
+    "name": "The Hollowmere Chart",
+    "leaguesPerMonth": 1,
+    "crew": [2, 5],
+    "launchCost": { "cogs": 6, "copper": 4, "envelope": 4, "coal": 20 },
+    "maxExpeditions": 2,
+    "shipLossFactor": 0.35,
+    "revisitSalvage": 0.3
+  },
+  "fates": [
+    { "id": "answering", "name": "Answering", "description": "Still raising steam, and still on the telegraph.", "danger": 0.05, "salvage": {}, "survivors": [0, 0] },
+    { "id": "frozen", "name": "Frozen", "description": "Every building standing, every hearth cold. The winter took them in their beds.", "danger": 0.15, "salvage": { "iron": [10, 25], "tools": [4, 10], "coats": [3, 8] }, "survivors": [0, 0] },
+    { "id": "overpressure", "name": "Overpressure", "description": "A crater where the Steamforge stood, ringed with twisted brass. The salvage is rich and the ground still hot.", "danger": 0.3, "salvage": { "iron": [20, 40], "copper": [10, 25], "cogs": [6, 14] }, "survivors": [0, 0] },
+    { "id": "revolt", "name": "Revolt", "description": "Smashed automatons in the square and a burnt guild hall. Some of the people are still there, living rough.", "danger": 0.2, "salvage": { "cogs": [8, 16], "iron": [10, 20] }, "survivors": [2, 5] },
+    { "id": "abandoned", "name": "Abandoned", "description": "Doors left open, carts gone, a note nailed to the Steamforge: 'Gone south. Do not follow.'", "danger": 0.1, "salvage": { "logs": [20, 40], "stone": [10, 30], "tools": [2, 6] }, "survivors": [0, 1] }
+  ],
+  "forges": [
+    { "id": "forge-1", "number": 1, "name": "Glimmerdeep", "fate": "frozen", "leagues": [3, 5], "relic": "frost-charts", "papers": ["papers-glimmerdeep"] },
+    { "id": "forge-2", "number": 2, "name": "Cinderholm", "fate": "overpressure", "leagues": [4, 6], "blueprint": "forge-core-retrofit", "papers": ["papers-cinderholm"] },
+    {
+      "id": "forge-3",
+      "number": 3,
+      "name": "Saltmarsh",
+      "fate": "answering",
+      "failFate": "abandoned",
+      "leagues": [2, 4],
+      "persona": "Engineer Hesketh Moss, who writes in a cramped, coughing hand",
+      "greeting": "telegram-saltmarsh",
+      "requests": [
+        { "id": "saltmarsh-tonic", "text": "Our streets are black and our children cough. Send lung tonic, any you can spare. We will pay in copper.", "wants": { "tonic": 12 }, "gives": { "copper": 14 }, "months": 5 },
+        { "id": "saltmarsh-coats", "text": "The smoke kills the game and the hunters have no hides. Send coats before the frost.", "wants": { "coats": 8 }, "gives": { "iron": 18 }, "months": 4 },
+        { "id": "saltmarsh-food", "text": "Blight on the fields again. Tinned food or rations, anything that keeps.", "wants": { "rations": 30 }, "gives": { "cogs": 10 }, "months": 4 }
+      ]
+    },
+    { "id": "forge-4", "number": 4, "name": "Ironhollow", "fate": "revolt", "leagues": [3, 5], "relic": "governor", "papers": ["papers-ironhollow"] },
+    {
+      "id": "forge-5",
+      "number": 5,
+      "name": "Brassmoor",
+      "fate": "answering",
+      "failFate": "overpressure",
+      "leagues": [3, 5],
+      "persona": "Chief Engineer Augusta Pell, who writes in bold copperplate and never uses one word where three will do",
+      "greeting": "telegram-brassmoor",
+      "silencedInAct3": "telegram-brassmoor-silence",
+      "requests": [
+        { "id": "brassmoor-coal", "text": "Brassmoor burns through coal like a furnace in a gale, which is to say magnificently. Send coal and we shall send you cogs of a quality the Board has never seen.", "wants": { "coal": 40 }, "gives": { "cogs": 14 }, "months": 4 },
+        { "id": "brassmoor-stone", "text": "We are building a second boiler hall. You may contribute stone and share, in a small way, in our glory.", "wants": { "stone": 60 }, "gives": { "copper": 16 }, "months": 5 },
+        { "id": "brassmoor-iron", "text": "Our Steamforge runs hotter every month, Chief Engineer. Free steam! Send iron for more mains and we will pay handsomely.", "wants": { "iron": 20 }, "gives": { "cogs": 12, "tools": 6 }, "months": 4 }
+      ]
+    },
+    { "id": "forge-6", "number": 6, "name": "Wending", "fate": "abandoned", "leagues": [2, 4], "relic": "survey-lens", "papers": ["papers-wending"] },
+    {
+      "id": "forge-7",
+      "number": 7,
+      "name": "Frostgate",
+      "fate": "answering",
+      "failFate": "frozen",
+      "leagues": [4, 6],
+      "persona": "Matron Elspeth Crane, who keeps the Frostgate log and writes short, cold sentences",
+      "greeting": "telegram-frostgate",
+      "requests": [
+        { "id": "frostgate-coal", "text": "Coal stocks at eleven days. Send coal before the winter. We will repay in iron.", "wants": { "coal": 50 }, "gives": { "iron": 24 }, "months": 4 },
+        { "id": "frostgate-coats", "text": "Four lost to the cold last month. Coats, please. Any number.", "wants": { "coats": 10 }, "gives": { "cogs": 8 }, "months": 3 },
+        { "id": "frostgate-firewood", "text": "The boiler is cracked. Firewood for the homes while we mend it.", "wants": { "firewood": 60 }, "gives": { "copper": 12 }, "months": 3 }
+      ]
+    },
+    { "id": "forge-8", "number": 8, "name": "Blackwater", "fate": "overpressure", "leagues": [5, 7], "blueprint": "high-pressure-mains", "papers": ["papers-blackwater"] },
+    { "id": "forge-10", "number": 10, "name": "Hollowmere Reach", "fate": "revolt", "hidden": true, "leagues": [5, 7], "relic": "brass-heart", "papers": ["papers-reach"] },
+    {
+      "id": "forge-11",
+      "number": 11,
+      "name": "Gearholt",
+      "fate": "answering",
+      "failFate": "revolt",
+      "leagues": [3, 5],
+      "persona": "Overseer Jonas Grieve, who writes like a man with a mob at his door",
+      "greeting": "telegram-gearholt",
+      "requests": [
+        { "id": "gearholt-food", "text": "The Brotherhood is out again. Food will buy us a month's peace. Rations, tins, bread: send what you can.", "wants": { "tinned": 20 }, "gives": { "cogs": 12 }, "months": 4 },
+        { "id": "gearholt-tools", "text": "Half our tools went into the river with the automatons. Send tools and we will send copper.", "wants": { "tools": 12 }, "gives": { "copper": 15 }, "months": 4 },
+        { "id": "gearholt-bread", "text": "Bread for the strikers' families, or there will be no Gearholt by spring.", "wants": { "bread": 30 }, "gives": { "iron": 20 }, "months": 3 }
+      ]
+    },
+    { "id": "forge-12", "number": 12, "name": "Lastlight", "fate": "abandoned", "leagues": [6, 8], "relic": "soot-filters", "papers": ["papers-lastlight"] }
+  ],
+  "relics": [
+    { "id": "frost-charts", "name": "Glimmerdeep's Frost Charts", "description": "Forty years of winter readings. Your people know when the cold is coming: winters bite 15% less.", "effect": { "kind": "winterSeverity", "factor": 0.85 } },
+    { "id": "governor", "name": "Ironhollow's Governor", "description": "The great brass governor from Ironhollow's Steamforge, fitted to yours: it raises a third more steam.", "effect": { "kind": "hqOutput", "factor": 1.35 } },
+    { "id": "survey-lens", "name": "Wending's Survey Lens", "description": "The finest instrument the Company ever sent north. Research goes 20% faster.", "effect": { "kind": "research", "factor": 1.2 } },
+    { "id": "brass-heart", "name": "The Brass Heart of the Reach", "description": "The master mainspring from the Reach's clockworks. Automatons work 15% faster.", "effect": { "kind": "automatonWork", "factor": 1.15 } },
+    { "id": "soot-filters", "name": "Lastlight's Flue Filters", "description": "Copper gauze baffles for every chimney: the colony puts out 20% less soot.", "effect": { "kind": "soot", "factor": 0.8 } }
+  ],
+  "saga": {
+    "act2Year": 4,
+    "act3Year": 12,
+    "papersForAct3": 3,
+    "creepPapers": ["papers-cinderholm", "papers-wending", "papers-blackwater"],
+    "relationStart": 50,
+    "relationHelp": 15,
+    "relationMissed": 25,
+    "relationDecayPerYear": 6,
+    "requestEveryMonths": [5, 9],
+    "creep": {
+      "perMonth": 0.04,
+      "valveFactor": 0.5,
+      "outputBonus": 1,
+      "warnings": [0.5, 0.75, 0.9],
+      "retrofitMonths": 4,
+      "retrofitOutput": 2.2,
+      "retrofitStanding": 60,
+      "retrofitSabotageChance": 0.15,
+      "ruptureRadius": 8,
+      "ruptureKillRadius": 4
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import { relicFactor } from './saga'
 import { decodeArray, encodeArray } from './codec'
 import { gridOf, generatorOf } from './energy'
 import { Rng } from './rng'
@@ -206,7 +207,7 @@ function refreshForest(sim: Simulation): void {
 export function updateSoot(sim: Simulation): void {
   const r = sim.rules.soot
   const f = sim.soot
-  const rate = sim.mods.sootRate ?? 1
+  const rate = (sim.mods.sootRate ?? 1) * relicFactor(sim, 'soot')
   const wind = windVector(sim)
   for (const b of sim.buildings.values()) {
     if (b.site) continue

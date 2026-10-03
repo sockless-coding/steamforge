@@ -168,6 +168,15 @@
           "work": 8,
           "lossPerTile": 0.005,
           "style": "lagged"
+        },
+        {
+          "id": "hp-main",
+          "name": "High-Pressure Main",
+          "description": "Blackwater's heavy riveted main, double-lagged and banded in copper. Pressure falls only 0.2% per tile.",
+          "cost": { "iron": 2, "copper": 1 },
+          "work": 10,
+          "lossPerTile": 0.002,
+          "style": "lagged"
         }
       ]
     },

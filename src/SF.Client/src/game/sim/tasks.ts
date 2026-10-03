@@ -1,3 +1,4 @@
+import { relicFactor } from './saga'
 import { guildWorkFactor } from './guilds'
 import { isLit } from './components/lighting'
 import { runEffect } from './effects'
@@ -131,7 +132,7 @@ export function workSpeed(sim: Simulation, c: Citizen, at?: number): number {
   let s: number
   if (c.automaton) {
     // Steady clockwork: no moods, tools, age or illness.
-    s = sim.mods.productionMultiplier * sim.rules.automaton.workFactor
+    s = sim.mods.productionMultiplier * sim.rules.automaton.workFactor * relicFactor(sim, 'automatonWork')
   } else {
     s = sim.mods.productionMultiplier * (0.8 + 0.3 * c.happiness)
     if (c.tools <= 0) s *= r.noToolsWorkFactor

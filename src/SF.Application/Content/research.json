@@ -207,6 +207,44 @@
     "unlocks": { "buildings": ["pneumatic-depot"] }
   },
   {
+    "id": "telegraphy",
+    "name": "Telegraphy",
+    "description": "Copper wire and a sounder: a telegraph office reaches the forges that still answer.",
+    "tier": 3,
+    "points": 40,
+    "requires": ["copper"],
+    "unlocks": { "buildings": ["telegraph-office"] }
+  },
+  {
+    "id": "expeditions",
+    "name": "Expeditionary Airships",
+    "description": "Long-range airships fitted out at a yard of your own, with envelope cloth sewn by your tailors. Crews can reach the silent forges.",
+    "tier": 6,
+    "points": 90,
+    "requires": ["aeronautics", "tailoring"],
+    "unlocks": { "buildings": ["airship-yard"], "recipes": ["sew-envelope"] }
+  },
+  {
+    "id": "high-pressure-mains",
+    "name": "High-Pressure Mains",
+    "description": "Blackwater's plans for a main that carries steam across a whole town with almost no loss. Salvage only: found in the ruins of Forge No. 8.",
+    "tier": 7,
+    "points": 1,
+    "requires": [],
+    "salvage": true,
+    "unlocks": { "conduits": ["hp-main"] }
+  },
+  {
+    "id": "forge-core-retrofit",
+    "name": "Forge Core Retrofit",
+    "description": "Ashcombe's drawings for opening a sealed Steamforge and fitting it with a governor. Salvage only: found in the crater at Forge No. 2. Needed to retrofit your own when its core begins to creep.",
+    "tier": 7,
+    "points": 1,
+    "requires": [],
+    "salvage": true,
+    "unlocks": {}
+  },
+  {
     "id": "automata",
     "name": "Clockwork Automata",
     "description": "Brass automatons that take a place in any trade and work without food or warmth. They need winding with coal and wear out in time, and the guilds whose trades they take will not thank you.",

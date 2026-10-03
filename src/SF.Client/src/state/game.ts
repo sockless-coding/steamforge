@@ -101,6 +101,54 @@ export interface GuildRow {
   hall: boolean
 }
 
+/** One forge on the Hollowmere chart, as the colony knows it. */
+export interface ForgeRow {
+  id: string
+  number: number
+  name: string
+  /** Chart position (-1..1, the colony at the centre), distance and months each way. */
+  x: number
+  y: number
+  leagues: number
+  months: number
+  status: 'answering' | 'silent' | 'visited'
+  /** The fate, once known. */
+  fate: string | null
+  fateText: string | null
+  persona: string | null
+  /** Answering forges: goodwill 0-100 and the open request. */
+  relation: number | null
+  request: { text: string; wants: { name: string; qty: number; have: number }[]; gives: string; monthsLeft: number } | null
+  /** Why an expedition (of the smallest crew) cannot leave for it now; null when it can. */
+  launchBlocked: string | null
+  /** An expedition bound for it: outbound or returning, and how far along (0-1). */
+  expedition: { stage: 'outbound' | 'returning'; progress: number; crew: number; monthsLeft: number } | null
+  /** Relics or plans still waiting there (known only by rumour until visited). */
+  rumour: string | null
+}
+
+export interface SagaInfo {
+  act: number
+  chartName: string
+  /** The league distance the chart's outer ring stands for. */
+  maxLeagues: number
+  forges: ForgeRow[]
+  yard: boolean
+  telegraph: boolean
+  crew: [number, number]
+  launchCost: string
+  relics: { name: string; description: string }[]
+  papers: number
+  /** Act III: the creeping core and the two answers to it. */
+  finale: {
+    state: 'pending' | 'retrofitting' | 'retrofitted' | 'decommissioned' | 'ruptured'
+    creep: number
+    retrofitBlocked: string | null
+    ventBlocked: string | null
+    monthsLeft: number
+  } | null
+}
+
 /** A guild petition waiting for an answer. */
 export interface GuildPetitionInfo {
   guild: string
@@ -125,7 +173,8 @@ export interface ProfessionRow {
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
-export type ResearchStatus = 'done' | 'current' | 'queued' | 'available' | 'locked'
+/** `salvage`: plans only an expedition can find. */
+export type ResearchStatus = 'done' | 'current' | 'queued' | 'available' | 'locked' | 'salvage'
 
 export interface ResearchRow {
   id: string
@@ -211,6 +260,7 @@ export interface HudState {
   guildPetition: GuildPetitionInfo | null
   /** No automaton will be built for this many more months (a pledge to the guilds). */
   automatonPledge: number
+  saga: SagaInfo | null
 }
 
 /** Coal smoke over the colony, for the barometer and wind vane. */
@@ -269,6 +319,7 @@ export const initialHud: HudState = {
   guilds: [],
   guildPetition: null,
   automatonPledge: 0,
+  saga: null,
 }
 
 /** Snapshot of the running colony for React. The GameController publishes into it; components only read. */

@@ -29,6 +29,7 @@ export const bundle: ContentBundle = {
   story: read('story'),
   guilds: read('guilds'),
   petitions: read('petitions'),
+  forges: read('forges'),
 }
 
 export const content: Content = indexContent(bundle)
