@@ -124,6 +124,92 @@ const painters: Record<string, Painter> = {
     ctx.fillRect(0, 0, s, s)
     speckle(ctx, s, 0.12, 61)
   },
+  /** Riveted plates: tinted by the material colour (iron, copper, brass). */
+  rivets: (ctx, s) => {
+    ctx.fillStyle = '#e4e4e4'
+    ctx.fillRect(0, 0, s, s)
+    const panels = 2
+    const p = s / panels
+    for (let py = 0; py < panels; py++) {
+      for (let px = 0; px < panels; px++) {
+        const g = ctx.createLinearGradient(px * p, py * p, px * p + p, py * p + p)
+        const k = 0.88 + hash2(px, py, 71) * 0.18
+        g.addColorStop(0, shadeRgb('#f4f4f4', k))
+        g.addColorStop(1, shadeRgb('#c8c8c8', k))
+        ctx.fillStyle = g
+        ctx.fillRect(px * p + 1, py * p + 1, p - 2, p - 2)
+      }
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'
+    for (let k = 0; k <= panels; k++) {
+      ctx.fillRect(k * p - 1, 0, 2, s)
+      ctx.fillRect(0, k * p - 1, s, 2)
+    }
+    for (let k = 0; k <= panels; k++) {
+      for (let t = 0; t < s; t += s / 10) {
+        for (const [x, y] of [
+          [k * p, t + s / 20],
+          [t + s / 20, k * p],
+        ]) {
+          ctx.fillStyle = 'rgba(0,0,0,0.4)'
+          ctx.beginPath()
+          ctx.arc(x + 1, y + 1, 2.2, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.fillStyle = '#ffffff'
+          ctx.beginPath()
+          ctx.arc(x, y, 1.8, 0, Math.PI * 2)
+          ctx.fill()
+        }
+      }
+    }
+    speckle(ctx, s, 0.14, 73)
+  },
+  /** Weathered copper: blue-green patina over bare copper, streaked by rain. */
+  verdigris: (ctx, s) => {
+    const img = ctx.createImageData(s, s)
+    for (let y = 0; y < s; y++) {
+      for (let x = 0; x < s; x++) {
+        const n = fbm(x / 16, y / 24, 81, 4)
+        const streak = fbm(x / 3, y / 40, 83, 2)
+        const patina = Math.min(1, Math.max(0, (n - 0.35) * 2.6 + (streak - 0.5) * 0.6))
+        const i = (y * s + x) * 4
+        img.data[i] = 168 * (1 - patina) + 92 * patina
+        img.data[i + 1] = 104 * (1 - patina) + 160 * patina
+        img.data[i + 2] = 60 * (1 - patina) + 138 * patina
+        img.data[i + 3] = 255
+      }
+    }
+    ctx.putImageData(img, 0, 0)
+    speckle(ctx, s, 0.18, 85)
+  },
+  /** Terracotta roof tiles in overlapping rows. */
+  tile: (ctx, s) => {
+    ctx.fillStyle = '#4a2418'
+    ctx.fillRect(0, 0, s, s)
+    const rows = 8
+    const cols = 8
+    for (let r = 0; r < rows; r++) {
+      const off = r % 2 ? s / cols / 2 : 0
+      for (let c = -1; c < cols; c++) {
+        const x = c * (s / cols) + off
+        const y = r * (s / rows)
+        const g = ctx.createLinearGradient(x, 0, x + s / cols, 0)
+        const k = 0.8 + hash2(r, c, 91) * 0.35
+        g.addColorStop(0, shadeRgb('#8a3a24', k * 0.8))
+        g.addColorStop(0.5, shadeRgb('#b4553a', k))
+        g.addColorStop(1, shadeRgb('#7a3020', k * 0.75))
+        ctx.fillStyle = g
+        ctx.fillRect(x + 1, y + 1, s / cols - 2, s / rows - 1)
+      }
+    }
+    speckle(ctx, s, 0.2, 93)
+  },
+  /** Cream render with soot stains low on the wall. */
+  plaster: (ctx, s) => {
+    ctx.fillStyle = '#d8ccb0'
+    ctx.fillRect(0, 0, s, s)
+    speckle(ctx, s, 0.16, 101)
+  },
 }
 
 const textures = new Map<string, THREE.Texture>()
@@ -157,7 +243,7 @@ const specs: Record<string, MatSpec> = {
   copper: { color: '#c06a3e', roughness: 0.38, metalness: 0.85, map: 'metal' },
   iron: { color: '#4e4a46', roughness: 0.6, metalness: 0.75, map: 'metal' },
   glass: { color: '#3a4a52', roughness: 0.15, metalness: 0.2, emissive: '#ffb860', emissiveIntensity: 0.35 },
-  glassroof: { color: '#7aa0b0', roughness: 0.15, metalness: 0.3, transparent: 0.75 },
+  glassroof: { color: '#a8c8d4', roughness: 0.1, metalness: 0.2, transparent: 0.42 },
   glow: { color: '#3a1a08', roughness: 0.6, emissive: '#ff7a2a', emissiveIntensity: 2.2 },
   soil: { color: '#5a4632', roughness: 1 },
   leaf: { color: '#3f6a32', roughness: 0.85 },
@@ -168,9 +254,38 @@ const specs: Record<string, MatSpec> = {
   ore: { color: '#7a4a36', roughness: 0.8, metalness: 0.3 },
   coal: { color: '#1c1a1a', roughness: 0.55, metalness: 0.1 },
   water: { color: '#2e5a6a', roughness: 0.1, metalness: 0.2 },
+  // Steampunk palette: riveted plate, weathered copper, soot-black iron, painted iron, clay tile, render.
+  plate: { color: '#6a645c', roughness: 0.5, metalness: 0.75, map: 'rivets' },
+  copperplate: { color: '#c47048', roughness: 0.5, metalness: 0.75, map: 'rivets' },
+  brassplate: { color: '#d0a24c', roughness: 0.42, metalness: 0.85, map: 'rivets' },
+  verdigris: { color: '#ffffff', roughness: 0.62, metalness: 0.35, map: 'verdigris' },
+  darkiron: { color: '#2e2b28', roughness: 0.55, metalness: 0.7, map: 'metal' },
+  redpaint: { color: '#8e2a1e', roughness: 0.55, metalness: 0.3, map: 'rivets' },
+  tile: { color: '#ffffff', roughness: 0.85, map: 'tile' },
+  plaster: { color: '#ffffff', roughness: 0.95, map: 'plaster' },
+  malachite: { color: '#3f8a72', roughness: 0.7, metalness: 0.2 },
+  /** Always-lit gas lamps and lanterns. */
+  lamp: { color: '#ffe0a0', roughness: 0.4, emissive: '#ffb44a', emissiveIntensity: 1.6 },
+  /** Gauge faces. */
+  dial: { color: '#efe6cc', roughness: 0.4, emissive: '#efe0b8', emissiveIntensity: 0.25 },
+  /** Galvanic arcs and charged coils (blue-white glow). */
+  arc: { color: '#1a2a3a', roughness: 0.4, emissive: '#7fdcff', emissiveIntensity: 1.1 },
 }
 
 const materials = new Map<string, THREE.MeshStandardMaterial>()
+let environment: THREE.Texture | null = null
+
+/**
+ * Reflections for building materials only (brass, copper, glass and stone get something to mirror); terrain and
+ * nature keep their flat look. Applies to materials already made and to every one made later.
+ */
+export function setBuildingEnvironment(texture: THREE.Texture | null): void {
+  environment = texture
+  for (const m of materials.values()) {
+    m.envMap = texture
+    m.needsUpdate = true
+  }
+}
 
 /** Shared material by content material name (buildings.json `mat`). Unknown names fall back to timber. */
 export function material(name: string): THREE.MeshStandardMaterial {
@@ -186,19 +301,22 @@ export function material(name: string): THREE.MeshStandardMaterial {
       emissiveIntensity: spec.emissiveIntensity ?? 0,
       transparent: spec.transparent !== undefined,
       opacity: spec.transparent ?? 1,
+      envMap: environment,
+      envMapIntensity: 0.55,
     })
     materials.set(name, m)
   }
   return m
 }
 
-/** Furnace glow for idle buildings (swapped in when nobody is working). */
-export function idleGlow(): THREE.MeshStandardMaterial {
-  let m = materials.get('$glow-idle')
+/** A glowing material dimmed for idle buildings (swapped in when nobody is working). */
+export function idleGlow(name = 'glow'): THREE.MeshStandardMaterial {
+  const key = `$idle-${name}`
+  let m = materials.get(key)
   if (!m) {
-    m = material('glow').clone()
-    m.emissiveIntensity = 0.15
-    materials.set('$glow-idle', m)
+    m = material(name).clone()
+    m.emissiveIntensity = Math.min(m.emissiveIntensity, 0.15)
+    materials.set(key, m)
   }
   return m
 }

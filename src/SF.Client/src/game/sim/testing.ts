@@ -25,6 +25,8 @@ export const bundle: ContentBundle = {
   events: read('events'),
   difficulty: read('difficulty'),
   mapgen: read('mapgen'),
+  research: read('research'),
+  story: read('story'),
 }
 
 export const content: Content = indexContent(bundle)

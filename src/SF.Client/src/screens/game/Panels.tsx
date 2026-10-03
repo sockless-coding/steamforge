@@ -13,7 +13,7 @@ import { Button, Modal, Tabs } from '../../ui/components'
 
 export function GuildPanel({ hud, controller, onClose }: { hud: HudState; controller: GameController; onClose: () => void }) {
   return (
-    <Modal title="Guildhall: Professions" onClose={onClose} wide>
+    <Modal title="Professions" onClose={onClose} wide>
       <p className="muted small">
         Everyone without a trade works as a laborer, hauling materials and clearing land. Builders raise construction sites and lay roads. Raising a
         profession assigns idle laborers to that trade&apos;s workplaces.

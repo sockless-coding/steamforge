@@ -1,4 +1,5 @@
 import { registerEffect } from '../effects'
+import { energyBlocked } from '../energy'
 import { addStock, nearestStorageFor } from '../inventory'
 import type { Simulation } from '../simulation'
 import { approachTile, claimTile, gotoBuilding, reserveIncoming, task } from '../tasks'
@@ -125,7 +126,7 @@ registerComponent<GathererConfig>({
   },
   outputs: (sim, _b, cfg) => yieldResources(sim, cfg),
   work: (sim, b, cfg, c) => {
-    if (outputFull(sim, b)) return haulOutputTask(sim, c, b, 1)
+    if (outputFull(sim, b) || energyBlocked(sim, b)) return haulOutputTask(sim, c, b, 1)
     const carry = sim.rules.citizen.carry
 
     if (cfg.yield) {

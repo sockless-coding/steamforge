@@ -25,7 +25,11 @@ export function GameScreen() {
       onMenu: () => setMenu((open) => !open),
     })
     setController(c)
-    if (import.meta.env.DEV) (window as unknown as { steamforge: GameController }).steamforge = c
+    if (import.meta.env.DEV) {
+      const w = window as unknown as { steamforge: GameController; steamforgeShowcase: () => Promise<Record<string, number>> }
+      w.steamforge = c
+      w.steamforgeShowcase = () => import('../../game/dev').then((m) => m.showcase(c))
+    }
     return () => {
       c.destroy()
       setController(null)

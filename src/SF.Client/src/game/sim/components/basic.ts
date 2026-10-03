@@ -37,10 +37,11 @@ registerComponent<HousingConfig>({
   describe: (sim, b, cfg) => {
     let food = 0
     for (const f of foodIds(sim)) food += amount(b.stock, f)
+    const steamHeat = (b.data.heat as number | undefined) ?? 0
     return [
       `Residents ${b.residents.length} / ${cfg.capacity}`,
       `Pantry: ${Math.floor(food)} food, ${Math.floor(amount(b.stock, 'firewood'))} firewood`,
-      b.data.heated === false ? 'Cold: no firewood!' : 'Warm',
+      b.data.heated === false ? 'Cold: no firewood!' : steamHeat >= 1 ? 'Warm: steam radiators' : 'Warm',
     ]
   },
 })
@@ -49,7 +50,7 @@ export interface ShelterConfig {
   warmUpPerMonth: number
 }
 
-/** Somewhere the homeless can warm up (the Guildhall). Read by the needs system. */
+/** Somewhere the homeless can warm up (the Steamforge). Read by the needs system. */
 registerComponent<ShelterConfig>({ kind: 'shelter' })
 
 export interface WorkplaceConfig {
@@ -64,10 +65,12 @@ registerComponent<WorkplaceConfig>({
 
 export interface FirefightingConfig {
   radius: number
+  /** Seconds a covered fire burns before it is put out, when quicker than the event's wellBurnSeconds. */
+  burnSeconds?: number
 }
 
-/** Buildings within reach of a well have fires put out quickly (see the fire system). */
+/** Buildings within reach of a well (or a steam fire station) have fires put out quickly (see the fire system). */
 registerComponent<FirefightingConfig>({
   kind: 'firefighting',
-  describe: (_sim, _b, cfg) => [`Fights fires within ${cfg.radius} tiles`],
+  describe: (_sim, _b, cfg) => [`Fights fires within ${cfg.radius} tiles${cfg.burnSeconds ? `, within ${cfg.burnSeconds}s` : ''}`],
 })

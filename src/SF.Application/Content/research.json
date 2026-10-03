@@ -1,0 +1,128 @@
+[
+  {
+    "id": "masonry",
+    "name": "Masonry & Setts",
+    "description": "Dressed granite for cobbled streets and the solid brick rowhouses that hold their heat.",
+    "tier": 1,
+    "points": 15,
+    "requires": [],
+    "unlocks": { "roads": ["cobble"], "buildings": ["rowhouse"] }
+  },
+  {
+    "id": "mining",
+    "name": "Deep Mining",
+    "description": "Timbered shafts and steam winches to sink mines into iron and coal seams.",
+    "tier": 1,
+    "points": 20,
+    "requires": [],
+    "unlocks": { "buildings": ["iron-mine", "coal-pit"] }
+  },
+  {
+    "id": "tailoring",
+    "name": "Tailoring",
+    "description": "Patterns for heavy leather greatcoats. Coated colonists lose heat far more slowly.",
+    "tier": 1,
+    "points": 15,
+    "requires": [],
+    "unlocks": { "buildings": ["tailor"] }
+  },
+  {
+    "id": "metallurgy",
+    "name": "Bloomery Metallurgy",
+    "description": "Coal-fired furnaces reduce ore to iron, and smiths turn iron into tools.",
+    "tier": 2,
+    "points": 30,
+    "requires": ["mining"],
+    "unlocks": { "buildings": ["smelter", "toolworks"] }
+  },
+  {
+    "id": "piping",
+    "name": "Pressure Piping",
+    "description": "Riveted iron mains that carry the Steamforge's steam to workshops anywhere in the colony.",
+    "tier": 2,
+    "points": 30,
+    "requires": ["metallurgy"],
+    "unlocks": { "networks": ["steam"] }
+  },
+  {
+    "id": "copper",
+    "name": "Copper Metallurgy",
+    "description": "Mining and smelting the green copper seams. Copper carries current and never rusts.",
+    "tier": 2,
+    "points": 40,
+    "requires": ["metallurgy"],
+    "unlocks": { "buildings": ["copper-mine"], "recipes": ["smelt-copper"] }
+  },
+  {
+    "id": "precision",
+    "name": "Precision Machining",
+    "description": "Steam-driven lathes that cut true cogs, the heart of every engine.",
+    "tier": 3,
+    "points": 45,
+    "requires": ["piping"],
+    "unlocks": { "buildings": ["machine-works"] }
+  },
+  {
+    "id": "glasshouse",
+    "name": "Glasshouse Horticulture",
+    "description": "Steam-heated glass halls that grow fresh tomatoes through the depths of winter.",
+    "tier": 3,
+    "points": 45,
+    "requires": ["piping"],
+    "unlocks": { "buildings": ["steam-glasshouse"] }
+  },
+  {
+    "id": "engines",
+    "name": "Steam Engines",
+    "description": "Coal-fired boiler houses to raise steam in quantity, and the machines that drink it.",
+    "tier": 4,
+    "points": 60,
+    "requires": ["precision"],
+    "unlocks": { "buildings": ["boiler-house", "steam-sawmill"] }
+  },
+  {
+    "id": "fire-brigade",
+    "name": "Steam Fire Brigade",
+    "description": "A steam pump that throws water farther and faster than any bucket chain.",
+    "tier": 5,
+    "points": 50,
+    "requires": ["engines"],
+    "unlocks": { "buildings": ["fire-station"] }
+  },
+  {
+    "id": "radiators",
+    "name": "Steam Radiators",
+    "description": "Cast-iron radiators in every room: steam-heated tenements need no firewood at all.",
+    "tier": 5,
+    "points": 60,
+    "requires": ["engines"],
+    "unlocks": { "buildings": ["steam-tenement"] }
+  },
+  {
+    "id": "galvanism",
+    "name": "Galvanism",
+    "description": "Steam-turned dynamos and copper conduits: a second kind of power for the colony.",
+    "tier": 5,
+    "points": 90,
+    "requires": ["engines", "copper"],
+    "unlocks": { "buildings": ["galvanic-dynamo"], "networks": ["power"] }
+  },
+  {
+    "id": "arc-smelting",
+    "name": "Arc Smelting",
+    "description": "A galvanic arc melts ore without coal and yields twice the metal.",
+    "tier": 6,
+    "points": 100,
+    "requires": ["galvanism"],
+    "unlocks": { "buildings": ["arc-furnace"] }
+  },
+  {
+    "id": "analytical",
+    "name": "Analytical Engines",
+    "description": "Brass calculating engines driven by galvanic power. The Board's dearest wish.",
+    "tier": 6,
+    "points": 140,
+    "requires": ["galvanism", "precision"],
+    "unlocks": { "buildings": ["analytical-engine"] }
+  }
+]

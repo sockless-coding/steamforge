@@ -3,13 +3,16 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import type { Simulation } from '../sim/simulation'
 import type { SimEvent } from '../sim/types'
 import { BuildingLayer } from './buildings'
 import { CameraRig } from './camera'
 import { CitizenLayer } from './citizens'
+import { ConduitLayer } from './conduits'
 import { NatureLayer } from './nature'
 import { OverlayLayer } from './overlays'
+import { setBuildingEnvironment } from './materials'
 import { Particles } from './particles'
 import type { QualityProfile } from './quality'
 import { TerrainLayer } from './terrain'
@@ -45,11 +48,13 @@ export class WorldRenderer {
   readonly nature: NatureLayer
   readonly buildings: BuildingLayer
   readonly citizens: CitizenLayer
+  readonly conduits: ConduitLayer
   readonly overlays: OverlayLayer
   readonly particles: Particles
   private readonly parent: HTMLElement
   private readonly sun: THREE.DirectionalLight
   private readonly hemi: THREE.HemisphereLight
+  private readonly environment: THREE.Texture
   private composer: EffectComposer | null = null
   private quality: QualityProfile
   private time = 0
@@ -81,6 +86,11 @@ export class WorldRenderer {
     this.sun.shadow.normalBias = 0.04
     this.scene.add(this.hemi, this.sun, this.sun.target)
     this.scene.fog = new THREE.Fog('#9ec4dc', 80, 260)
+    // A soft studio environment gives brass, copper and glass something to reflect.
+    const pmrem = new THREE.PMREMGenerator(this.renderer)
+    this.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
+    setBuildingEnvironment(this.environment)
+    pmrem.dispose()
 
     this.terrain = new TerrainLayer(world)
     this.rig.heightAt = (x, z) => this.terrain.heightAt(x, z)
@@ -89,7 +99,8 @@ export class WorldRenderer {
     this.buildings = new BuildingLayer(this.terrain, this.particles)
     this.citizens = new CitizenLayer(this.terrain, sim.content.bundle.professions, sim.content.bundle.resources)
     this.overlays = new OverlayLayer(this.terrain)
-    this.scene.add(this.terrain.group, this.nature.group, this.buildings.group, this.citizens.group, this.overlays.group, this.particles.points)
+    this.conduits = new ConduitLayer(this.terrain, this.particles)
+    this.scene.add(this.terrain.group, this.nature.group, this.buildings.group, this.conduits.group, this.citizens.group, this.overlays.group, this.particles.points)
 
     this.applyQuality()
     this.resizeObserver = new ResizeObserver(() => this.resize())
@@ -146,6 +157,14 @@ export class WorldRenderer {
         case 'terrain':
           this.terrain.reshape(e.x, e.y, e.w, e.h)
           this.nature.markDirty()
+          this.conduits.markDirty()
+          break
+        case 'conduit':
+          this.conduits.markDirty()
+          break
+        case 'building':
+          // Pipes reach into the buildings they serve, so finished or removed buildings reshape the mains.
+          if (e.change !== 'changed') this.conduits.markDirty()
           break
       }
     }
@@ -199,6 +218,7 @@ export class WorldRenderer {
     this.terrain.update(this.time)
     this.nature.update(performance.now())
     this.buildings.sync(sim, this.time, dt)
+    this.conduits.update(sim, this.time, dt)
     this.citizens.update(sim, alpha, this.time)
     this.particles.update(dt)
 
@@ -243,7 +263,10 @@ export class WorldRenderer {
     this.buildings.dispose()
     this.citizens.dispose()
     this.overlays.dispose()
+    this.conduits.dispose()
     this.particles.dispose()
+    setBuildingEnvironment(null)
+    this.environment.dispose()
     this.renderer.dispose()
     this.renderer.domElement.remove()
   }

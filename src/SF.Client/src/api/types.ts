@@ -49,6 +49,23 @@ export interface CitizenRules {
   oldAgeDeathPerMonth: number
 }
 
+export interface ConduitDef {
+  name: string
+  description: string
+  cost: Stock
+  work: number
+}
+
+/** An energy network: generators and consumers joined by conduit tiles (steam pipes, copper conduits). */
+export interface NetworkDef {
+  id: string
+  name: string
+  /** Short unit label for gauges, e.g. "psi" or "volts". */
+  unit: string
+  color: string
+  conduit: ConduitDef
+}
+
 export interface RulesDef {
   ticksPerSecond: number
   secondsPerMonth: number
@@ -62,6 +79,7 @@ export interface RulesDef {
   construction: { workChunkSeconds: number; buildersPerTile: number; refundOnDemolish: number }
   events: { disastersPerYear: number; blessingsPerYear: number; graceYears: number }
   roads: RoadDef[]
+  networks: NetworkDef[]
   startingBuilders: number
   startingArea: number
 }
@@ -92,7 +110,7 @@ export interface FeatureDef {
   growth?: { months: number; spawnChance: number }
 }
 
-export type ModelShape = 'box' | 'cylinder' | 'cone' | 'sphere' | 'gable' | 'hip' | 'gear' | 'chimney'
+export type ModelShape = 'box' | 'cylinder' | 'cone' | 'sphere' | 'gable' | 'hip' | 'gear' | 'chimney' | 'stack' | 'tank' | 'pipe' | 'torus' | 'dome'
 
 export interface ModelPart {
   shape: ModelShape
@@ -104,10 +122,16 @@ export interface ModelPart {
   axis?: 'x' | 'y' | 'z'
   /** Top radius as a fraction of the bottom radius (cylinders). */
   taper?: number
-  /** Radians per second while the building is working (gears). */
+  /** Radians per second while the building is working (gears); also the stroke rate of bobbing parts. */
   spin?: number
   /** Brightens while the building is working (furnace mouths). */
   glow?: boolean
+  /** Moves up and down by this many tiles while the building is working (pistons, steam hammers). */
+  bob?: number
+  /** Particles puffed from the top of the part while the building works (chimneys and stacks smoke by default). */
+  emit?: 'smoke' | 'steam'
+  /** Degrees of a partial torus (pipe bends); a full ring when omitted. */
+  arc?: number
 }
 
 export interface ModelSpec {
@@ -122,7 +146,7 @@ export interface PlacementRules {
   variableSize?: { min: [number, number]; max: [number, number] }
 }
 
-export type BuildingCategory = 'civic' | 'housing' | 'storage' | 'food' | 'resources' | 'industry'
+export type BuildingCategory = 'civic' | 'housing' | 'storage' | 'food' | 'resources' | 'industry' | 'power' | 'science'
 
 export interface BuildingDef {
   id: string
@@ -133,6 +157,8 @@ export interface BuildingDef {
   cost: { resources: Stock; work: number }
   limit?: number
   buildable?: boolean
+  /** The colony's heart (the Steamforge): placed at founding, cannot be demolished. Exactly one per content set. */
+  headquarters?: boolean
   walkable?: boolean
   placement?: PlacementRules
   /** Keyed by component kind; each kind is implemented by a handler in game/sim/components. */
@@ -193,6 +219,8 @@ export interface DifficultyPreset {
   startingFamilies: number
   startingResources: Stock
   startingBuildings: { id: string; count: number }[]
+  /** Research already completed when the colony is founded. */
+  startingResearch?: string[]
   modifiers: DifficultyModifiers
 }
 
@@ -219,7 +247,7 @@ export interface TerrainPresetDef {
   forest: number
   rocks: number
   berries: number
-  deposits: Record<'stone' | 'iron' | 'coal', number>
+  deposits: Partial<Record<'stone' | 'iron' | 'coal' | 'copper', number>>
 }
 
 export interface MapGenDef {
@@ -227,6 +255,37 @@ export interface MapGenDef {
   defaultTerrain: string
   sizes: MapSizeDef[]
   terrains: TerrainPresetDef[]
+}
+
+export interface ResearchUnlocks {
+  buildings?: string[]
+  roads?: string[]
+  networks?: string[]
+  recipes?: string[]
+}
+
+export interface ResearchDef {
+  id: string
+  name: string
+  description: string
+  /** Column in the research tree. */
+  tier: number
+  points: number
+  requires: string[]
+  unlocks: ResearchUnlocks
+}
+
+export interface DispatchDef {
+  id: string
+  title: string
+  /** May contain {colony}, replaced by the colony's name. */
+  text: string
+  when: { research?: string; building?: string; year?: number; population?: number }
+}
+
+export interface StoryDef {
+  intro: { title: string; paragraphs: string[]; signature: string }
+  dispatches: DispatchDef[]
 }
 
 export interface ContentBundle {
@@ -241,6 +300,8 @@ export interface ContentBundle {
   events: EventDef[]
   difficulty: DifficultyCatalog
   mapgen: MapGenDef
+  research: ResearchDef[]
+  story: StoryDef
 }
 
 export interface AuthResponse {

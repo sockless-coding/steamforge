@@ -15,6 +15,7 @@ const TERRAIN_COLORS: Record<number, [number, number, number]> = {
   [Terrain.Iron]: [0.52, 0.34, 0.24],
   [Terrain.Coal]: [0.2, 0.19, 0.18],
   [Terrain.Sand]: [0.74, 0.67, 0.5],
+  [Terrain.Copper]: [0.24, 0.46, 0.38],
 }
 
 const ROAD_COLORS: [number, number, number][] = [

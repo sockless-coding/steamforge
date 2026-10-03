@@ -1,10 +1,11 @@
 import { chooseTask } from './ai'
-import { updateSteam } from './components/boiler'
 import type { ShelterConfig } from './components/basic'
+import { solveEnergy } from './energy'
 import { rollEvents, updateFires } from './events'
 import { computeTotals, foodIds } from './inventory'
 import { assignHousing, assignJobs, births, killCitizen } from './population'
 import type { Simulation } from './simulation'
+import { checkDispatches } from './story'
 import { runCitizen } from './tasks'
 import { MARK_CLEAR } from './world'
 
@@ -193,9 +194,12 @@ registerSystem({
 })
 
 registerSystem({
-  id: 'steam',
-  second: updateSteam,
-  restore: updateSteam,
+  id: 'energy',
+  second: (sim) => solveEnergy(sim, true),
+  restore: (sim) => {
+    sim.energy.dirty = true
+    solveEnergy(sim, false)
+  },
 })
 
 // ---------------------------------------------------------------- storage
@@ -270,6 +274,7 @@ registerSystem({
 
 registerSystem({ id: 'fire', second: updateFires })
 registerSystem({ id: 'events', month: rollEvents })
+registerSystem({ id: 'story', month: (sim) => checkDispatches(sim, {}) })
 
 // ---------------------------------------------------------------- outcome and warnings
 

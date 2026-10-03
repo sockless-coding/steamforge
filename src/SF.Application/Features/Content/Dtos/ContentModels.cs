@@ -21,13 +21,19 @@ public sealed record SeasonDef(string Id, string Name, IReadOnlyList<int> Months
 
 public sealed record RoadDef(string Id, string Name, Dictionary<string, double> Cost, double Work, double Speed);
 
+public sealed record ConduitDef(string Name, Dictionary<string, double> Cost, double Work);
+
+/// <summary>An energy network (steam, galvanic power): generators and consumers joined by conduit tiles.</summary>
+public sealed record NetworkDef(string Id, string Name, string Color, ConduitDef Conduit);
+
 public sealed record RulesDef(
     int TicksPerSecond,
     int SecondsPerMonth,
     IReadOnlyList<string> Months,
     IReadOnlyList<SeasonDef> Seasons,
     IReadOnlyList<double> Temperature,
-    IReadOnlyList<RoadDef> Roads);
+    IReadOnlyList<RoadDef> Roads,
+    IReadOnlyList<NetworkDef> Networks);
 
 public sealed record ResourceDef(string Id, string Name, string Category, string Color, double SpoilagePerYear, int DefaultLimit);
 
@@ -35,7 +41,7 @@ public sealed record FeatureYield(string Resource, double Amount, double Seconds
 
 public sealed record FeatureDef(string Id, string Name, string Model, FeatureYield Clear, FeatureYield? Harvest);
 
-public sealed record ModelPart(string Shape, string Mat, IReadOnlyList<double> Pos, IReadOnlyList<double> Size);
+public sealed record ModelPart(string Shape, string Mat, IReadOnlyList<double> Pos, IReadOnlyList<double> Size, string? Emit);
 
 public sealed record ModelSpec(IReadOnlyList<ModelPart> Parts);
 
@@ -55,6 +61,7 @@ public sealed record BuildingDef(
     BuildingCost Cost,
     int? Limit,
     bool? Buildable,
+    bool? Headquarters,
     PlacementRules? Placement,
     Dictionary<string, JsonElement> Components,
     ModelSpec Model);
@@ -65,7 +72,32 @@ public sealed record CropDef(string Id, string Name, string Resource, double Yie
 
 public sealed record ProfessionDef(string Id, string Name, string Color);
 
-public sealed record EventDef(string Id, string Name, string Kind, bool Disaster, double Weight, int MinYear, IReadOnlyList<string>? Seasons);
+public sealed record EventDef(
+    string Id,
+    string Name,
+    string Kind,
+    bool Disaster,
+    double Weight,
+    int MinYear,
+    IReadOnlyList<string>? Seasons,
+    Dictionary<string, JsonElement>? Params);
+
+public sealed record ResearchUnlocks(
+    IReadOnlyList<string>? Buildings,
+    IReadOnlyList<string>? Roads,
+    IReadOnlyList<string>? Networks,
+    IReadOnlyList<string>? Recipes);
+
+public sealed record ResearchDef(string Id, string Name, int Tier, double Points, IReadOnlyList<string> Requires, ResearchUnlocks Unlocks);
+
+public sealed record StoryIntro(string Title, IReadOnlyList<string> Paragraphs, string Signature);
+
+/// <summary>When a dispatch arrives: exactly one of the fields is set.</summary>
+public sealed record DispatchTrigger(string? Research, string? Building, int? Year, int? Population);
+
+public sealed record DispatchDef(string Id, string Title, string Text, DispatchTrigger When);
+
+public sealed record StoryDef(StoryIntro Intro, IReadOnlyList<DispatchDef> Dispatches);
 
 public sealed record StartingBuilding(string Id, int Count);
 
@@ -76,6 +108,7 @@ public sealed record DifficultyPreset(
     int StartingFamilies,
     Dictionary<string, double> StartingResources,
     IReadOnlyList<StartingBuilding> StartingBuildings,
+    IReadOnlyList<string>? StartingResearch,
     Dictionary<string, double> Modifiers);
 
 public sealed record DifficultyCatalog(string DefaultPreset, IReadOnlyList<DifficultyPreset> Presets);
@@ -106,6 +139,8 @@ public sealed class ContentSnapshot
         Events = Read<List<EventDef>>("events");
         Difficulty = Read<DifficultyCatalog>("difficulty");
         MapGen = Read<MapGenDef>("mapgen");
+        Research = Read<List<ResearchDef>>("research");
+        Story = Read<StoryDef>("story");
 
         // Assemble the bundle once: {"version": ..., "<kind>": <document>, ...}.
         using var stream = new MemoryStream();
@@ -140,6 +175,8 @@ public sealed class ContentSnapshot
     public IReadOnlyList<EventDef> Events { get; }
     public DifficultyCatalog Difficulty { get; }
     public MapGenDef MapGen { get; }
+    public IReadOnlyList<ResearchDef> Research { get; }
+    public StoryDef Story { get; }
 
     public bool HasPreset(string id) => Difficulty.Presets.Any(p => p.Id == id);
 }
@@ -147,5 +184,5 @@ public sealed class ContentSnapshot
 public static class ContentKinds
 {
     /// <summary>Every content document, in bundle order. Each maps to <c>Content/&lt;kind&gt;.json</c>.</summary>
-    public static readonly string[] All = ["rules", "resources", "features", "buildings", "recipes", "crops", "professions", "events", "difficulty", "mapgen"];
+    public static readonly string[] All = ["rules", "resources", "features", "buildings", "recipes", "crops", "professions", "events", "difficulty", "mapgen", "research", "story"];
 }

@@ -1,6 +1,8 @@
 import type { BuildingDef } from '../../api/types'
 import { addStock, addToStorage } from './inventory'
 import { fireWorker } from './population'
+import { lockedBy } from './research'
+import { checkDispatches } from './story'
 import type { Simulation } from './simulation'
 import { TERRAIN_IDS, type ActionResult, type Building, type Rotation } from './types'
 import { MARK_CLEAR, type World } from './world'
@@ -44,8 +46,10 @@ export function countBuildings(sim: Simulation, defId: string): number {
   return n
 }
 
-export function canPlace(sim: Simulation, def: BuildingDef, x: number, y: number, rot: Rotation, w?: number, h?: number): ActionResult {
+export function canPlace(sim: Simulation, def: BuildingDef, x: number, y: number, rot: Rotation, w?: number, h?: number, ignoreResearch = false): ActionResult {
   if (def.buildable === false) return fail(`${def.name} cannot be built.`)
+  const lock = ignoreResearch ? null : lockedBy(sim, 'building', def.id)
+  if (lock) return fail(`Requires research: ${lock.name}.`)
   if (def.limit && countBuildings(sim, def.id) >= def.limit) return fail(`Only ${def.limit} ${def.name} allowed.`)
   const world = sim.world
   const [fw, fh] = footprintSize(def, rot, w, h)
@@ -162,6 +166,14 @@ export function placeBuilding(sim: Simulation, def: BuildingDef, x: number, y: n
         sim.emit({ type: 'road', tile: i })
       }
       sim.roadJobs.delete(i)
+      if (world.conduit[i] !== 0) {
+        world.conduit[i] = 0
+        sim.energy.dirty = true
+        sim.emit({ type: 'conduit', tile: i })
+      }
+      for (let n = 0; n < sim.rules.networks.length; n++) {
+        if (sim.conduitJobs.delete(i * 8 + n)) sim.emit({ type: 'conduit', tile: i })
+      }
       if (world.feature[i] !== 0) {
         if (prebuilt) {
           world.feature[i] = 0
@@ -194,7 +206,9 @@ export function activateBuilding(sim: Simulation, b: Building): void {
   sim.invalidateStorages()
   sim.housingDirty = true
   sim.jobsDirty = true
+  sim.energy.dirty = true
   sim.emit({ type: 'building', id: b.id, change: 'completed' })
+  if (sim.tick > 0) checkDispatches(sim, { building: b.def })
 }
 
 /** Total worker-seconds needed; variable-size buildings scale with area. */
@@ -233,6 +247,7 @@ export function removeBuilding(sim: Simulation, b: Building): void {
   sim.invalidateStorages()
   sim.housingDirty = true
   sim.jobsDirty = true
+  sim.energy.dirty = true
   sim.emit({ type: 'building', id: b.id, change: 'removed' })
 }
 
@@ -258,7 +273,7 @@ function hasMargin(sim: Simulation, x: number, y: number, w: number, h: number):
 }
 
 /** Deterministic spiral search for a free spot near (cx, cy), keeping a one-tile gap around the footprint. */
-export function findSpot(sim: Simulation, def: BuildingDef, cx: number, cy: number, maxRadius = 30): { x: number; y: number } | null {
+export function findSpot(sim: Simulation, def: BuildingDef, cx: number, cy: number, maxRadius = 30, ignoreResearch = false): { x: number; y: number } | null {
   const [w, h] = footprintSize(def, 0)
   for (let r = 2; r <= maxRadius; r++) {
     for (let dy = -r; dy <= r; dy++) {
@@ -266,7 +281,7 @@ export function findSpot(sim: Simulation, def: BuildingDef, cx: number, cy: numb
         if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue
         const x = cx + dx - (w >> 1)
         const y = cy + dy - (h >> 1)
-        if (!canPlace(sim, def, x, y, 0).ok || !hasMargin(sim, x, y, w, h)) continue
+        if (!canPlace(sim, def, x, y, 0, undefined, undefined, ignoreResearch).ok || !hasMargin(sim, x, y, w, h)) continue
         const door = doorTile(sim.world, def, x, y, w, h, 0)
         if (!sim.world.walkable(door)) continue
         return { x, y }
@@ -276,11 +291,11 @@ export function findSpot(sim: Simulation, def: BuildingDef, cx: number, cy: numb
   return null
 }
 
-/** The Guildhall, a short plaza road, the difficulty's starting buildings and its supplies. */
+/** The Steamforge (headquarters), a short plaza road, the difficulty's starting buildings and its supplies. */
 export function placeStartingBuildings(sim: Simulation, sx: number, sy: number): void {
   const world = sim.world
-  const hall = sim.def('guildhall')
-  const guildhall = placeBuilding(sim, hall, sx - 2, sy - 3, 0, hall.size[0], hall.size[1], true)
+  const hq = sim.content.headquarters
+  const forge = placeBuilding(sim, hq, sx - (hq.size[0] >> 1), sy + 1 - hq.size[1], 0, hq.size[0], hq.size[1], true)
 
   const dirt = sim.rules.roads.findIndex((r) => r.id === 'dirt') + 1
   if (dirt > 0) {
@@ -294,13 +309,13 @@ export function placeStartingBuildings(sim: Simulation, sx: number, sy: number):
     const def = sim.content.buildings.get(entry.id)
     if (!def) continue
     for (let n = 0; n < entry.count; n++) {
-      const spot = findSpot(sim, def, sx, sy + 3)
+      const spot = findSpot(sim, def, sx, sy + 3, 30, true)
       if (spot) placeBuilding(sim, def, spot.x, spot.y, 0, ...footprintSize(def, 0), true)
     }
   }
 
   for (const [res, qty] of Object.entries(sim.preset.startingResources)) {
-    const left = addToStorage(sim, res, qty, guildhall.door)
-    if (left > 0) addStock(guildhall.stock, res, left)
+    const left = addToStorage(sim, res, qty, forge.door)
+    if (left > 0) addStock(forge.stock, res, left)
   }
 }

@@ -255,6 +255,16 @@
   background: rgba(60, 16, 10, 0.85);
 }
 
+.notice-story button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: inset 3px 0 0 var(--brass-hi), 0 0 14px rgba(246, 217, 138, 0.25);
+  background: linear-gradient(180deg, rgba(74, 56, 30, 0.92), rgba(40, 28, 16, 0.92));
+  color: var(--brass-hi);
+  font-family: var(--font-heading);
+}
+
 .notice:nth-child(n + 4) {
   opacity: 0.7;
 }
@@ -296,7 +306,8 @@ kbd {
 
 .hint-chip {
   position: absolute;
-  bottom: calc(150px + var(--safe-bottom));
+  /* Above the map, clear of build trays of any height. */
+  top: calc(112px + var(--safe-top));
   left: 50%;
   transform: translateX(-50%);
   padding: 6px 14px;
@@ -400,6 +411,275 @@ kbd {
 
 .build-card.active {
   box-shadow: inset 0 0 0 2px var(--brass-hi), 0 0 12px rgba(246, 217, 138, 0.3);
+}
+
+.build-card.locked {
+  filter: grayscale(0.75) brightness(0.72);
+}
+
+.build-card.locked b {
+  color: var(--parchment-dim);
+}
+
+/* ---------------------------------------------------------------- energy gauges and research chip */
+
+.energy-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.gauge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(200, 146, 62, 0.35);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.gauge-chip.short {
+  box-shadow: inset 0 0 0 1px var(--ember), 0 0 10px var(--ember-glow);
+}
+
+.gauge-chip.short b {
+  color: var(--ember);
+}
+
+.research-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 190px;
+  padding: 5px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(127, 212, 255, 0.35);
+  color: var(--tesla);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.research-chip:hover {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.research-chip.idle {
+  color: var(--ember);
+  box-shadow: inset 0 0 0 1px var(--ember);
+  animation: chip-pulse 2.4s ease-in-out infinite;
+}
+
+.research-chip-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.research-chip-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--parchment);
+}
+
+.research-chip .month-bar span {
+  background: var(--tesla);
+}
+
+@keyframes chip-pulse {
+  50% {
+    box-shadow: inset 0 0 0 1px var(--ember), 0 0 12px var(--ember-glow);
+  }
+}
+
+/* ---------------------------------------------------------------- research tree */
+
+.research-tree {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(150px, 1fr);
+  gap: 10px;
+  overflow-x: auto;
+  padding: 6px 2px 10px;
+}
+
+.research-tier {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.research-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--iron-gradient);
+  box-shadow: var(--bevel), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  color: var(--parchment);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+}
+
+.research-card b {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  color: var(--brass-hi);
+}
+
+.research-card.focused {
+  box-shadow: inset 0 0 0 2px var(--brass-hi), 0 0 12px rgba(246, 217, 138, 0.25);
+}
+
+.research-done {
+  background: linear-gradient(170deg, #3a3a24, #24251a);
+}
+
+.research-done b,
+.research-state {
+  color: var(--acid);
+}
+
+.research-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.research-current {
+  box-shadow: inset 0 0 0 2px var(--tesla), 0 0 14px var(--tesla-glow);
+}
+
+.research-current .progress-fill {
+  background: var(--tesla) !important;
+}
+
+.research-queued {
+  box-shadow: inset 0 0 0 1px var(--tesla);
+}
+
+.research-locked {
+  filter: brightness(0.65) saturate(0.6);
+}
+
+.research-detail {
+  margin-top: 6px;
+}
+
+.research-detail h4 {
+  margin: 0 0 4px;
+  color: var(--brass-hi);
+}
+
+.research-queue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.research-queue-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--tesla);
+}
+
+/* ---------------------------------------------------------------- dispatches and the charter */
+
+.dispatch-layout {
+  display: grid;
+  grid-template-columns: minmax(170px, 230px) 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.dispatch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dispatch-list button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--parchment);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+}
+
+.dispatch-list button.active {
+  background: var(--brass-gradient);
+  color: var(--soot);
+}
+
+.letter {
+  max-height: 60vh;
+  overflow-y: auto;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.letter p {
+  margin: 0 0 10px;
+}
+
+.letter-title {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  text-align: center;
+}
+
+.letter-signature {
+  font-style: italic;
+  text-align: right;
+}
+
+.charter-scrim {
+  z-index: 50;
+}
+
+.charter {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+}
+
+.charter .letter {
+  max-height: calc(100vh - 140px);
+}
+
+.charter-actions {
+  display: flex;
+  justify-content: center;
 }
 
 .cost {
@@ -629,6 +909,18 @@ kbd {
 
   .build-status {
     display: none;
+  }
+
+  .energy-strip {
+    order: 2;
+  }
+
+  .research-chip {
+    max-width: 120px;
+  }
+
+  .dispatch-layout {
+    grid-template-columns: 1fr;
   }
 }
 

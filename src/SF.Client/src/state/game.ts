@@ -7,6 +7,8 @@ export type Tool =
   | { kind: 'build'; def: string }
   | { kind: 'road'; road: string }
   | { kind: 'removeRoad' }
+  | { kind: 'conduit'; network: string }
+  | { kind: 'removeConduit'; network: string }
   | { kind: 'clear' }
   | { kind: 'unclear' }
   | { kind: 'demolish' }
@@ -84,6 +86,31 @@ export interface ProfessionRow {
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
+export type ResearchStatus = 'done' | 'current' | 'queued' | 'available' | 'locked'
+
+export interface ResearchRow {
+  id: string
+  name: string
+  description: string
+  tier: number
+  points: number
+  progress: number
+  requires: string[]
+  unlocks: string[]
+  status: ResearchStatus
+}
+
+export interface NetworkRow {
+  id: string
+  name: string
+  unit: string
+  color: string
+  supply: number
+  demand: number
+  /** Any generator or consumer of this network has been built. */
+  active: boolean
+}
+
 export interface HudState {
   ready: boolean
   colonyName: string
@@ -111,6 +138,14 @@ export interface HudState {
   professions: ProfessionRow[]
   sites: number
   save: SaveStatus
+  research: ResearchRow[]
+  /** Points per research project on the drafting tables, null when nothing is queued. */
+  researching: { name: string; progress: number; points: number } | null
+  networks: NetworkRow[]
+  /** Story dispatches received, oldest first. */
+  dispatches: string[]
+  /** Content still locked behind research: "building:<id>", "road:<id>", "network:<id>" -> research name. */
+  locks: Record<string, string>
 }
 
 export const initialHud: HudState = {
@@ -140,6 +175,11 @@ export const initialHud: HudState = {
   professions: [],
   sites: 0,
   save: 'idle',
+  research: [],
+  researching: null,
+  networks: [],
+  dispatches: [],
+  locks: {},
 }
 
 /** Snapshot of the running colony for React. The GameController publishes into it; components only read. */

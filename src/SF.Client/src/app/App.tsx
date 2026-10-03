@@ -6,6 +6,7 @@ import { MusicDirector } from '../game/audio/music'
 import { play } from '../game/audio/synth'
 import { AuthScreen } from '../screens/AuthScreen'
 import { GameScreen } from '../screens/game/GameScreen'
+import { ModelGallery } from '../screens/game/ModelGallery'
 import { Sandbox } from '../screens/game/Sandbox'
 import { LoadScreen } from '../screens/LoadScreen'
 import { NewGameScreen } from '../screens/NewGameScreen'
@@ -75,6 +76,7 @@ export function App() {
         <Route path="/auth" element={<AuthScreen />} />
         <Route path="/settings" element={<SettingsScreen />} />
         {import.meta.env.DEV && <Route path="/dev/sandbox" element={<Sandbox />} />}
+        {import.meta.env.DEV && <Route path="/dev/models" element={<ModelGallery />} />}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <UpdatePrompt />

@@ -254,6 +254,7 @@ function placeDeposits(
     ['stone', Terrain.Stone],
     ['iron', Terrain.Iron],
     ['coal', Terrain.Coal],
+    ['copper', Terrain.Copper],
   ]
   const n = world.width
   for (const [key, terrain] of kinds) {

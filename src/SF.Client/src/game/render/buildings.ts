@@ -18,6 +18,8 @@ interface BuildingView {
   wasSite: boolean
   fireLight: THREE.PointLight | null
   emitAcc: number
+  ventAcc: number
+  indicator: THREE.Sprite | null
   /** Translucent full-size model and ground outline shown while the building is only planned. */
   blueprint: THREE.Group | null
   outline: THREE.Group | null
@@ -52,6 +54,55 @@ const doorMaterial = new THREE.MeshBasicMaterial({ color: '#f6d98a', transparent
 const roadPlanMaterial = new THREE.MeshBasicMaterial({ color: '#f6d98a', transparent: true, opacity: 0.45, depthWrite: false })
 const roadPlanGeometry = new THREE.PlaneGeometry(0.62, 0.62).rotateX(-Math.PI / 2)
 const blueprintCache = new Map<string, THREE.Group>()
+
+type IndicatorKind = 'power' | 'fuel'
+const indicatorMaterials = new Map<IndicatorKind, THREE.SpriteMaterial>()
+
+/** Brass-rimmed badge: a lightning bolt (no energy) or a guttering flame (no fuel). Drawn once on a canvas. */
+function indicatorMaterial(kind: IndicatorKind): THREE.SpriteMaterial {
+  let m = indicatorMaterials.get(kind)
+  if (m) return m
+  const size = 96
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = size
+  const ctx = canvas.getContext('2d')!
+  const c = size / 2
+  ctx.fillStyle = '#d4a24a'
+  ctx.beginPath()
+  ctx.arc(c, c, c - 2, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = '#2a1e16'
+  ctx.beginPath()
+  ctx.arc(c, c, c - 9, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = kind === 'power' ? '#ffd23a' : '#ff6a2a'
+  ctx.beginPath()
+  if (kind === 'power') {
+    const pts = [[54, 16], [28, 52], [46, 52], [40, 80], [68, 40], [50, 40], [58, 16]]
+    ctx.moveTo(pts[0][0], pts[0][1])
+    for (const [x, y] of pts.slice(1)) ctx.lineTo(x, y)
+  } else {
+    ctx.moveTo(48, 18)
+    ctx.bezierCurveTo(70, 40, 70, 58, 62, 70)
+    ctx.bezierCurveTo(56, 80, 40, 80, 34, 70)
+    ctx.bezierCurveTo(26, 56, 34, 44, 42, 36)
+    ctx.bezierCurveTo(42, 46, 46, 50, 50, 52)
+    ctx.bezierCurveTo(52, 40, 48, 30, 48, 18)
+  }
+  ctx.closePath()
+  ctx.fill()
+  ctx.strokeStyle = '#e04030'
+  ctx.lineWidth = 6
+  ctx.beginPath()
+  ctx.moveTo(22, 74)
+  ctx.lineTo(74, 22)
+  ctx.stroke()
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.colorSpace = THREE.SRGBColorSpace
+  m = new THREE.SpriteMaterial({ map: tex, depthWrite: false, transparent: true })
+  indicatorMaterials.set(kind, m)
+  return m
+}
 
 /** Wireframe-and-glass version of a building model: what a planned building will look like. */
 function blueprintModel(defId: string, model: BuiltModel): THREE.Group {
@@ -234,6 +285,8 @@ export class BuildingLayer {
       wasSite: !!b.site,
       fireLight: null,
       emitAcc: Math.random(),
+      ventAcc: Math.random(),
+      indicator: null,
       blueprint: null,
       outline: null,
     }
@@ -309,21 +362,39 @@ export class BuildingLayer {
       else if (gear.userData.axis === 'y') gear.rotation.y += spin
       else gear.rotation.z += spin
     }
-    for (const glow of model.glows) glow.material = working ? material('glow') : idleGlow()
+    for (const bob of model.bobs) {
+      const stroke = working ? 0.5 + 0.5 * Math.sin(time * (bob.userData.rate as number) + b.id) : 1
+      bob.position.y = (bob.userData.baseY as number) + (bob.userData.bob as number) * stroke
+    }
+    for (const glow of model.glows) glow.material = working ? material(glow.userData.mat as string) : idleGlow(glow.userData.mat as string)
 
-    // Chimney smoke: homes when heated in the cold, workplaces while working, boilers as white steam.
+    // Chimney smoke: homes when heated in the cold, workplaces while working (generators while lit), the
+    // headquarters always. Steam vents puff in bursts while the building works.
     const isHome = !!def.components.housing
-    const isBoiler = !!def.components.boiler
-    const homeFire = b.residents.length > 0 && b.data.heated !== false
-    const smoking = b.fire === 0 && model.chimneys.length > 0 && (isHome ? homeFire : working || !!def.components.shelter)
-    view.emitAcc += dt * (smoking ? (isBoiler ? 6 : 2.2) : 0)
-    while (view.emitAcc >= 1) {
-      view.emitAcc -= 1
-      for (const c of model.chimneys) {
-        const p = c.clone().applyEuler(view.group.rotation).add(view.group.position)
-        this.particles.emit(isBoiler ? 'steam' : 'smoke', p.x, p.y, p.z)
+    const homeFire = b.residents.length > 0 && b.data.heated !== false && b.data.heat === undefined
+    const always = !!def.components.shelter && !def.components.generator
+    const smoking = b.fire === 0 && (isHome ? homeFire : working || always)
+    const venting = b.fire === 0 && (isHome ? b.data.heat !== undefined && b.residents.length > 0 : working)
+    view.emitAcc += dt * (smoking ? 2.4 : 0)
+    view.ventAcc += dt * (venting ? 1.6 : 0)
+    const puff = (kind: 'smoke' | 'steam') => {
+      for (const e of model.emitters) {
+        if (e.kind !== kind) continue
+        const p = e.pos.clone().applyEuler(view.group.rotation).add(view.group.position)
+        this.particles.emit(kind, p.x, p.y, p.z)
       }
     }
+    while (view.emitAcc >= 1) {
+      view.emitAcc -= 1
+      puff('smoke')
+    }
+    while (view.ventAcc >= 1) {
+      view.ventAcc -= 1
+      // Irregular hiss: skip some puffs, double others.
+      if (Math.random() < 0.7) puff('steam')
+      if (Math.random() < 0.25) puff('steam')
+    }
+    this.updateIndicator(sim, b, view, model, time)
 
     if (def.model.piles) this.updatePiles(sim, b, view)
 
@@ -343,6 +414,32 @@ export class BuildingLayer {
       view.fireLight.dispose()
       view.fireLight = null
     }
+  }
+
+  /** A floating badge over buildings that cannot work: no energy for required consumers, or a cold generator. */
+  private updateIndicator(sim: Simulation, b: Building, view: BuildingView, model: BuiltModel, time: number): void {
+    const def = sim.def(b)
+    const consumer = def.components.consumer as { required?: boolean } | undefined
+    const generator = def.components.generator as { fuel?: Record<string, number> } | undefined
+    const staffed = !def.components.workplace || b.workers.length > 0
+    let kind: IndicatorKind | null = null
+    if (b.fire === 0 && staffed) {
+      if (consumer?.required && ((b.data.power as number | undefined) ?? 0) < 0.5) kind = 'power'
+      else if (generator?.fuel && b.data.lit === false) kind = 'fuel'
+    }
+    if (!kind) {
+      if (view.indicator) view.indicator.visible = false
+      return
+    }
+    if (!view.indicator) {
+      view.indicator = new THREE.Sprite(indicatorMaterial(kind))
+      view.indicator.scale.set(0.75, 0.75, 1)
+      view.indicator.renderOrder = 7
+      view.group.add(view.indicator)
+    }
+    view.indicator.material = indicatorMaterial(kind)
+    view.indicator.visible = true
+    view.indicator.position.set(0, model.height + 0.55 + Math.sin(time * 3 + b.id) * 0.08, 0)
   }
 
   private updatePiles(sim: Simulation, b: Building, view: BuildingView): void {

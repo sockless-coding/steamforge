@@ -21,6 +21,8 @@ export class World {
   solid: Uint8Array
   /** 0 = none, otherwise road content index + 1. */
   road: Uint8Array
+  /** Bitmask of energy networks (bit n = rules.networks[n]) with a conduit on the tile. */
+  conduit: Uint8Array
   mark: Uint8Array
   /** 1 where a building's entrance must stay clear. */
   door: Uint8Array
@@ -41,6 +43,7 @@ export class World {
     this.building = new Int32Array(this.size)
     this.solid = new Uint8Array(this.size)
     this.road = new Uint8Array(this.size)
+    this.conduit = new Uint8Array(this.size)
     this.mark = new Uint8Array(this.size)
     this.door = new Uint8Array(this.size)
   }
@@ -131,6 +134,7 @@ export class World {
       feature: encodeArray(this.feature),
       growth: encodeArray(this.growth),
       road: encodeArray(this.road),
+      conduit: encodeArray(this.conduit),
       mark: encodeArray(this.mark),
     }
   }
@@ -143,6 +147,7 @@ export class World {
     world.feature = decodeArray(s.feature, Uint8Array)
     world.growth = decodeArray(s.growth, Uint8Array)
     world.road = decodeArray(s.road, Uint8Array)
+    world.conduit = decodeArray(s.conduit, Uint8Array)
     world.mark = decodeArray(s.mark, Uint8Array)
     return world
   }
@@ -157,5 +162,6 @@ export interface WorldSnapshot {
   feature: string
   growth: string
   road: string
+  conduit: string
   mark: string
 }

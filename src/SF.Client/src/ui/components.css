@@ -254,16 +254,34 @@ a.btn { text-decoration: none; }
   animation: popIn 0.22s cubic-bezier(0.3, 1.4, 0.5, 1);
 }
 .modal-wide { width: min(900px, 100%); }
+/* Round iron button with a brass rim, inset from the corner rivet. It lives in the panel body: in the body's top-right
+   corner for untitled panels (the inspector), lifted into the title row when the panel has a title. */
 .modal-close {
   position: absolute;
-  top: -34px;
-  right: -8px;
-  background: none;
+  z-index: 3;
+  top: 8px;
+  right: 18px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
   border: 0;
+  border-radius: 50%;
+  background: var(--iron-gradient);
+  box-shadow: inset 0 0 0 1.5px var(--brass), var(--bevel), 0 2px 4px rgba(0, 0, 0, 0.5);
   color: var(--brass-hi);
   cursor: pointer;
-  padding: 6px;
+  transition: filter 0.12s, transform 0.12s;
 }
+.panel-title + .panel-body > .modal-close { top: -29px; }
+.modal-close svg { width: 14px; height: 14px; }
+.modal-close:hover { filter: brightness(1.3); }
+.modal-close:active { transform: scale(0.94); }
+.modal-close:focus-visible { outline: 2px solid var(--tesla); outline-offset: 2px; }
+/* Keep titles clear of the button. */
+.panel-title:has(+ .panel-body > .modal-close) { padding-right: 56px; }
+.panel-body > .modal-close + h3 { padding-right: 40px; }
 @keyframes fadeIn { from { opacity: 0; } }
 @keyframes popIn { from { opacity: 0; transform: scale(0.94) translateY(8px); } }
 

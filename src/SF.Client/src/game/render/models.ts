@@ -9,13 +9,21 @@ import { material } from './materials'
  * building id and cloned (geometry and materials are shared).
  */
 
+export interface Emitter {
+  /** Local position of the outlet (top of a chimney, stack or vent). */
+  pos: THREE.Vector3
+  kind: 'smoke' | 'steam'
+}
+
 export interface BuiltModel {
   group: THREE.Group
   /** Meshes that rotate while the building works, with their spin rate (rad/s) in userData.spin. */
   gears: THREE.Mesh[]
   glows: THREE.Mesh[]
-  /** Local positions of chimney tops (smoke and steam emitters). */
-  chimneys: THREE.Vector3[]
+  /** Meshes that stroke up and down while the building works (userData.bob amplitude, userData.rate, userData.baseY). */
+  bobs: THREE.Mesh[]
+  /** Chimney and stack tops (smoke) and vents (steam). */
+  emitters: Emitter[]
   height: number
 }
 
@@ -127,13 +135,84 @@ function boxProjectUVs(g: THREE.BufferGeometry): THREE.BufferGeometry {
   return geo
 }
 
+/** A ring in the xz plane at height y (bands round stacks and tanks). */
+function band(radius: number, tube: number, y: number): THREE.BufferGeometry {
+  return new THREE.TorusGeometry(radius, tube, 6, 20).rotateX(Math.PI / 2).translate(0, y, 0)
+}
+
+/** Banded, tapering smokestack with a flared lip; base at the origin. */
+function stackGeometry(d: number, h: number, taper: number): THREE.BufferGeometry {
+  const r = d / 2
+  const rt = r * taper
+  const at = (t: number) => r + (rt - r) * t
+  return mergeGeometries([
+    new THREE.CylinderGeometry(rt, r, h, 16).translate(0, h / 2, 0).toNonIndexed(),
+    band(at(0.12) * 1.02, r * 0.1, h * 0.12).toNonIndexed(),
+    band(at(0.5) * 1.02, r * 0.09, h * 0.5).toNonIndexed(),
+    new THREE.CylinderGeometry(rt * 1.32, rt * 1.04, Math.max(0.05, h * 0.07), 16).translate(0, h - Math.max(0.05, h * 0.07) / 2, 0).toNonIndexed(),
+  ])!
+}
+
+/** Riveted boiler or tank: a cylinder with domed ends and two bands, lying along y (base at the origin). */
+function tankGeometry(d: number, len: number): THREE.BufferGeometry {
+  const r = d / 2
+  const cap = Math.min(r * 0.45, len * 0.25)
+  const body = len - cap * 2
+  const top = new THREE.SphereGeometry(r, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, cap / r, 1).translate(0, cap + body, 0)
+  const bottom = new THREE.SphereGeometry(r, 16, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2).scale(1, cap / r, 1).translate(0, cap, 0)
+  return mergeGeometries([
+    new THREE.CylinderGeometry(r, r, body, 18).translate(0, cap + body / 2, 0).toNonIndexed(),
+    top.toNonIndexed(),
+    bottom.toNonIndexed(),
+    band(r * 1.01, r * 0.06, cap + body * 0.2).toNonIndexed(),
+    band(r * 1.01, r * 0.06, cap + body * 0.8).toNonIndexed(),
+  ])!
+}
+
+/** A run of pipe with a flange at each end, lying along y (base at the origin). */
+function pipeGeometry(d: number, len: number): THREE.BufferGeometry {
+  const r = d / 2
+  const flange = Math.min(len / 4, Math.max(0.025, d * 0.35))
+  return mergeGeometries([
+    new THREE.CylinderGeometry(r, r, len, 10).translate(0, len / 2, 0).toNonIndexed(),
+    new THREE.CylinderGeometry(r * 1.5, r * 1.5, flange, 10).translate(0, flange / 2, 0).toNonIndexed(),
+    new THREE.CylinderGeometry(r * 1.5, r * 1.5, flange, 10).translate(0, len - flange / 2, 0).toNonIndexed(),
+  ])!
+}
+
+/** Lays a geometry built along +y onto the part's axis: vertical parts keep their base, others are centred. */
+function orient(g: THREE.BufferGeometry, axis: 'x' | 'y' | 'z', len: number): THREE.BufferGeometry {
+  if (axis === 'y') return g
+  g.translate(0, -len / 2, 0)
+  return axis === 'x' ? g.rotateZ(Math.PI / 2) : g.rotateX(Math.PI / 2)
+}
+
 function partGeometry(p: ModelPart): THREE.BufferGeometry {
   const [sx, sy, sz] = p.size
   const axis = p.axis ?? 'y'
   let g: THREE.BufferGeometry
-  // Vertical parts are positioned by their base; parts lying on x/z and spheres/gears by their centre.
+  // Vertical parts are positioned by their base; parts lying on x/z and spheres/gears/tori by their centre.
   let lift = 0
   switch (p.shape) {
+    case 'stack':
+      g = stackGeometry(sx, sy, p.taper ?? 0.78)
+      break
+    case 'tank':
+      g = orient(tankGeometry(sx, sy), axis, sy)
+      break
+    case 'pipe':
+      g = orient(pipeGeometry(sx, sy), axis, sy)
+      break
+    case 'torus': {
+      const arc = ((p.arc ?? 360) * Math.PI) / 180
+      g = new THREE.TorusGeometry(Math.max(0.01, sx / 2 - sy / 2), sy / 2, 8, Math.max(8, Math.round(24 * (arc / (Math.PI * 2)))), arc)
+      if (axis === 'y') g.rotateX(Math.PI / 2)
+      else if (axis === 'x') g.rotateY(Math.PI / 2)
+      break
+    }
+    case 'dome':
+      g = new THREE.SphereGeometry(0.5, 18, 9, 0, Math.PI * 2, 0, Math.PI / 2).scale(sx, sy * 2, sz)
+      break
     case 'box':
       g = new THREE.BoxGeometry(sx, sy, sz)
       lift = sy / 2
@@ -184,22 +263,29 @@ function build(spec: ModelSpec): BuiltModel {
   const buckets = new Map<string, THREE.BufferGeometry[]>()
   const gears: THREE.Mesh[] = []
   const glows: THREE.Mesh[] = []
-  const chimneys: THREE.Vector3[] = []
+  const bobs: THREE.Mesh[] = []
+  const emitters: Emitter[] = []
   let height = 0
 
   for (const p of spec.parts) {
     const [x, y, z] = p.pos
     const g = partGeometry(p)
     g.computeBoundingBox()
-    height = Math.max(height, y + g.boundingBox!.max.y)
-    if (p.shape === 'chimney') chimneys.push(new THREE.Vector3(x, y + p.size[1] + 0.1, z))
-    if ((p.shape === 'gear' && p.spin) || p.glow) {
+    const top = y + g.boundingBox!.max.y
+    height = Math.max(height, top)
+    const emit = p.emit ?? (p.shape === 'chimney' || p.shape === 'stack' ? 'smoke' : undefined)
+    if (emit) emitters.push({ pos: new THREE.Vector3(x, top + 0.08, z), kind: emit })
+    if ((p.shape === 'gear' && p.spin) || p.glow || p.bob) {
       const mesh = new THREE.Mesh(g, material(p.mat))
       mesh.position.set(x, y, z)
       mesh.castShadow = true
       mesh.userData.spin = p.spin ?? 0
       mesh.userData.axis = p.axis ?? 'y'
-      ;(p.glow ? glows : gears).push(mesh)
+      mesh.userData.bob = p.bob ?? 0
+      mesh.userData.rate = p.spin ?? 5
+      mesh.userData.baseY = y
+      mesh.userData.mat = p.mat
+      ;(p.bob ? bobs : p.glow ? glows : gears).push(mesh)
       group.add(mesh)
       continue
     }
@@ -217,7 +303,7 @@ function build(spec: ModelSpec): BuiltModel {
     mesh.receiveShadow = true
     group.add(mesh)
   }
-  return { group, gears, glows, chimneys, height }
+  return { group, gears, glows, bobs, emitters, height }
 }
 
 /** A fresh instance of a building's model (shared geometry and materials). */
@@ -230,12 +316,14 @@ export function buildingModel(defId: string, spec: ModelSpec): BuiltModel {
   const group = base.group.clone(true)
   const gears: THREE.Mesh[] = []
   const glows: THREE.Mesh[] = []
+  const bobs: THREE.Mesh[] = []
   group.traverse((o) => {
     if (!(o instanceof THREE.Mesh)) return
     if (base.gears.some((g) => g.geometry === o.geometry)) gears.push(o)
     if (base.glows.some((g) => g.geometry === o.geometry)) glows.push(o)
+    if (base.bobs.some((g) => g.geometry === o.geometry)) bobs.push(o)
   })
-  return { group, gears, glows, chimneys: base.chimneys, height: base.height }
+  return { group, gears, glows, bobs, emitters: base.emitters, height: base.height }
 }
 
 /** Scaffold frame drawn around construction sites. */

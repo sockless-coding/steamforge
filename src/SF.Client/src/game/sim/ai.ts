@@ -7,6 +7,7 @@ import {
   gotoBuilding,
   reserveIncoming,
   reserveSite,
+  release,
   reserveStock,
   slotCount,
   takeSlot,
@@ -66,7 +67,7 @@ function eatTask(sim: Simulation, c: Citizen): Task | null {
   return task('need', 'Eating from the stores', best.id, [gotoBuilding(best), { op: 'work', seconds: 1.5, effect: 'eat', args: [best.id] }])
 }
 
-/** Where a citizen can get warm: a heated home, else a shelter (the Guildhall). */
+/** Where a citizen can get warm: a heated home, else a shelter (the Steamforge). */
 function warmPlace(sim: Simulation, c: Citizen): Building | null {
   const home = c.home ? sim.buildings.get(c.home) : undefined
   if (home && (home.data.heated || amount(home.stock, 'firewood') > 0)) return home
@@ -263,40 +264,72 @@ function builderTask(sim: Simulation, c: Citizen): Task | null {
   return roadTask(sim, c)
 }
 
+interface LayJob {
+  tile: number
+  cost: Record<string, number>
+  work: number
+  name: string
+  effect: string
+  args: number[]
+}
+
+/** Lays the nearest ordered road or conduit tile, fetching its materials first. */
 function roadTask(sim: Simulation, c: Citizen): Task | null {
   const world = sim.world
   const here = tileOf(c, sim)
-  let bestTile = -1
+  // Claims are per tile, so a road and a pipe ordered on the same tile are laid one after the other.
+  let best: LayJob | null = null
   let bestD = Infinity
   for (const job of sim.roadJobs.values()) {
     if (sim.claimed.has(job.tile) || world.feature[job.tile] !== 0) continue
     const d = world.distance(here, job.tile)
     if (d < bestD) {
+      const road = sim.rules.roads.find((r) => r.id === job.road)!
       bestD = d
-      bestTile = job.tile
+      best = { tile: job.tile, cost: road.cost, work: road.work, name: road.name, effect: 'buildRoad', args: [job.tile] }
     }
   }
-  if (bestTile < 0) return null
-  const job = sim.roadJobs.get(bestTile)!
-  const road = sim.rules.roads.find((r) => r.id === job.road)!
+  for (const job of sim.conduitJobs.values()) {
+    if (sim.claimed.has(job.tile) || world.feature[job.tile] !== 0) continue
+    const d = world.distance(here, job.tile)
+    if (d < bestD) {
+      const n = sim.rules.networks.findIndex((x) => x.id === job.network)
+      const conduit = sim.rules.networks[n].conduit
+      bestD = d
+      best = { tile: job.tile, cost: conduit.cost, work: conduit.work, name: conduit.name, effect: 'buildConduit', args: [job.tile, n] }
+    }
+  }
+  if (!best) return null
   const steps: Step[] = []
-  const res: Reservation[] = [claimTile(sim, bestTile)]
-  for (const [item, qty] of Object.entries(road.cost)) {
-    const store = nearestStorageWith(sim, item, bestTile, qty)
+  const res: Reservation[] = [claimTile(sim, best.tile)]
+  for (const [item, qty] of Object.entries(best.cost)) {
+    const store = nearestStorageWith(sim, item, best.tile, qty)
     if (!store) {
-      sim.claimed.delete(bestTile)
+      for (const r of res) release(sim, r)
       return null
     }
     steps.push(gotoBuilding(store), { op: 'take', from: store.id, res: item, qty })
     res.push(reserveStock(store, item, qty))
   }
-  steps.push({ op: 'goto', tile: bestTile }, { op: 'work', seconds: road.work, effect: 'buildRoad', args: [bestTile] })
-  return task('build', `Laying ${road.name.toLowerCase()}`, 0, steps, res)
+  steps.push({ op: 'goto', tile: best.tile }, { op: 'work', seconds: best.work, effect: best.effect, args: best.args })
+  return task('build', `Laying ${best.name.toLowerCase()}`, 0, steps, res)
 }
 
-/** General labour: supply construction sites, clear marked land, haul goods to storage. */
+/** General labour: supply construction sites, service buildings (fuel the Steamforge), clear land, haul goods. */
 export function laborTask(sim: Simulation, c: Citizen): Task | null {
-  return supplySiteTask(sim, c) ?? clearTask(sim, c) ?? haulAnyTask(sim, c)
+  return supplySiteTask(sim, c) ?? serviceTask(sim, c) ?? clearTask(sim, c) ?? haulAnyTask(sim, c)
+}
+
+/** Tasks buildings offer to any laborer through their components' labor hooks. */
+function serviceTask(sim: Simulation, c: Citizen): Task | null {
+  for (const b of sim.buildings.values()) {
+    if (b.site || b.fire > 0) continue
+    for (const [handler, cfg] of sim.components(b)) {
+      const t = handler.labor?.(sim, b, cfg, c)
+      if (t) return t
+    }
+  }
+  return null
 }
 
 function supplySiteTask(sim: Simulation, c: Citizen): Task | null {

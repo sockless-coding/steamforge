@@ -65,6 +65,32 @@
     { "id": "dirt", "name": "Dirt Road", "description": "A packed-earth track. Citizens walk faster on roads.", "cost": {}, "work": 2, "speed": 1.5 },
     { "id": "cobble", "name": "Cobbled Road", "description": "Granite setts. The fastest way across town.", "cost": { "stone": 1 }, "work": 4, "speed": 1.9 }
   ],
+  "networks": [
+    {
+      "id": "steam",
+      "name": "Steam",
+      "unit": "psi",
+      "color": "#f0e6cf",
+      "conduit": {
+        "name": "Steam Pipe",
+        "description": "Riveted iron main on trestles. Carries steam from boilers to every building it touches. Runs over roads.",
+        "cost": { "iron": 1 },
+        "work": 3
+      }
+    },
+    {
+      "id": "power",
+      "name": "Galvanic Power",
+      "unit": "volts",
+      "color": "#7fd8ff",
+      "conduit": {
+        "name": "Copper Conduit",
+        "description": "Copper cable strung on insulated poles. Carries galvanic power from dynamos.",
+        "cost": { "copper": 1 },
+        "work": 3
+      }
+    }
+  ],
   "startingBuilders": 2,
   "startingArea": 8
 }

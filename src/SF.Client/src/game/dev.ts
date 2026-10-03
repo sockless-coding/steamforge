@@ -1,0 +1,40 @@
+// Dev-only helpers for visual review (exposed on window in dev builds; never used by the game itself).
+import type { GameController } from './GameController'
+import { findSpot, footprintSize, placeBuilding } from './sim/placement'
+
+/**
+ * Fills the area around the Steamforge with one finished copy of every building, completes all research, lays a
+ * sample steam main and power line, and marks every building as working so gears, pistons, glows and vents animate.
+ * Returns building ids by definition for camera tours.
+ */
+export function showcase(controller: GameController): Record<string, number> {
+  const sim = controller.sim
+  const hq = sim.headquarters()!
+  sim.research.done = sim.content.bundle.research.map((t) => t.id)
+  sim.research.queue = []
+  const ids: Record<string, number> = { [hq.def]: hq.id }
+  const cx = hq.x + 2
+  const cy = hq.y + 2
+  for (const def of sim.content.bundle.buildings) {
+    if (def.buildable === false) continue
+    const spot = findSpot(sim, def, cx, cy, 70, true)
+    if (!spot) continue
+    const [w, h] = footprintSize(def, 0)
+    ids[def.id] = placeBuilding(sim, def, spot.x, spot.y, 0, w, h, true).id
+  }
+  // A steam main and a power line along the plaza, clear of buildings.
+  const world = sim.world
+  for (let dx = -10; dx <= 10; dx++) {
+    for (const [dy, bit] of [
+      [2, 1],
+      [3, 2],
+    ] as const) {
+      const i = world.index(cx + dx, cy + dy)
+      if (world.isLand(i) && world.building[i] === 0) world.conduit[i] |= bit
+    }
+  }
+  sim.energy.dirty = true
+  for (const b of sim.buildings.values()) b.activeAt = 1e9
+  controller.renderer.handleEvents([...sim.drainEvents(), { type: 'conduit', tile: 0 }, { type: 'feature', tile: -1 }])
+  return ids
+}

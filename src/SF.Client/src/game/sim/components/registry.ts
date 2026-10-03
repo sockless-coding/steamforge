@@ -14,6 +14,8 @@ export interface ComponentHandler<C = unknown> {
   remove?(sim: Simulation, b: Building, cfg: C): void
   /** Next task for a worker employed here, or null if nothing needs doing right now. */
   work?(sim: Simulation, b: Building, cfg: C, citizen: Citizen): Task | null
+  /** A task any laborer may take on for this building (such as fuelling the Steamforge), or null. */
+  labor?(sim: Simulation, b: Building, cfg: C, citizen: Citizen): Task | null
   /** Resources this building produces into its own stock (hauled to storage by workers and laborers). */
   outputs?(sim: Simulation, b: Building, cfg: C): string[]
   /** Default worker target when construction completes. */

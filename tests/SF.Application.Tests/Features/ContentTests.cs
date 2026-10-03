@@ -47,8 +47,26 @@ public sealed class ContentTests : IClassFixture<TestApp>
         Assert.True(c.Buildings.Count >= 20, "a full starting building set");
         Assert.Contains(c.Buildings, b => b.Components.ContainsKey("housing"));
         Assert.Contains(c.Buildings, b => b.Components.ContainsKey("field"));
-        Assert.Contains(c.Buildings, b => b.Components.ContainsKey("boiler"));
+        Assert.Contains(c.Buildings, b => b.Components.ContainsKey("generator") && b.Components.ContainsKey("workplace"));
+        Assert.Contains(c.Buildings, b => b.Components.ContainsKey("research"));
+        Assert.Single(c.Buildings, b => b.Headquarters == true);
         Assert.True(c.Resources.Count(r => r.Category == "food") >= 5, "food variety");
+
+        // Every network has a generator, and at least one building needs it outright.
+        foreach (var net in c.Rules.Networks)
+        {
+            Assert.Contains(c.Buildings, b => b.Components.TryGetValue("generator", out var g) && g.GetProperty("network").GetString() == net.Id);
+            Assert.Contains(c.Buildings, b => b.Components.TryGetValue("consumer", out var u)
+                && u.GetProperty("uses").TryGetProperty(net.Id, out _)
+                && u.TryGetProperty("required", out var req) && req.GetBoolean());
+        }
+
+        // Research builds on itself, and a building that makes research points is available from the start.
+        Assert.True(c.Research.Count >= 10, "a research tree");
+        Assert.Contains(c.Research, t => t.Requires.Count > 0);
+        var locked = c.Research.SelectMany(t => t.Unlocks.Buildings ?? []).ToHashSet();
+        Assert.Contains(c.Buildings, b => b.Components.ContainsKey("research") && !locked.Contains(b.Id));
+        Assert.NotEmpty(c.Story.Dispatches);
 
         // Harder presets start with less.
         var ordered = c.Difficulty.Presets.OrderBy(p => p.Order).ToList();
@@ -77,6 +95,29 @@ public sealed class ContentTests : IClassFixture<TestApp>
         Assert.Contains(errors, e => e.Contains("unobtainium"));
         Assert.Contains(errors, e => e.Contains("teleporter"));
         Assert.Contains(errors, e => e.Contains("default preset"));
+    }
+
+    [Fact]
+    public void Validator_reports_broken_research_and_story()
+    {
+        var docs = Snapshot.Documents.ToDictionary(kv => kv.Key, kv => kv.Value);
+        var research = JsonNode.Parse(docs["research"])!.AsArray();
+        var mining = research.First(t => t!["id"]!.GetValue<string>() == "mining")!;
+        var metallurgy = research.First(t => t!["id"]!.GetValue<string>() == "metallurgy")!;
+        mining["requires"] = new JsonArray("metallurgy");
+        metallurgy["unlocks"]!["buildings"] = new JsonArray("smelter", "zeppelin-dock", "steamforge");
+        docs["research"] = research.ToJsonString();
+
+        var story = JsonNode.Parse(docs["story"])!;
+        story["dispatches"]!.AsArray().Add(JsonNode.Parse("""{"id":"x","title":"X","text":"X","when":{"year":2,"research":"time-travel"}}"""));
+        docs["story"] = story.ToJsonString();
+
+        var errors = ContentValidator.Validate(new ContentSnapshot("test", docs));
+        Assert.Contains(errors, e => e.Contains("requirement cycle"));
+        Assert.Contains(errors, e => e.Contains("zeppelin-dock"));
+        Assert.Contains(errors, e => e.Contains("headquarters cannot be locked"));
+        Assert.Contains(errors, e => e.Contains("exactly one trigger"));
+        Assert.Contains(errors, e => e.Contains("time-travel"));
     }
 
     [Fact]

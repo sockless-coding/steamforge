@@ -20,7 +20,7 @@ function summary(sim: Simulation): string {
   const t = sim.totals
   const food = sim.content.bundle.resources.filter((r) => r.category === 'food').reduce((s, r) => s + (t[r.id] ?? 0), 0)
   const p = sim.population()
-  return `y${sim.year} m${sim.month} pop ${p.total} (a${p.adults} c${p.children} e${p.elders} homeless ${p.homeless}) food ${Math.round(food)} wood ${Math.round(t.firewood ?? 0)} logs ${Math.round(t.logs ?? 0)} stone ${Math.round(t.stone ?? 0)} tools ${Math.round(t.tools ?? 0)} deaths ${JSON.stringify(sim.stats.deathsBy)} births ${sim.stats.births} buildings ${sim.buildings.size}
+  return `research ${sim.research.done.join('/')} y${sim.year} m${sim.month} pop ${p.total} (a${p.adults} c${p.children} e${p.elders} homeless ${p.homeless}) food ${Math.round(food)} wood ${Math.round(t.firewood ?? 0)} logs ${Math.round(t.logs ?? 0)} stone ${Math.round(t.stone ?? 0)} tools ${Math.round(t.tools ?? 0)} deaths ${JSON.stringify(sim.stats.deathsBy)} births ${sim.stats.births} buildings ${sim.buildings.size}
    produced ${JSON.stringify(Object.fromEntries(Object.entries(sim.stats.produced).map(([k, v]) => [k, Math.round(v)])))}
    consumed ${JSON.stringify(Object.fromEntries(Object.entries(sim.stats.consumed).map(([k, v]) => [k, Math.round(v)])))}`
 }
@@ -41,9 +41,9 @@ function playYear(sim: Simulation, hall: [number, number]): void {
   staff(sim)
 }
 
-/** Keeps wood production lean so food gets the hands, as a player would on the Guildhall panel. */
+/** Keeps wood production lean so food gets the hands, as a player would on the Steamforge panel. */
 function staff(sim: Simulation): void {
-  const caps: Record<string, number> = { 'foresters-lodge': 2, 'woodcutters-shed': 1, quarry: 2, toolworks: 1 }
+  const caps: Record<string, number> = { 'foresters-lodge': 2, 'woodcutters-shed': 1, quarry: 2, toolworks: 1, 'hunters-lodge': 2, 'drafting-office': 1 }
   for (const b of sim.buildings.values()) {
     const cap = caps[b.def]
     if (cap !== undefined) sim.perform({ type: 'setWorkers', building: b.id, count: cap })
@@ -53,9 +53,9 @@ function staff(sim: Simulation): void {
 describe('soak', () => {
   it('an Engineer colony with a sensible build order survives ten years', () => {
     const sim = newColony({ seed: 2024, mapSize: 'medium' })
-    const hallB = [...sim.buildings.values()].find((b) => b.def === 'guildhall')!
+    const hallB = [...sim.buildings.values()].find((b) => b.def === 'steamforge')!
     const hall: [number, number] = [hallB.x + 2, hallB.y + 2]
-    // Clear the land around the Guildhall for logs and stone, as a Banished player would.
+    // Clear the land around the Steamforge for logs and stone, as a Banished player would.
     const clear: number[] = []
     const tree = sim.featureCode('tree')
     const rock = sim.featureCode('rock')
@@ -63,10 +63,12 @@ describe('soak', () => {
       if (sim.world.feature[i] === tree || sim.world.feature[i] === rock) clear.push(i)
     })
     sim.perform({ type: 'markClear', tiles: clear, clear: true })
-    for (const def of ['foragers-hut', 'cottage', 'cottage', 'foresters-lodge', 'woodcutters-shed', 'hunters-lodge', 'cottage']) {
+    for (const def of ['foragers-hut', 'cottage', 'cottage', 'drafting-office', 'foresters-lodge', 'woodcutters-shed', 'hunters-lodge', 'cottage']) {
       place(sim, def, hall)
     }
     place(sim, 'crop-field', [hall[0] + 14, hall[1] + 6], 8, 8)
+    // Toolworks need Bloomery Metallurgy (via Deep Mining).
+    sim.perform({ type: 'research', tech: 'metallurgy' })
     const started = Date.now()
     for (let year = 0; year < 10 && sim.outcome === 'playing'; year++) {
       playYear(sim, hall)
@@ -75,9 +77,11 @@ describe('soak', () => {
         staff(sim)
       }
       console.log(summary(sim))
+      if (process.env.SOAK_NOTICES) console.log(sim.notices.filter((n) => n.level === 'bad' || n.level === 'warn').map((n) => n.text).join(' | '))
     }
     console.log(`soak took ${Date.now() - started} ms`)
     expect(sim.outcome).toBe('playing')
     expect(sim.citizens.size).toBeGreaterThan(10)
+    expect(sim.research.done).toContain('metallurgy')
   }, 300_000)
 })

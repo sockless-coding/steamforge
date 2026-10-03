@@ -9,8 +9,10 @@ import {
   type BuildingInfo,
   type CitizenInfo,
   type HudState,
+  type NetworkRow,
   type OptionInfo,
   type ProfessionRow,
+  type ResearchRow,
   type Tool,
 } from '../state/game'
 import type { Settings } from '../state/settings'
@@ -18,8 +20,10 @@ import { Ambience } from './audio/ambience'
 import { MusicDirector } from './audio/music'
 import { play } from './audio/synth'
 import type { FieldConfig } from './sim/components/field'
-import type { ProducerConfig } from './sim/components/producer'
+import { currentRecipe, type ProducerConfig } from './sim/components/producer'
+import { participates, touchesGrid, type ConsumerConfig, type GeneratorConfig } from './sim/energy'
 import { canPlace, doorTile, footprintSize, totalWork } from './sim/placement'
+import { canResearch, currentResearch, isUnlocked, lockedBy, unlockNames } from './sim/research'
 import { Simulation, type ColonySnapshot } from './sim/simulation'
 import type { Action, ActionResult, Building, Citizen, NewColonyOptions, Rotation, SimEvent } from './sim/types'
 import type { TileMark } from './render/overlays'
@@ -254,7 +258,7 @@ export class GameController {
     this.select({ kind: 'citizen', id })
   }
 
-  /** Spreads a profession's worker target across its workplaces (Guildhall panel). */
+  /** Spreads a profession's worker target across its workplaces (professions panel). */
   setProfessionTarget(profession: string, target: number): void {
     let left = Math.max(0, Math.round(target))
     for (const b of this.sim.buildings.values()) {
@@ -363,6 +367,8 @@ export class GameController {
         this.updatePreview()
         return
       case 'Escape':
+        // An open panel closes itself on Escape; don't also cancel tools or open the menu behind it.
+        if (document.querySelector('.modal-scrim')) return
         if (this.drag) this.drag = null
         else if (this.tool.kind !== 'select') this.setTool({ kind: 'select' })
         else if (this.selected) this.select(null)
@@ -420,7 +426,7 @@ export class GameController {
   private dragTool(): boolean {
     const t = this.tool
     if (t.kind === 'build') return !!this.sim.def(t.def).placement?.variableSize
-    return t.kind === 'road' || t.kind === 'removeRoad' || t.kind === 'clear' || t.kind === 'unclear'
+    return t.kind === 'road' || t.kind === 'removeRoad' || t.kind === 'clear' || t.kind === 'unclear' || t.kind === 'conduit' || t.kind === 'removeConduit'
   }
 
   private onPointerMove(e: PointerEvent): void {
@@ -551,6 +557,12 @@ export class GameController {
     const t = this.tool
     if (t.kind === 'road') {
       if (this.perform({ type: 'road', road: t.road, tiles: this.roadPath(a, b) }).ok) play('hammer', { volume: 0.3 })
+    } else if (t.kind === 'conduit') {
+      const result = this.perform({ type: 'conduit', network: t.network, tiles: this.roadPath(a, b) })
+      if (result.ok) play('hammer', { volume: 0.3 })
+      else this.hint = result.reason
+    } else if (t.kind === 'removeConduit') {
+      this.perform({ type: 'removeConduit', network: t.network, tiles: this.areaTiles(a, b) })
     } else if (t.kind === 'removeRoad') {
       this.perform({ type: 'removeRoad', tiles: this.areaTiles(a, b) })
     } else if (t.kind === 'clear' || t.kind === 'unclear') {
@@ -591,7 +603,7 @@ export class GameController {
       }
       const f = this.footprintAt(def, tile)
       const check = canPlace(sim, def, f.x, f.y, this.rot)
-      this.hint = check.ok ? 'R to rotate the entrance' : `${check.reason} · R to rotate`
+      this.hint = check.ok ? `${this.gridHint(def, f)}R to rotate the entrance` : `${check.reason} · R to rotate`
       overlays.setGhost(def, f.x, f.y, f.w, f.h, this.rot, check.ok)
       if (!def.walkable) {
         const door = doorTile(sim.world, def, f.x, f.y, f.w, f.h, this.rot)
@@ -599,7 +611,8 @@ export class GameController {
       }
       const marks: TileMark[] = []
       for (let y = f.y; y < f.y + f.h; y++) for (let x = f.x; x < f.x + f.w; x++) marks.push({ x, y, ok: check.ok })
-      overlays.setTiles(marks)
+      const network = this.energyNetworkOf(def)
+      overlays.setTiles(network ? [...this.gridMarks(network), ...marks] : marks)
       const radius =
         sim.component<{ radius?: number }>(def.id, 'gatherer')?.radius ??
         sim.component<{ radius: number }>(def.id, 'boiler')?.radius ??
@@ -615,6 +628,26 @@ export class GameController {
       const road = sim.rules.roads.find((r) => r.id === t.road)
       const stone = road?.cost.stone ? ` · ${tiles.length * road.cost.stone} stone` : ''
       this.hint = `${tiles.length} tiles${stone}`
+      return
+    }
+    if (t.kind === 'conduit') {
+      const tiles = dragging ? this.roadPath(dragging, tile) : [sim.world.index(tile[0], tile[1])]
+      const w = sim.world
+      const net = sim.rules.networks.find((n) => n.id === t.network)
+      const marks = tiles.map((i) => ({ x: w.xOf(i), y: w.yOf(i), ok: w.isLand(i) && w.building[i] === 0 }))
+      overlays.setTiles([...this.gridMarks(t.network), ...marks])
+      const cost = Object.entries(net?.conduit.cost ?? {}).map(([r, q]) => `${q * tiles.length} ${sim.resource(r)?.name.toLowerCase() ?? r}`)
+      const lock = lockedBy(sim, 'network', t.network)
+      this.hint = lock ? `Requires research: ${lock.name}` : `${tiles.length} tiles${cost.length ? ` · ${cost.join(', ')}` : ''} · runs over roads`
+      return
+    }
+    if (t.kind === 'removeConduit') {
+      const area = dragging ? this.areaTiles(dragging, tile) : [sim.world.index(tile[0], tile[1])]
+      const w = sim.world
+      const n = sim.rules.networks.findIndex((x) => x.id === t.network)
+      const relevant = area.filter((i) => w.conduit[i] & (1 << n) || sim.conduitJobs.has(i * 8 + n))
+      overlays.setTiles(area.map((i) => ({ x: w.xOf(i), y: w.yOf(i), ok: false })))
+      this.hint = `${relevant.length} ${sim.rules.networks[n]?.conduit.name.toLowerCase() ?? 'conduit'} tiles`
       return
     }
     if (t.kind === 'removeRoad' || t.kind === 'clear' || t.kind === 'unclear') {
@@ -635,6 +668,38 @@ export class GameController {
         this.hint = `${b.site ? 'Cancel' : 'Demolish'} ${sim.def(b).name}`
       } else this.hint = null
     }
+  }
+
+  /** The network a building generates or (first) consumes, if any. */
+  private energyNetworkOf(def: BuildingDef): string | null {
+    const gen = def.components.generator as GeneratorConfig | undefined
+    if (gen) return gen.network
+    const consumer = def.components.consumer as ConsumerConfig | undefined
+    return consumer ? (Object.keys(consumer.uses)[0] ?? null) : null
+  }
+
+  /** Placement hint: whether the footprint joins a grid on the network the building needs. */
+  private gridHint(def: BuildingDef, f: { x: number; y: number; w: number; h: number }): string {
+    const network = this.energyNetworkOf(def)
+    if (!network) return ''
+    const net = this.sim.rules.networks.find((n) => n.id === network)
+    const name = net?.name.toLowerCase() ?? network
+    if (touchesGrid(this.sim, f.x, f.y, f.w, f.h, network)) return `Joins the ${name} grid · `
+    const consumer = def.components.consumer as ConsumerConfig | undefined
+    return consumer?.required ? `Not on a ${name} grid yet: connect it with ${net?.conduit.name.toLowerCase() ?? 'conduits'} · ` : `Can join a ${name} grid · `
+  }
+
+  /** Footprints of every building on a network: green when supplied (or lit), red when starved. */
+  private gridMarks(network: string): TileMark[] {
+    const sim = this.sim
+    const marks: TileMark[] = []
+    for (const b of sim.buildings.values()) {
+      if (!participates(sim, b, network)) continue
+      const gen = sim.component<GeneratorConfig>(b, 'generator')
+      const ok = gen?.network === network ? b.data.lit === true : ((b.data.power as number | undefined) ?? 0) >= 0.99
+      for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) marks.push({ x, y, ok })
+    }
+    return marks
   }
 
   // ---------------------------------------------------------------- HUD
@@ -686,7 +751,67 @@ export class GameController {
       professions: this.professionRows(),
       sites,
       save: this.saveStatus,
+      research: this.researchRows(),
+      researching: this.researching(),
+      networks: this.networkRows(),
+      dispatches: sim.story.sent,
+      locks: this.locks(),
     })
+  }
+
+  private researchRows(): ResearchRow[] {
+    const sim = this.sim
+    const r = sim.research
+    return sim.content.bundle.research.map((t) => ({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      tier: t.tier,
+      points: t.points,
+      progress: r.done.includes(t.id) ? t.points : (r.progress[t.id] ?? 0),
+      requires: t.requires,
+      unlocks: unlockNames(sim, t),
+      status: r.done.includes(t.id) ? 'done' : r.queue[0] === t.id ? 'current' : r.queue.includes(t.id) ? 'queued' : canResearch(sim, t) ? 'available' : 'locked',
+    }))
+  }
+
+  private researching(): HudState['researching'] {
+    const tech = currentResearch(this.sim)
+    return tech ? { name: tech.name, progress: this.sim.research.progress[tech.id] ?? 0, points: tech.points } : null
+  }
+
+  private networkRows(): NetworkRow[] {
+    const sim = this.sim
+    return sim.rules.networks.map((net, n) => {
+      let active = false
+      for (const b of sim.buildings.values()) {
+        if (!b.site && participates(sim, b, net.id)) {
+          active = true
+          break
+        }
+      }
+      const totals = sim.energy.totals[n] ?? { supply: 0, demand: 0 }
+      return { id: net.id, name: net.name, unit: net.unit, color: net.color, supply: totals.supply, demand: totals.demand, active }
+    })
+  }
+
+  /** Research gates for build bar entries, keyed like the research lock map. */
+  private locks(): Record<string, string> {
+    const sim = this.sim
+    const out: Record<string, string> = {}
+    for (const def of sim.content.bundle.buildings) {
+      const lock = lockedBy(sim, 'building', def.id)
+      if (lock) out[`building:${def.id}`] = lock.name
+    }
+    for (const road of sim.rules.roads) {
+      const lock = lockedBy(sim, 'road', road.id)
+      if (lock) out[`road:${road.id}`] = lock.name
+    }
+    for (const net of sim.rules.networks) {
+      const lock = lockedBy(sim, 'network', net.id)
+      if (lock) out[`network:${net.id}`] = lock.name
+    }
+    return out
   }
 
   private professionRows(): ProfessionRow[] {
@@ -761,15 +886,15 @@ export class GameController {
     const def = sim.def(b)
     const lines: string[] = []
     if (!b.site) for (const [handler, cfg] of sim.components(b)) lines.push(...(handler.describe?.(sim, b, cfg) ?? []))
-    if (b.data.steam) lines.push(`Steam powered: +${Math.round((b.data.steam as number) * 100)}% work speed`)
     const options: OptionInfo[] = []
     const producer = sim.component<ProducerConfig>(b, 'producer')
-    if (producer && producer.recipes.length > 1) {
+    const recipes = producer?.recipes.filter((id) => isUnlocked(sim, 'recipe', id)) ?? []
+    if (producer && recipes.length > 1) {
       options.push({
         key: 'recipe',
         label: 'Recipe',
-        value: (b.data.recipe as string) ?? producer.recipes[0],
-        values: producer.recipes.map((id) => ({ id, name: sim.content.recipes.get(id)?.name ?? id })),
+        value: currentRecipe(sim, b, producer).id,
+        values: recipes.map((id) => ({ id, name: sim.content.recipes.get(id)?.name ?? id })),
       })
     }
     const field = sim.component<FieldConfig>(b, 'field')

@@ -10,6 +10,7 @@ import type {
   FeatureDef,
   ProfessionDef,
   RecipeDef,
+  ResearchDef,
   ResourceDef,
 } from './types'
 
@@ -26,6 +27,9 @@ export interface Content {
   professions: Map<string, ProfessionDef>
   events: Map<string, EventDef>
   presets: Map<string, DifficultyPreset>
+  research: Map<string, ResearchDef>
+  /** The headquarters building (the Steamforge). */
+  headquarters: BuildingDef
 }
 
 export function indexContent(bundle: ContentBundle): Content {
@@ -40,6 +44,8 @@ export function indexContent(bundle: ContentBundle): Content {
     professions: byId(bundle.professions),
     events: byId(bundle.events),
     presets: byId(bundle.difficulty.presets),
+    research: byId(bundle.research),
+    headquarters: bundle.buildings.find((b) => b.headquarters) ?? bundle.buildings[0],
   }
 }
 

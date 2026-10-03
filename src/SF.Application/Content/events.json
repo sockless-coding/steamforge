@@ -15,7 +15,7 @@
     "disaster": true,
     "weight": 2,
     "minYear": 1,
-    "params": { "component": "boiler", "burnSeconds": 35, "spreadChance": 0.06, "spreadRadius": 3, "wellBurnSeconds": 10 }
+    "params": { "component": "generator", "burnSeconds": 35, "spreadChance": 0.06, "spreadRadius": 3, "wellBurnSeconds": 10 }
   },
   {
     "id": "blight",
@@ -64,5 +64,23 @@
     "minYear": 1,
     "seasons": ["summer"],
     "params": { "growth": 0.25 }
+  },
+  {
+    "id": "pipe-burst",
+    "name": "Burst Steam Main",
+    "kind": "pipeBurst",
+    "disaster": true,
+    "weight": 2,
+    "minYear": 2,
+    "params": { "network": "steam", "tiles": 3 }
+  },
+  {
+    "id": "supply-airship",
+    "name": "Supply Airship",
+    "kind": "supplies",
+    "disaster": false,
+    "weight": 2,
+    "minYear": 1,
+    "params": { "iron": 12, "tools": 8, "coats": 6, "cogs": 4 }
   }
 ]

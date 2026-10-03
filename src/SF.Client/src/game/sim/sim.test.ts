@@ -37,11 +37,11 @@ describe('map generation', () => {
 })
 
 describe('founding', () => {
-  it('creates the Guildhall, families and supplies per difficulty', () => {
+  it('creates the Steamforge, families and supplies per difficulty', () => {
     for (const preset of content.bundle.difficulty.presets) {
       const sim = newColony({ difficulty: preset.id })
       const defs = [...sim.buildings.values()].map((b) => b.def)
-      expect(defs).toContain('guildhall')
+      expect(defs).toContain('steamforge')
       for (const entry of preset.startingBuildings) {
         expect(defs.filter((d) => d === entry.id).length, `${preset.id} ${entry.id}`).toBe(entry.count)
       }
@@ -63,7 +63,7 @@ describe('founding', () => {
 describe('pause and build', () => {
   it('accepts placement while paused and makes no progress until time runs', () => {
     const sim = newColony()
-    const hall = [...sim.buildings.values()].find((b) => b.def === 'guildhall')!
+    const hall = [...sim.buildings.values()].find((b) => b.def === 'steamforge')!
     const spot = findSpot(sim, sim.def('cottage'), hall.x + 2, hall.y + 10)!
     const result = sim.perform({ type: 'place', def: 'cottage', x: spot.x, y: spot.y, rot: 0 })
     expect(result.ok).toBe(true)
@@ -82,7 +82,7 @@ describe('pause and build', () => {
 
   it('rejects invalid placements with a reason', () => {
     const sim = newColony()
-    const hall = [...sim.buildings.values()].find((b) => b.def === 'guildhall')!
+    const hall = [...sim.buildings.values()].find((b) => b.def === 'steamforge')!
     const overlap = sim.perform({ type: 'place', def: 'cottage', x: hall.x, y: hall.y, rot: 0 })
     expect(overlap).toEqual({ ok: false, reason: expect.stringContaining('already built') })
     const quarry = sim.perform({ type: 'place', def: 'quarry', x: hall.x + 6, y: hall.y + 6, rot: 0 })
@@ -91,7 +91,7 @@ describe('pause and build', () => {
 
   it('builds roads and clears marked trees', () => {
     const sim = newColony()
-    const hall = [...sim.buildings.values()].find((b) => b.def === 'guildhall')!
+    const hall = [...sim.buildings.values()].find((b) => b.def === 'steamforge')!
     const free = (i: number) => sim.world.walkable(i) && sim.world.building[i] === 0 && sim.world.road[i] === 0 && sim.world.feature[i] === 0
     let tiles: number[] = []
     for (let y = hall.y - 6; y < hall.y + 12 && tiles.length === 0; y++) {
@@ -116,7 +116,7 @@ describe('determinism and saves', () => {
     const a = newColony({ seed: 42 })
     const b = newColony({ seed: 42 })
     for (const sim of [a, b]) {
-      const hall = [...sim.buildings.values()].find((x) => x.def === 'guildhall')!
+      const hall = [...sim.buildings.values()].find((x) => x.def === 'steamforge')!
       const spot = findSpot(sim, sim.def('foragers-hut'), hall.x, hall.y + 12)!
       sim.perform({ type: 'place', def: 'foragers-hut', x: spot.x, y: spot.y, rot: 0 })
       runMonths(sim, 4)

@@ -4,6 +4,8 @@
   { "id": "ironOre", "name": "Iron Ore", "category": "material", "color": "#7a4e3c", "spoilagePerYear": 0, "defaultLimit": 200 },
   { "id": "coal", "name": "Coal", "category": "fuel", "color": "#2c2a2a", "spoilagePerYear": 0, "defaultLimit": 200 },
   { "id": "iron", "name": "Iron", "category": "material", "color": "#a9b2b8", "spoilagePerYear": 0, "defaultLimit": 150 },
+  { "id": "copperOre", "name": "Copper Ore", "category": "material", "color": "#3f8a72", "spoilagePerYear": 0, "defaultLimit": 150 },
+  { "id": "copper", "name": "Copper", "category": "material", "color": "#d07a44", "spoilagePerYear": 0, "defaultLimit": 120 },
   { "id": "cogs", "name": "Cogs", "category": "material", "color": "#d4a24a", "spoilagePerYear": 0, "defaultLimit": 120 },
   { "id": "firewood", "name": "Firewood", "category": "fuel", "color": "#b07840", "spoilagePerYear": 0, "defaultLimit": 250 },
   { "id": "tools", "name": "Tools", "category": "goods", "color": "#8fa0aa", "spoilagePerYear": 0, "defaultLimit": 60 },
@@ -15,5 +17,6 @@
   { "id": "fish", "name": "Fish", "category": "food", "color": "#7a9ab0", "spoilagePerYear": 0.3, "defaultLimit": 0 },
   { "id": "potatoes", "name": "Potatoes", "category": "food", "color": "#c09a5a", "spoilagePerYear": 0.1, "defaultLimit": 0 },
   { "id": "cabbage", "name": "Cabbage", "category": "food", "color": "#7aa84a", "spoilagePerYear": 0.15, "defaultLimit": 0 },
-  { "id": "barley", "name": "Barley", "category": "food", "color": "#d8c070", "spoilagePerYear": 0.05, "defaultLimit": 0 }
+  { "id": "barley", "name": "Barley", "category": "food", "color": "#d8c070", "spoilagePerYear": 0.05, "defaultLimit": 0 },
+  { "id": "tomatoes", "name": "Hothouse Tomatoes", "category": "food", "color": "#c8402a", "spoilagePerYear": 0.3, "defaultLimit": 0 }
 ]

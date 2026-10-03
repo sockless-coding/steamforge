@@ -107,6 +107,27 @@ registerEffect('buildRoad', (sim, c, [tile]) => {
   return true
 })
 
+/** Lays a conduit tile (args: tile, network index), spending the materials the citizen carries. */
+registerEffect('buildConduit', (sim, c, [tile, n]) => {
+  const key = tile * 8 + n
+  const job = sim.conduitJobs.get(key)
+  const net = sim.rules.networks[n]
+  if (!job || !net) return true
+  for (const res in net.conduit.cost) {
+    if (!c.carry || amount(c.carry, res) < net.conduit.cost[res]) return false
+  }
+  for (const res in net.conduit.cost) addStock(c.carry!, res, -net.conduit.cost[res])
+  if (c.carry && Object.keys(c.carry).length === 0) c.carry = null
+  sim.conduitJobs.delete(key)
+  const world = sim.world
+  if (world.isLand(tile) && world.building[tile] === 0) {
+    world.conduit[tile] |= 1 << n
+    sim.energy.dirty = true
+  }
+  sim.emit({ type: 'conduit', tile })
+  return true
+})
+
 /** Eats a meal from a home pantry or a storage, favouring foods not eaten recently. */
 registerEffect('eat', (sim, c, [id]) => {
   const b = sim.buildings.get(id)

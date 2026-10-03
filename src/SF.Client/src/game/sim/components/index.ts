@@ -3,6 +3,7 @@ import './basic'
 import './gatherer'
 import './producer'
 import './field'
-import './boiler'
+import './energy'
+import './research'
 
 export { componentHandler, knownComponents, registerComponent, type ComponentHandler } from './registry'

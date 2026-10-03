@@ -1,6 +1,8 @@
 import type { EventDef } from '../../api/types'
 import type { FieldPhase } from './components/field'
 import type { FirefightingConfig } from './components/basic'
+import { energyBlocked, networkIndex } from './energy'
+import { addToStorage } from './inventory'
 import { assignHousing, createCitizen, spawnFamily } from './population'
 import { firstName, surname } from './names'
 import { removeBuilding } from './placement'
@@ -27,27 +29,36 @@ const num = (def: EventDef, key: string, fallback: number) => (typeof def.params
 
 // ---------------------------------------------------------------- fire
 
+/** The headquarters (a riveted iron engine) never catches fire: losing it would end the colony outright. */
 export function burnable(sim: Simulation, b: Building): boolean {
   const def = sim.def(b)
-  return !def.walkable && !def.components.firefighting && b.fire === 0
+  return !def.walkable && !def.headquarters && !def.components.firefighting && b.fire === 0
 }
 
-export function wellCovers(sim: Simulation, b: Building): boolean {
+/**
+ * The quickest firefighting cover for a building, as seconds until its fire is out, or null when no well or
+ * working fire station reaches it. Fire stations that need steam only help while they have it.
+ */
+export function fireCover(sim: Simulation, b: Building, wellSeconds: number): number | null {
   const cx = b.x + b.w / 2
   const cy = b.y + b.h / 2
+  let best: number | null = null
   for (const w of sim.buildings.values()) {
     const cfg = sim.component<FirefightingConfig>(w, 'firefighting')
-    if (!cfg || w.site) continue
+    if (!cfg || w.site || energyBlocked(sim, w)) continue
     const dx = w.x + w.w / 2 - cx
     const dy = w.y + w.h / 2 - cy
-    if (dx * dx + dy * dy <= cfg.radius * cfg.radius) return true
+    if (dx * dx + dy * dy > cfg.radius * cfg.radius) continue
+    const seconds = Math.min(wellSeconds, cfg.burnSeconds ?? wellSeconds)
+    best = best === null ? seconds : Math.min(best, seconds)
   }
-  return false
+  return best
 }
 
 export function ignite(sim: Simulation, b: Building, def: EventDef): void {
-  const covered = wellCovers(sim, b)
-  b.fire = covered ? num(def, 'wellBurnSeconds', 10) : num(def, 'burnSeconds', 45)
+  const cover = fireCover(sim, b, num(def, 'wellBurnSeconds', 10))
+  const covered = cover !== null
+  b.fire = cover ?? num(def, 'burnSeconds', 45)
   b.data.fireCovered = covered
   b.data.fireSpread = num(def, 'spreadChance', 0.04)
   b.data.fireRadius = num(def, 'spreadRadius', 3)
@@ -94,11 +105,12 @@ registerEvent({
   run: (sim, def) => {
     const component = def.params.component as string | undefined
     const candidates = [...sim.buildings.values()].filter(
-      (b) => !b.site && burnable(sim, b) && sim.def(b).id !== 'guildhall' && (!component || sim.def(b).components[component]),
+      (b) => !b.site && burnable(sim, b) && !sim.def(b).headquarters && (!component || sim.def(b).components[component]),
     )
     const target = sim.rng.pick(candidates)
     if (!target) return false
-    if (component === 'boiler' && target.data.lit !== true) return false
+    // A boiler burst needs a lit firebox.
+    if (component === 'generator' && target.data.lit !== true) return false
     ignite(sim, target, def)
     sim.notify('bad', `${def.name}! The ${sim.def(target).name} is ablaze.`, target.door)
     return true
@@ -196,6 +208,58 @@ registerEvent({
     if (fields.length === 0) return false
     for (const f of fields) f.data.growth = Math.min(0.99, (f.data.growth as number) + num(def, 'growth', 0.25))
     sim.notify('good', `${def.name}: warm rain has the crops racing ahead.`)
+    return true
+  },
+})
+
+registerEvent({
+  kind: 'pipeBurst',
+  run: (sim, def) => {
+    const network = (def.params.network as string | undefined) ?? sim.rules.networks[0].id
+    const n = networkIndex(sim, network)
+    if (n < 0) return false
+    const world = sim.world
+    const bit = 1 << n
+    // Only conduits carrying energy can burst.
+    const pipes: number[] = []
+    for (let i = 0; i < world.size; i++) if (world.conduit[i] & bit) pipes.push(i)
+    if (pipes.length < 4 || (sim.energy.totals[n]?.supply ?? 0) <= 0) return false
+    const start = sim.rng.pick(pipes)!
+    // The burst tears out a short run of connected pipe; builders re-lay it.
+    const burst: number[] = [start]
+    for (let k = 0; k < burst.length && burst.length < num(def, 'tiles', 3); k++) {
+      const x = world.xOf(burst[k])
+      const y = world.yOf(burst[k])
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const j = world.index(x + dx, y + dy)
+        if (world.inBounds(x + dx, y + dy) && world.conduit[j] & bit && !burst.includes(j) && burst.length < num(def, 'tiles', 3)) burst.push(j)
+      }
+    }
+    for (const tile of burst) {
+      world.conduit[tile] &= ~bit
+      sim.conduitJobs.set(tile * 8 + n, { tile, network })
+      sim.emit({ type: 'conduit', tile })
+    }
+    sim.energy.dirty = true
+    const conduit = sim.rules.networks[n].conduit.name.toLowerCase()
+    sim.notify('bad', `${def.name}! A ${conduit} has ruptured. Builders will re-lay ${burst.length} sections.`, start)
+    return true
+  },
+})
+
+registerEvent({
+  kind: 'supplies',
+  run: (sim, def) => {
+    const hq = sim.headquarters()
+    if (!hq) return false
+    const delivered: string[] = []
+    for (const [res, qty] of Object.entries(def.params)) {
+      if (typeof qty !== 'number' || !sim.resource(res)) continue
+      const left = addToStorage(sim, res, qty, hq.door)
+      if (left < qty) delivered.push(`${Math.round(qty - left)} ${sim.resource(res)!.name.toLowerCase()}`)
+    }
+    if (delivered.length === 0) return false
+    sim.notify('good', `${def.name}: crates dropped by the Company airship hold ${delivered.join(', ')}.`, hq.door)
     return true
   },
 })

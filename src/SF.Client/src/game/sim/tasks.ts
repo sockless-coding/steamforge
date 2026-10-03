@@ -1,4 +1,5 @@
 import { runEffect } from './effects'
+import { energyFactor } from './energy'
 import { addStock, addToStorage, amount } from './inventory'
 import type { Simulation } from './simulation'
 import type { Building, Citizen, Reservation, Step, Task, TaskKind } from './types'
@@ -131,8 +132,8 @@ export function workSpeed(sim: Simulation, c: Citizen, at?: number): number {
   if (c.health < 0.4) s *= 0.7
   if (c.sick > 0) s *= 0.6
   if (at) {
-    const steam = sim.buildings.get(at)?.data.steam as number | undefined
-    if (steam) s *= 1 + steam
+    const b = sim.buildings.get(at)
+    if (b) s *= energyFactor(sim, b)
   }
   return s
 }

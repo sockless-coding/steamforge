@@ -14,5 +14,8 @@
   { "id": "smith", "name": "Blacksmith", "color": "#5a6a7a" },
   { "id": "tailor", "name": "Tailor", "color": "#6a5a9a" },
   { "id": "machinist", "name": "Machinist", "color": "#d4a24a" },
-  { "id": "stoker", "name": "Stoker", "color": "#3a3030" }
+  { "id": "stoker", "name": "Stoker", "color": "#3a3030" },
+  { "id": "engineer", "name": "Engineer", "color": "#c8a050" },
+  { "id": "gardener", "name": "Glasshouse Keeper", "color": "#5a9a5a" },
+  { "id": "galvanist", "name": "Galvanist", "color": "#5ab8d8" }
 ]

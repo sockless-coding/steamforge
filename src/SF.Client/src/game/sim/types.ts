@@ -15,6 +15,7 @@ export const Terrain = {
   Iron: 4,
   Coal: 5,
   Sand: 6,
+  Copper: 7,
 } as const
 
 export const TERRAIN_IDS: Record<string, number> = {
@@ -25,6 +26,7 @@ export const TERRAIN_IDS: Record<string, number> = {
   iron: Terrain.Iron,
   coal: Terrain.Coal,
   sand: Terrain.Sand,
+  copper: Terrain.Copper,
 }
 
 export interface NewColonyOptions {
@@ -151,11 +153,27 @@ export interface RoadJob {
   delivered: boolean
 }
 
+/** A conduit tile (steam pipe, copper conduit) ordered but not yet laid. */
+export interface ConduitJob {
+  tile: number
+  network: string
+}
+
+export interface ResearchState {
+  done: string[]
+  /** Planned research, current first. */
+  queue: string[]
+  /** Points put into unfinished research (kept when the queue changes). */
+  progress: Record<string, number>
+}
+
 export interface Notice {
   id: number
   tick: number
-  level: 'info' | 'good' | 'warn' | 'bad'
+  level: 'info' | 'good' | 'warn' | 'bad' | 'story'
   text: string
+  /** Story dispatch id for 'story' notices. */
+  dispatch?: string
   /** Tile to focus when clicked. */
   at?: number
 }
@@ -176,6 +194,10 @@ export type Action =
   | { type: 'place'; def: string; x: number; y: number; rot: Rotation; w?: number; h?: number }
   | { type: 'road'; road: string; tiles: number[] }
   | { type: 'removeRoad'; tiles: number[] }
+  | { type: 'conduit'; network: string; tiles: number[] }
+  | { type: 'removeConduit'; network: string; tiles: number[] }
+  | { type: 'research'; tech: string }
+  | { type: 'clearResearch' }
   | { type: 'markClear'; tiles: number[]; clear: boolean }
   | { type: 'demolish'; building: number }
   | { type: 'cancelSite'; building: number }
@@ -192,6 +214,8 @@ export type SimEvent =
   | { type: 'building'; id: number; change: 'added' | 'completed' | 'removed' | 'changed' }
   | { type: 'feature'; tile: number }
   | { type: 'road'; tile: number }
+  | { type: 'conduit'; tile: number }
+  | { type: 'research'; tech: string }
   | { type: 'terrain'; x: number; y: number; w: number; h: number }
   | { type: 'citizen'; id: number; change: 'born' | 'arrived' | 'died'; cause?: string }
   | { type: 'month'; month: number; year: number }

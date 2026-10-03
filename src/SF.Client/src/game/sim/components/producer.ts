@@ -1,6 +1,8 @@
 import type { RecipeDef } from '../../../api/types'
 import { registerEffect } from '../effects'
+import { energyBlocked } from '../energy'
 import { addStock, available } from '../inventory'
+import { isUnlocked } from '../research'
 import type { Simulation } from '../simulation'
 import { gotoBuilding, reserveStock, task } from '../tasks'
 import type { Building } from '../types'
@@ -9,13 +11,15 @@ import { registerComponent } from './registry'
 
 export interface ProducerConfig {
   recipes: string[]
-  /** Only works inside the coverage of a lit boiler house. */
-  requiresSteam?: boolean
 }
 
+/** The chosen recipe, or the first one research has unlocked. */
 export function currentRecipe(sim: Simulation, b: Building, cfg: ProducerConfig): RecipeDef {
   const id = (b.data.recipe as string | undefined) ?? cfg.recipes[0]
-  return sim.content.recipes.get(id) ?? sim.content.recipes.get(cfg.recipes[0])!
+  const chosen = sim.content.recipes.get(id)
+  if (chosen && isUnlocked(sim, 'recipe', chosen.id)) return chosen
+  const first = cfg.recipes.find((r) => isUnlocked(sim, 'recipe', r)) ?? cfg.recipes[0]
+  return sim.content.recipes.get(first)!
 }
 
 registerEffect('produce', (sim, _c, [id, recipeIndex]) => {
@@ -47,7 +51,7 @@ registerComponent<ProducerConfig>({
     const recipe = currentRecipe(sim, b, cfg)
     const carry = sim.rules.citizen.carry
     if (outputFull(sim, b)) return haulOutputTask(sim, c, b, 1)
-    if (cfg.requiresSteam && !b.data.steam) return haulOutputTask(sim, c, b, 1)
+    if (energyBlocked(sim, b)) return haulOutputTask(sim, c, b, 1)
     if (Object.keys(recipe.outputs).every((res) => sim.atLimit(res))) return haulOutputTask(sim, c, b, 1)
 
     const haul = haulOutputTask(sim, c, b, carry)
@@ -71,7 +75,7 @@ registerComponent<ProducerConfig>({
     return haulOutputTask(sim, c, b, 1)
   },
   option: (sim, b, cfg, key, value) => {
-    if (key !== 'recipe' || !cfg.recipes.includes(value) || !sim.content.recipes.has(value)) return false
+    if (key !== 'recipe' || !cfg.recipes.includes(value) || !sim.content.recipes.has(value) || !isUnlocked(sim, 'recipe', value)) return false
     b.data.recipe = value
     return true
   },
@@ -80,7 +84,6 @@ registerComponent<ProducerConfig>({
     const fmt = (stock: Record<string, number>) =>
       Object.entries(stock).map(([res, qty]) => `${qty} ${sim.resource(res)?.name ?? res}`).join(' + ')
     const lines = [`${recipe.name}: ${fmt(recipe.inputs)} → ${fmt(recipe.outputs)}`]
-    if (cfg.requiresSteam && !b.data.steam) lines.push('Idle: needs steam from a boiler house')
     const missing = Object.keys(recipe.inputs).filter((res) => onHand(b, res) <= 0)
     if (missing.length) lines.push(`Waiting for ${missing.map((r) => sim.resource(r)?.name ?? r).join(', ')}`)
     return lines

@@ -1,0 +1,64 @@
+{
+  "intro": {
+    "title": "The Brass Charter",
+    "paragraphs": [
+      "To the Chief Engineer of the {colony} Expedition.",
+      "By resolution of the Board of the Meridian Steam Company, you are entrusted with Steamforge No. 9, one of the twelve sealed pressure engines cast at our Ashcombe works, and with the families who have chosen to follow it north beyond the last railhead.",
+      "Past the Hollowmere ranges lies country no surveyor has walked. The Board requires a colony there, self-sufficient within the decade, as proof that brass and steam can master any frontier. Eleven forges have gone before yours. Four still answer our telegrams.",
+      "The Steamforge will shelter your people and keep a fire against the cold. It raises a modest head of steam for any workshop built against its flanks, but it cannot feed you, and it will not burn without fuel. Gather timber and stone, raise homes before the first frost, and set your engineers to work at the drafting table: every pipe you lay and every engine you raise brings {colony} closer to standing on its own.",
+      "Our supply airships will call when the winds allow. Do not count on them.",
+      "The Board expects reports. We expect results."
+    ],
+    "signature": "Cornelius Vane, Secretary to the Board, Meridian Steam Company"
+  },
+  "dispatches": [
+    {
+      "id": "drafting-office",
+      "title": "Dispatch: On the Drafting Office",
+      "text": "The Board notes that {colony} has raised a drafting office. Our engineers in Ashcombe have sent the patterns we could spare. Choose your research with care: a colony that builds engines before it can feed itself does not survive its second winter.",
+      "when": { "building": "drafting-office" }
+    },
+    {
+      "id": "first-winter",
+      "title": "Dispatch: The First Winter",
+      "text": "Word has reached Ashcombe that {colony} has come through its first winter. Three of the forges sent out before yours did not. The Board has entered your name in the ledger of active colonies. Do not make us strike it out.",
+      "when": { "year": 2 }
+    },
+    {
+      "id": "piping",
+      "title": "Dispatch: Pressure Piping",
+      "text": "So you have learned to pipe steam. Mind your mains: a burst pipe in a cold month has emptied more than one colony. Run them along your streets, keep a stock of iron for repairs, and remember that every workshop on a main shares what the boilers can give.",
+      "when": { "research": "piping" }
+    },
+    {
+      "id": "boiler-house",
+      "title": "Dispatch: The First Boiler House",
+      "text": "A boiler house in {colony}! The Steamforge was only ever meant to light the first fires. Feed your boilers coal and keep a stoker beside them, and your workshops will run day and night. The Board has authorised one additional supply flight in recognition.",
+      "when": { "building": "boiler-house" }
+    },
+    {
+      "id": "population",
+      "title": "Dispatch: A Growing Town",
+      "text": "Forty souls! {colony} is no longer an outpost but a town. Families in the southern provinces have begun to ask about passage north. Build homes, and they will come.",
+      "when": { "population": 40 }
+    },
+    {
+      "id": "galvanism",
+      "title": "Dispatch: On Galvanism",
+      "text": "Some on the Board are uneasy about galvanism. Let them be uneasy. Copper conduits carry power where no steam main can reach, and a dynamo turns steam into current with very little loss. Build your dynamo beside a strong boiler house.",
+      "when": { "research": "galvanism" }
+    },
+    {
+      "id": "year-five",
+      "title": "Dispatch: Five Years On",
+      "text": "Five years since Steamforge No. 9 left the Ashcombe yards. The Board would like to see an analytical engine running in {colony} before the decade is out. Only then will the charter be considered fulfilled.",
+      "when": { "year": 6 }
+    },
+    {
+      "id": "charter-fulfilled",
+      "title": "Dispatch: The Charter Fulfilled",
+      "text": "The telegraph from {colony} was confirmed this morning: an analytical engine stands in the north, driven by galvanic power from steam raised in a colony that did not exist a few years ago. The Board declares the Brass Charter fulfilled. The colony is yours, Chief Engineer. Keep it burning.",
+      "when": { "building": "analytical-engine" }
+    }
+  ]
+}

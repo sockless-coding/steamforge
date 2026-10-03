@@ -22,8 +22,12 @@ import {
   refund,
 } from './placement'
 import { abortTask, rebuildClaims } from './tasks'
+import { encodeArray } from './codec'
+import { EnergyState } from './energy'
 import { createFounders, fireWorker } from './population'
+import { canResearch, isUnlocked, lockedBy, researchPlan } from './research'
 import { Rng } from './rng'
+import type { StoryState } from './story'
 import { refreshRipeness, systems } from './systems'
 import type {
   Action,
@@ -31,15 +35,17 @@ import type {
   Building,
   Citizen,
   ColonyStats,
+  ConduitJob,
   NewColonyOptions,
   Notice,
+  ResearchState,
   RoadJob,
   SimEvent,
   Stock,
 } from './types'
 import { MARK_CLEAR, World, type WorldSnapshot } from './world'
 
-export const SAVE_VERSION = 1
+export const SAVE_VERSION = 2
 
 export interface ColonySnapshot {
   v: number
@@ -52,6 +58,9 @@ export interface ColonySnapshot {
   buildings: Building[]
   citizens: Citizen[]
   roadJobs: RoadJob[]
+  conduitJobs: ConduitJob[]
+  research: ResearchState
+  story: StoryState
   clearQueue: number[]
   limits: Record<string, number>
   builderTarget: number
@@ -87,6 +96,12 @@ export class Simulation {
   buildings = new Map<number, Building>()
   citizens = new Map<number, Citizen>()
   roadJobs = new Map<number, RoadJob>()
+  /** Conduit tiles ordered but not laid, keyed by tile * 8 + network index. */
+  conduitJobs = new Map<number, ConduitJob>()
+  research: ResearchState = { done: [], queue: [], progress: {} }
+  story: StoryState = { sent: [] }
+  /** Network topology and the last supply/demand solve. Derived; rebuilt on load. */
+  readonly energy = new EnergyState()
   /** Tiles whose feature must be cleared (player marks and construction footprints). */
   clearQueue = new Set<number>()
   /** Tiles claimed by an in-progress task (features, road jobs, field plots). Rebuilt from tasks on load. */
@@ -132,6 +147,7 @@ export class Simulation {
     const map = generateMap(content, options.seed, size, terrain, content.bundle.rules.startingArea)
     const sim = new Simulation(content, options, map.world)
     sim.builderTarget = sim.rules.startingBuilders
+    sim.research.done = (sim.preset.startingResearch ?? []).filter((id) => content.research.has(id))
     for (const r of content.bundle.resources) {
       if (r.defaultLimit > 0) sim.limits[r.id] = r.defaultLimit
     }
@@ -139,11 +155,17 @@ export class Simulation {
     placeStartingBuildings(sim, map.spawnX, map.spawnY)
     createFounders(sim, map.spawnX, map.spawnY)
     for (const system of systems) system.restore?.(sim)
-    sim.notify('info', `${options.name} is founded. Build homes before the first winter.`)
+    sim.notify('info', `${options.name} is founded around its Steamforge. Build homes before the first winter and set engineers to work at a Drafting Office.`)
     return sim
   }
 
   // ---------------------------------------------------------------- content lookups
+
+  /** The colony's headquarters (the Steamforge). */
+  headquarters(): Building | undefined {
+    for (const b of this.buildings.values()) if (this.def(b).headquarters) return b
+    return undefined
+  }
 
   def(b: Building | string): BuildingDef {
     return this.content.buildings.get(typeof b === 'string' ? b : b.def)!
@@ -248,8 +270,9 @@ export class Simulation {
     return out
   }
 
-  notify(level: Notice['level'], text: string, at?: number): void {
+  notify(level: Notice['level'], text: string, at?: number, dispatch?: string): void {
     const notice: Notice = { id: this.noticeId++, tick: this.tick, level, text, at }
+    if (dispatch) notice.dispatch = dispatch
     this.notices.push(notice)
     if (this.notices.length > MAX_NOTICES) this.notices.shift()
     this.emit({ type: 'notice', notice })
@@ -288,6 +311,8 @@ export class Simulation {
       case 'road': {
         const road = this.rules.roads.findIndex((r) => r.id === action.road)
         if (road < 0) return { ok: false, reason: 'Unknown road.' }
+        const roadLock = lockedBy(this, 'road', action.road)
+        if (roadLock) return { ok: false, reason: `Requires research: ${roadLock.name}.` }
         let placed = 0
         for (const tile of action.tiles) {
           if (tile < 0 || tile >= this.world.size) continue
@@ -310,6 +335,48 @@ export class Simulation {
         }
         return { ok: true }
       }
+      case 'conduit': {
+        const n = this.rules.networks.findIndex((x) => x.id === action.network)
+        if (n < 0) return { ok: false, reason: 'Unknown network.' }
+        const lock = lockedBy(this, 'network', action.network)
+        if (lock) return { ok: false, reason: `Requires research: ${lock.name}.` }
+        let placed = 0
+        for (const tile of action.tiles) {
+          if (tile < 0 || tile >= this.world.size) continue
+          if (!this.world.isLand(tile) || this.world.building[tile] !== 0) continue
+          if (this.world.conduit[tile] & (1 << n) || this.conduitJobs.has(tile * 8 + n)) continue
+          this.conduitJobs.set(tile * 8 + n, { tile, network: action.network })
+          this.queueClear(tile)
+          this.emit({ type: 'conduit', tile })
+          placed++
+        }
+        return placed > 0 ? { ok: true } : { ok: false, reason: 'Nothing to lay there.' }
+      }
+      case 'removeConduit': {
+        const n = this.rules.networks.findIndex((x) => x.id === action.network)
+        if (n < 0) return { ok: false, reason: 'Unknown network.' }
+        for (const tile of action.tiles) {
+          if (tile < 0 || tile >= this.world.size) continue
+          if (this.conduitJobs.delete(tile * 8 + n)) this.emit({ type: 'conduit', tile })
+          else if (this.world.conduit[tile] & (1 << n)) {
+            this.world.conduit[tile] &= ~(1 << n)
+            this.energy.dirty = true
+            this.emit({ type: 'conduit', tile })
+          }
+        }
+        return { ok: true }
+      }
+      case 'research': {
+        const tech = this.content.research.get(action.tech)
+        if (!tech) return { ok: false, reason: 'Unknown research.' }
+        if (this.research.done.includes(tech.id)) return { ok: false, reason: `${tech.name} is already researched.` }
+        this.research.queue = researchPlan(this, tech.id)
+        return { ok: true }
+      }
+      case 'clearResearch': {
+        this.research.queue = []
+        return { ok: true }
+      }
       case 'markClear': {
         for (const tile of action.tiles) {
           if (tile < 0 || tile >= this.world.size || this.world.feature[tile] === 0) continue
@@ -325,7 +392,7 @@ export class Simulation {
       case 'demolish': {
         const b = this.buildings.get(action.building)
         if (!b) return { ok: false, reason: 'No such building.' }
-        if (this.def(b).id === 'guildhall') return { ok: false, reason: 'The Guildhall cannot be demolished.' }
+        if (this.def(b).headquarters) return { ok: false, reason: `The ${this.def(b).name} cannot be demolished.` }
         refund(this, b, b.site ? 1 : this.rules.construction.refundOnDemolish)
         removeBuilding(this, b)
         return { ok: true }
@@ -432,6 +499,9 @@ export class Simulation {
       buildings: [...this.buildings.values()],
       citizens: [...this.citizens.values()],
       roadJobs: [...this.roadJobs.values()],
+      conduitJobs: [...this.conduitJobs.values()],
+      research: this.research,
+      story: this.story,
       clearQueue: [...this.clearQueue],
       limits: this.limits,
       builderTarget: this.builderTarget,
@@ -443,9 +513,8 @@ export class Simulation {
   }
 
   static deserialize(content: Content, snapshot: ColonySnapshot): Simulation {
-    if (snapshot.v !== SAVE_VERSION) throw new Error(`Unsupported save version ${snapshot.v}.`)
     // Round-trip through JSON so the live simulation never aliases the snapshot object.
-    const s = JSON.parse(JSON.stringify(snapshot)) as ColonySnapshot
+    const s = migrate(content, JSON.parse(JSON.stringify(snapshot)) as ColonySnapshot)
     const sim = new Simulation(content, s.options, World.deserialize(s.world))
     sim.tick = s.tick
     sim.rng.state32 = s.rng
@@ -456,6 +525,9 @@ export class Simulation {
     }
     for (const c of s.citizens) sim.citizens.set(c.id, c)
     for (const r of s.roadJobs) sim.roadJobs.set(r.tile, r)
+    for (const j of s.conduitJobs) sim.conduitJobs.set(j.tile * 8 + sim.rules.networks.findIndex((n) => n.id === j.network), j)
+    sim.research = s.research
+    sim.story = s.story
     sim.clearQueue = new Set(s.clearQueue)
     sim.limits = s.limits
     sim.builderTarget = s.builderTarget
@@ -478,8 +550,39 @@ export class Simulation {
     this.stats.consumed[res] = (this.stats.consumed[res] ?? 0) + qty
   }
 
+  /** Whether research has unlocked a building (or it never needed any). */
+  unlocked(defId: string): boolean {
+    return isUnlocked(this, 'building', defId)
+  }
+
+  /** Research that can be started right now. */
+  availableResearch(): string[] {
+    return this.content.bundle.research.filter((t) => canResearch(this, t)).map((t) => t.id)
+  }
+
   /** Drops a citizen's current task (used when jobs change). */
   interrupt(c: Citizen): void {
     if (c.task) abortTask(this, c)
   }
+}
+
+/**
+ * Upgrades older snapshots. Version 1 predates research, energy networks and the story: its Guildhall becomes the
+ * headquarters, every research counts as done (a legacy colony keeps what it had built) and every dispatch as
+ * already received.
+ */
+function migrate(content: Content, s: ColonySnapshot): ColonySnapshot {
+  if (s.v === SAVE_VERSION) return s
+  if (s.v !== 1) throw new Error(`Unsupported save version ${s.v}.`)
+  const hq = content.bundle.buildings.find((b) => b.headquarters)
+  for (const b of s.buildings) {
+    if (b.def === 'guildhall' && hq && !content.buildings.has('guildhall')) b.def = hq.id
+    delete b.data.steam
+  }
+  s.world.conduit = encodeArray(new Uint8Array(s.world.width * s.world.height))
+  s.conduitJobs = []
+  s.research = { done: content.bundle.research.map((t) => t.id), queue: [], progress: {} }
+  s.story = { sent: content.bundle.story.dispatches.map((d) => d.id) }
+  s.v = SAVE_VERSION
+  return s
 }
