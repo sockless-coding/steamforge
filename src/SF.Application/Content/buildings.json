@@ -1647,6 +1647,46 @@
     }
   },
   {
+    "id": "guild-hall",
+    "name": "Guild Hall",
+    "category": "civic",
+    "description": "A pillared hall where one guild meets, keeps its banners and settles its grievances. Choose which guild it serves: that guild's standing is much higher while the hall stands, and when it strikes, its members gather here.",
+    "size": [3, 2],
+    "cost": { "resources": { "stone": 30, "logs": 16, "iron": 4 }, "work": 200 },
+    "components": {
+      "guildHall": { "standing": 15 }
+    },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [2.85, 0.25, 1.85] },
+        { "shape": "box", "mat": "stone", "pos": [0, 0.25, 0.75], "size": [2.4, 0.08, 0.3] },
+        { "shape": "box", "mat": "brick", "pos": [0, 0.25, -0.2], "size": [2.4, 1.4, 1.25] },
+        { "shape": "box", "mat": "stone", "pos": [0, 1.65, -0.05], "size": [2.6, 0.14, 1.6] },
+        { "shape": "gable", "mat": "slate", "pos": [0, 1.79, -0.05], "size": [1.6, 0.6, 2.6], "rot": 90 },
+        { "shape": "cylinder", "mat": "stone", "pos": [-0.95, 0.33, 0.62], "size": [0.18, 1.32, 0.18] },
+        { "shape": "cylinder", "mat": "stone", "pos": [-0.32, 0.33, 0.62], "size": [0.18, 1.32, 0.18] },
+        { "shape": "cylinder", "mat": "stone", "pos": [0.32, 0.33, 0.62], "size": [0.18, 1.32, 0.18] },
+        { "shape": "cylinder", "mat": "stone", "pos": [0.95, 0.33, 0.62], "size": [0.18, 1.32, 0.18] },
+        { "shape": "box", "mat": "plank", "pos": [0, 0.25, 0.43], "size": [0.42, 0.8, 0.05] },
+        { "shape": "torus", "mat": "stone", "pos": [0, 1.05, 0.44], "size": [0.48, 0.07, 0], "axis": "z", "arc": 180 },
+        { "shape": "box", "mat": "glass", "pos": [-0.65, 0.65, 0.44], "size": [0.26, 0.6, 0.03] },
+        { "shape": "box", "mat": "glass", "pos": [0.65, 0.65, 0.44], "size": [0.26, 0.6, 0.03] },
+        { "shape": "gear", "mat": "brassplate", "pos": [0, 2.0, 0.76], "size": [0.5, 0.05, 0.5], "axis": "z" },
+        { "shape": "sphere", "mat": "brass", "pos": [0, 2.0, 0.79], "size": [0.12, 0.12, 0.06] },
+        { "shape": "box", "mat": "redpaint", "pos": [-0.62, 1.05, 0.73], "size": [0.3, 0.55, 0.02] },
+        { "shape": "box", "mat": "redpaint", "pos": [0.62, 1.05, 0.73], "size": [0.3, 0.55, 0.02] },
+        { "shape": "box", "mat": "brass", "pos": [-0.62, 1.6, 0.74], "size": [0.36, 0.03, 0.03] },
+        { "shape": "box", "mat": "brass", "pos": [0.62, 1.6, 0.74], "size": [0.36, 0.03, 0.03] },
+        { "shape": "cylinder", "mat": "darkiron", "pos": [1.25, 0.25, 0.75], "size": [0.05, 2.2, 0.05] },
+        { "shape": "box", "mat": "redpaint", "pos": [1.25, 2.05, 0.95], "size": [0.03, 0.3, 0.4] },
+        { "shape": "sphere", "mat": "brass", "pos": [1.25, 2.47, 0.75], "size": [0.08, 0.08, 0.08] },
+        { "shape": "chimney", "mat": "brick", "pos": [-0.9, 1.75, -0.6], "size": [0.24, 0.7, 0.24] },
+        { "shape": "sphere", "mat": "lamp", "pos": [-0.32, 1.15, 0.75], "size": [0.08, 0.1, 0.08] },
+        { "shape": "sphere", "mat": "lamp", "pos": [0.32, 1.15, 0.75], "size": [0.08, 0.1, 0.08] }
+      ]
+    }
+  },
+  {
     "id": "safety-valve",
     "name": "Safety Valve",
     "category": "power",

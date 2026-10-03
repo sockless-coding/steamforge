@@ -12,7 +12,7 @@ public static class ContentValidator
     public static readonly HashSet<string> ComponentKinds =
         ["storage", "housing", "shelter", "workplace", "firefighting", "gatherer", "producer", "field", "generator", "consumer", "research",
          "amenity", "lighting", "airship", "assembler", "tramDepot", "pneumatic", "valve", "emitter", "scrubber", "clinic",
-         "booster", "tractor"];
+         "booster", "tractor", "guildHall"];
 
     /// <summary>Components that are worked by a building's staff; they need a workplace component.</summary>
     public static readonly HashSet<string> StaffedComponents = ["gatherer", "producer", "field", "research", "assembler"];
@@ -23,6 +23,8 @@ public static class ContentValidator
     public static readonly HashSet<string> Shapes = ["box", "cylinder", "cone", "sphere", "gable", "hip", "gear", "chimney", "stack", "tank", "pipe", "torus", "dome"];
     public static readonly HashSet<string> Emitters = ["smoke", "steam"];
     public static readonly HashSet<string> ConduitStyles = ["duct", "main", "lagged", "water", "wire"];
+    public static readonly HashSet<string> PetitionEffects = ["standing", "mood", "workFactor", "mechanise", "noAutomatons", "resource", "credit", "happiness"];
+    public static readonly HashSet<string> GuildFactors = ["fed", "warm", "health", "happiness", "soot", "nightShift", "hall"];
     public static readonly HashSet<string> NatureModels = ["tree", "rock", "ironstone", "bush", "mushroom"];
     public static readonly HashSet<string> Modifiers = ["winterSeverity", "disasterRate", "productionMultiplier", "birthRate", "spoilageRate", "wearRate", "hungerRate", "sootRate"];
     public static readonly HashSet<string> RequiredProfessions = ["child", "laborer", "builder"];
@@ -57,6 +59,8 @@ public static class ContentValidator
         Unique("network", c.Rules.Networks, n => n.Id);
         Unique("research", c.Research, t => t.Id);
         Unique("dispatch", c.Story.Dispatches, d => d.Id);
+        Unique("guild", c.Guilds, g => g.Id);
+        Unique("petition", c.Petitions, p => p.Id);
 
         var resources = c.Resources.ToDictionary(r => r.Id);
         var features = c.Features.Select(f => f.Id).ToHashSet();
@@ -297,6 +301,9 @@ public static class ContentValidator
                     Check(cfg.TryGetProperty("radius", out var tr) && tr.GetDouble() > 0, $"{where} tractor needs a positive radius.");
                     Check(cfg.TryGetProperty("bonus", out var bonus) && bonus.GetDouble() > 0, $"{where} tractor needs a positive bonus.");
                     break;
+                case "guildHall":
+                    Check(cfg.TryGetProperty("standing", out var hs) && hs.GetDouble() >= 0, $"{where} guild hall needs a standing of 0 or more.");
+                    break;
                 case "assembler":
                     Check(Keys("inputs").Any(), $"{where} assembler needs inputs.");
                     CheckStock($"{where} assembler", Keys("inputs"));
@@ -328,6 +335,55 @@ public static class ContentValidator
                     Check(cfg.TryGetProperty("points", out var points) && points.GetDouble() > 0, $"{where} research needs positive points.");
                     Check(cfg.TryGetProperty("seconds", out var seconds) && seconds.GetDouble() > 0, $"{where} research needs positive seconds.");
                     break;
+            }
+        }
+
+        // Guilds and petitions
+        var guilds = c.Guilds.Select(g => g.Id).ToHashSet();
+        if (r.Guilds is { } gr)
+        {
+            Check(gr.Drift is > 0 and <= 1, "Rules: guilds.drift must be in (0, 1].");
+            Check(gr.Weights.Keys.All(GuildFactors.Contains), "Rules: guilds.weights has an unknown factor.");
+            Check(gr.Unrest <= gr.Strike && gr.Strike <= gr.WorkToRule && gr.WorkToRule <= gr.High,
+                "Rules: guild thresholds must rise from unrest through strike and workToRule to high.");
+            Check(gr.WorkToRuleFactor is > 0 and <= 1, "Rules: guilds.workToRuleFactor must be in (0, 1].");
+            Check(new[] { gr.SabotageChance, gr.EmigrationChance }.All(v => v is >= 0 and <= 1), "Rules: guild unrest chances must be 0-1.");
+            Check(gr.PetitionWaitMonths > 0, "Rules: guilds.petitionWaitMonths must be positive.");
+        }
+        else
+        {
+            Check(c.Guilds.Count == 0, "Rules: guild settings are required when guilds are defined.");
+        }
+
+        foreach (var g in c.Guilds)
+        {
+            Check(g.Automatons.Scope is "trade" or "colony", $"Guild {g.Id} automatons scope must be 'trade' or 'colony'.");
+        }
+
+        foreach (var p in c.Professions)
+        {
+            Check(p.Guild is null || guilds.Contains(p.Guild), $"Profession {p.Id} belongs to unknown guild '{p.Guild}'.");
+            Check(p.Guild is null || !RequiredProfessions.Contains(p.Id), $"Profession {p.Id} cannot belong to a guild.");
+        }
+
+        foreach (var p in c.Petitions)
+        {
+            var where = $"Petition {p.Id}";
+            Check(guilds.Contains(p.Guild), $"{where} comes from unknown guild '{p.Guild}'.");
+            Check(p.Weight >= 0, $"{where} has a negative weight.");
+            Check(p.Choices.Count is >= 1 and <= 4, $"{where} needs 1-4 choices.");
+            Check(p.When.Season is null || seasons.Contains(p.When.Season), $"{where} waits for an unknown season.");
+            Check(p.When.Building is null || buildings.Contains(p.When.Building), $"{where} waits for an unknown building.");
+            Check(p.When.Resource is null || Res(p.When.Resource.Id), $"{where} waits for an unknown resource.");
+            foreach (var e in p.Choices.SelectMany(ch => ch.Effects))
+            {
+                Check(PetitionEffects.Contains(e.Kind), $"{where} has an unknown effect '{e.Kind}'.");
+                Check(e.Guild is null || guilds.Contains(e.Guild), $"{where} affects unknown guild '{e.Guild}'.");
+                Check(e.Kind is not ("mood" or "workFactor" or "noAutomatons") || e.Months is > 0, $"{where}: a {e.Kind} effect needs positive months.");
+                Check(e.Kind != "workFactor" || e.Factor is > 0, $"{where}: a workFactor effect needs a positive factor.");
+                Check(e.Kind != "mechanise" || e.Value is not null, $"{where}: a mechanise effect needs a value.");
+                Check(e.Kind != "resource" || e.Resource == "food" || Res(e.Resource ?? string.Empty), $"{where} moves an unknown resource.");
+                Check(e.Kind is not ("standing" or "mood" or "resource" or "credit" or "happiness") || e.Amount is not null, $"{where}: a {e.Kind} effect needs an amount.");
             }
         }
 
@@ -439,6 +495,12 @@ public static class ContentValidator
             foreach (var tech in p.StartingResearch ?? [])
             {
                 Check(techs.Contains(tech), $"{where} starts with unknown research '{tech}'.");
+            }
+
+            if (p.GuildTemperament is { } gt)
+            {
+                Check(gt.StartingStanding is >= 0 and <= 100, $"{where} guild starting standing must be 0-100.");
+                Check(gt.StandingDrift > 0 && gt.PetitionsPerYear >= 0, $"{where} guild temperament needs a positive drift and non-negative petitions.");
             }
 
             foreach (var m in Modifiers)

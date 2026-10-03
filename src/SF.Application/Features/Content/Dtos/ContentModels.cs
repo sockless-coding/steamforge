@@ -60,7 +60,8 @@ public sealed record RulesDef(
     IReadOnlyList<RoadDef> Roads,
     IReadOnlyList<NetworkDef> Networks,
     WindRules? Wind,
-    SootRules? Soot);
+    SootRules? Soot,
+    GuildRules? Guilds);
 
 public sealed record ResourceDef(string Id, string Name, string Category, string Color, double SpoilagePerYear, int DefaultLimit);
 
@@ -97,7 +98,51 @@ public sealed record RecipeDef(string Id, string Name, Dictionary<string, double
 
 public sealed record CropDef(string Id, string Name, string Resource, double YieldPerTile, int GrowthMonths);
 
-public sealed record ProfessionDef(string Id, string Name, string Color);
+public sealed record ProfessionDef(string Id, string Name, string Color, string? Guild);
+
+public sealed record GuildAutomatons(double Weight, string Scope);
+
+/// <summary>A guild of trades with a standing the player must keep up.</summary>
+public sealed record GuildDef(string Id, string Name, string Short, string Color, GuildAutomatons Automatons);
+
+public sealed record PetitionResource(string Id, double Min);
+
+/// <summary>When a guild may raise a petition: every field that is set must hold.</summary>
+public sealed record PetitionCondition(
+    string? Season,
+    int? MinMembers,
+    double? MinStanding,
+    double? MaxStanding,
+    string? Building,
+    int? AutomatonsInTrade,
+    PetitionResource? Resource,
+    double? Credit,
+    double? Food,
+    double? SootAbove);
+
+/// <summary>One consequence of answering a petition (see the client's PetitionEffect).</summary>
+public sealed record PetitionEffect(string Kind, string? Guild, double? Amount, double? Factor, int? Months, bool? Value, string? Resource);
+
+public sealed record PetitionChoice(string Label, IReadOnlyList<PetitionEffect> Effects);
+
+public sealed record PetitionDef(string Id, string Guild, string Title, string Text, double Weight, PetitionCondition When, IReadOnlyList<PetitionChoice> Choices);
+
+/// <summary>Guild standing: monthly drift towards a target, and the thresholds for pride, work-to-rule, strikes and unrest.</summary>
+public sealed record GuildRules(
+    double Drift,
+    double Base,
+    Dictionary<string, double> Weights,
+    double High,
+    double HighWorkBonus,
+    double WorkToRule,
+    double WorkToRuleFactor,
+    double Strike,
+    double Unrest,
+    double SabotageChance,
+    double EmigrationChance,
+    double PetitionWaitMonths);
+
+public sealed record GuildTemperament(double StartingStanding, double StandingDrift, double PetitionsPerYear);
 
 public sealed record EventDef(
     string Id,
@@ -137,7 +182,8 @@ public sealed record DifficultyPreset(
     Dictionary<string, double> StartingResources,
     IReadOnlyList<StartingBuilding> StartingBuildings,
     IReadOnlyList<string>? StartingResearch,
-    Dictionary<string, double> Modifiers);
+    Dictionary<string, double> Modifiers,
+    GuildTemperament? GuildTemperament);
 
 public sealed record DifficultyCatalog(string DefaultPreset, IReadOnlyList<DifficultyPreset> Presets);
 
@@ -169,6 +215,8 @@ public sealed class ContentSnapshot
         MapGen = Read<MapGenDef>("mapgen");
         Research = Read<List<ResearchDef>>("research");
         Story = Read<StoryDef>("story");
+        Guilds = Read<List<GuildDef>>("guilds");
+        Petitions = Read<List<PetitionDef>>("petitions");
 
         // Assemble the bundle once: {"version": ..., "<kind>": <document>, ...}.
         using var stream = new MemoryStream();
@@ -205,6 +253,8 @@ public sealed class ContentSnapshot
     public MapGenDef MapGen { get; }
     public IReadOnlyList<ResearchDef> Research { get; }
     public StoryDef Story { get; }
+    public IReadOnlyList<GuildDef> Guilds { get; }
+    public IReadOnlyList<PetitionDef> Petitions { get; }
 
     public bool HasPreset(string id) => Difficulty.Presets.Any(p => p.Id == id);
 }
@@ -212,5 +262,5 @@ public sealed class ContentSnapshot
 public static class ContentKinds
 {
     /// <summary>Every content document, in bundle order. Each maps to <c>Content/&lt;kind&gt;.json</c>.</summary>
-    public static readonly string[] All = ["rules", "resources", "features", "buildings", "recipes", "crops", "professions", "events", "difficulty", "mapgen", "research", "story"];
+    public static readonly string[] All = ["rules", "resources", "features", "buildings", "recipes", "crops", "professions", "events", "difficulty", "mapgen", "research", "story", "guilds", "petitions"];
 }

@@ -4,7 +4,7 @@ Victorian-steampunk survival city builder in the spirit of Banished, rendered in
 
 ## Standing rules
 
-- **Content is data.** Resources, nature features, buildings (including their 3D models), recipes, crops, professions, events, difficulty presets, map generation, energy networks (`rules.json`), research and the story are JSON under `src/SF.Application/Content/`. The server merges content packs (`Content/packs/<pack>/<kind>.json`, merged by `id`), validates everything with `ContentValidator` (startup fails on invalid content), stores it in `ContentDocuments`, and serves it verbatim at `GET /api/content` with an ETag.
+- **Content is data.** Resources, nature features, buildings (including their 3D models), recipes, crops, professions, guilds, guild petitions, events, difficulty presets, map generation, energy networks (`rules.json`), research and the story are JSON under `src/SF.Application/Content/`. The server merges content packs (`Content/packs/<pack>/<kind>.json`, merged by `id`), validates everything with `ContentValidator` (startup fails on invalid content), stores it in `ContentDocuments`, and serves it verbatim at `GET /api/content` with an ETag.
 - **The simulation is deterministic.** `src/SF.Client/src/game/sim` is pure TypeScript with no DOM: never use `Math.random` or the wall clock there, iterate in insertion order, and draw all randomness from `sim.rng`. Rendering and audio may use `Math.random` freely.
 - **Pause and build.** Every player command goes through `Simulation.perform(action)` and is valid while paused; placements create construction sites that only progress while time runs. Do not add commands that bypass `perform`.
 - **The renderer only reads.** `game/render` never mutates simulation state. It reacts to `SimEvent`s and re-reads state every frame.
@@ -16,6 +16,7 @@ Victorian-steampunk survival city builder in the spirit of Banished, rendered in
 
 - **New building**: add it to `buildings.json` (size, cost, components, model parts). No code needed if it uses existing component kinds. Lock it behind research by listing it in a `research.json` item's `unlocks`; make it need energy with a `consumer` component (`required`, `workBonus` or `heatBonus`).
 - **New research / dispatch**: data only (`research.json`, `story.json`); the validator checks references and requirement cycles.
+- **Guilds and petitions**: data only (`guilds.json`, `petitions.json`, `guild` on professions, `rules.json` → `guilds`, preset `guildTemperament`). A new petition effect kind needs a case in `applyEffect` (`game/sim/guilds.ts`), the client `PetitionEffect` type and `ContentValidator.PetitionEffects`.
 - **New energy network**: add it to `rules.json` → `networks` (max 8; a converter's input network must come first), then use it in `generator`/`consumer` components.
 - **Conduit grades and pressure**: a network's `conduit` is its basic grade and `upgrades` lists better ones (each with `lossPerTile` and a render `style`); research unlocks grades via `unlocks.conduits`. Pressure (head) falls along conduits from each lit generator; a `booster` component restores it. Changing the network order shifts conduit bits, so it needs a save migration.
 - **Coal smoke**: give a building an `emitter` (`soot` per second while working, `stack` tiles downwind); `scrubber`

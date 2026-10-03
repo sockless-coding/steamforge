@@ -24,7 +24,8 @@ ledger. The charter counts as fulfilled when an Analytical Engine stands in the 
 2. Build: lay out homes, storage and workplaces around the Steamforge, and lay steam ducts and mains to them.
    Pressure falls along every tile of pipe, so a town grows compact around its boilers. Every site goes through
    clearing, then material delivery, then building.
-3. Staff: assign professions in the Guild panel. Anyone without a job is a laborer.
+3. Staff: assign professions in the Guild panel. Anyone without a job is a laborer. Every trade belongs to a guild,
+   and the guilds must be kept on side (see Guilds).
 4. Research: engineers at a Drafting Office unlock new buildings, roads, conduits and recipes.
 5. Survive the seasons: crops grow from spring to autumn, and winter drains warmth and food.
 6. Grow: couples need empty homes to marry and have children, and travellers sometimes ask to join.
@@ -138,6 +139,7 @@ All values live in content JSON.
 | Trade | Airship Mast (see below) |
 | Logistics | Steam Tram Depot, Pneumatic Depot, Safety Valve (see below) |
 | Automatons | Automaton Works (see below) |
+| Guilds | Guild Hall (one guild meets there; see Guilds) |
 
 ## The Steamforge
 
@@ -237,14 +239,74 @@ Prices and factors live in `rules.json` (`trade`) and the mast's `airship` compo
 
 ## Clockwork automatons
 
-The Automaton Works (needs steam) assembles automatons from cogs, copper and iron, up to an optional target count.
-Automatons join the workforce like adult laborers but:
+The Automaton Works (needs steam; Clockwork Automata research, tier 4 after Precision Machining) assembles
+automatons from cogs, copper and iron, up to an optional target count. Automatons join the workforce like adult
+laborers and take a place in any trade whose guild allows them. Unlike people, automatons:
 
 - never eat, freeze, fall ill, marry or need a home, and work at a steady 90% with no tools
 - wind themselves with 2 coal from storage every 6 months; without coal they run down and stand idle
 - seize up for good after about 12 years of service (`rules.json` → `automaton`)
 
 A colony with only automatons left is still lost.
+
+## Guilds (`guilds.json`, `petitions.json`)
+
+Each profession names its guild (`professions.json` → `guild`). Laborers, builders and children belong to none.
+
+| Guild | Trades | Automatons |
+|---|---|---|
+| Brotherhood of Stokers & Miners | stoker, miner, quarryman, smelter, woodcutter | −40 at full mechanisation of its trades |
+| Artisans' Guild | smith, tailor, machinist, baker, canner, apothecary | −30 in its trades |
+| Engineers' Institute | engineer, galvanist | +20 at full mechanisation of the colony |
+| Land & Water Union | farmer, fisher, hunter, forester, glasshouse keeper | −20 in its trades |
+
+**Standing** (0–100, in the save) is recomputed monthly (`rules.json` → `guilds`):
+
+1. Lingering petition effects expire.
+2. The guild's **target** is worked out from its members:
+   - `base` (5)
+   - weights times the share fed (15), warm (10), mean health (10) and mean happiness (25)
+   - coal smoke at their workplaces (−25)
+   - lamplit night shifts (−12)
+   - a Guild Hall serving the guild (+15)
+   - the guild's automaton weight times the mechanisation share
+   - petition moods
+
+   A guild with no members heads for 50. A fed, warm, unremarkable colony sits around 60. The Guild panel lists
+   every contribution.
+3. Standing closes 30% of the gap to the target. Losses are scaled by the preset's `standingDrift`.
+
+**Effects of standing:**
+
+| Standing | Effect |
+|---|---|
+| 70 or more | Proud: members work 10% faster |
+| Below 30 | Working to rule: members work at 70% |
+| Below 15 | Strike: members leave their posts and gather at their Guild Hall (or the Steamforge) until standing is back above 20 |
+| 8 or less | Unrest: each month a 35% chance of sabotage and a 20% chance that a member's household emigrates |
+
+Sabotage smashes an automaton working the guild's trades, bursts a steam main, or sets one of the guild's
+workplaces alight. Emigrants count as departures, not deaths.
+
+**Mechanisation.** Each guild has a policy (Guild panel, `setGuildPolicy`) allowing or forbidding automatons in its
+trades. Forbidding them releases those already there.
+
+**The Guild Hall** (Masonry) serves one guild, chosen in its inspector. By default it serves the lowest-standing
+guild without a hall.
+
+**Petitions.**
+- Guilds raise petitions monthly at the preset's `petitionsPerYear`, never in the grace year, one at a time, from
+  those whose conditions hold.
+- Conditions: season, members, standing range, a building standing, automatons in the guild's trades, a resource,
+  credit, food, or soot at members' workplaces.
+- Each petition has two to four choices. Their effects: `standing` (any guild), `mood` (a target offset for some
+  months), `workFactor`, `mechanise`, `noAutomatons` (a pledge that stops the Automaton Works), `resource` (`food`
+  takes a mix), `credit`, `happiness`.
+- A petition left for a month counts as its last choice.
+
+**Display.** The HUD shows the four guilds as enamel shields bearing their standing; a striking guild's shield
+pulses red. The Guild panel shows each guild's meter (with its target and the 15/30/70 marks), its contributions and
+its automaton policy. The citizen inspector shows the guild.
 
 ## Steam logistics and pressure
 
@@ -317,7 +379,14 @@ Coal smoke is simulated (`soot.ts`, settings in `rules.json` → `soot` and `win
 | Ironclad | 4 | Thin stores | ×1.35 | ×1.6 | ×0.95 | ×1.3 |
 | Brass Inferno | 3 | Scraps | ×1.7 | ×2.4 | ×0.85 | ×1.6 |
 
-Presets also scale `birthRate`, `spoilageRate`, `wearRate` and `hungerRate`.
+Presets also scale `birthRate`, `spoilageRate`, `wearRate` and `hungerRate`, and set a `guildTemperament`:
+
+| Preset | Starting standing | Standing losses | Petitions per year |
+|---|---|---|---|
+| Tinkerer | 70 | ×0.6 | 1.5 |
+| Engineer | 55 | ×1 | 2 |
+| Ironclad | 45 | ×1.3 | 2.5 |
+| Brass Inferno | 35 | ×1.6 | 3 |
 
 ## Events (`events.json`)
 
@@ -409,7 +478,7 @@ builds the land in layers:
 
 ## Persistence and backend
 
-- Saves are full snapshots (gzip + base64), currently version 6, migrated one version at a time:
+- Saves are full snapshots (gzip + base64), currently version 7, migrated one version at a time:
   - Version 1: the Guildhall becomes the Steamforge, all research counts as done and all dispatches as received.
   - Version 2: gains empty trade orders and no credit.
   - Version 3: the clock is rescaled from 40- to 120-second months so the colony keeps its date. It gains no waiting
@@ -423,6 +492,7 @@ builds the land in layers:
       their timber is refunded.
     - Removed research is dropped. A colony with Steam Engines gains Hydraulics, with a notice that boilers now need
       feedwater.
+  - Version 6: gains guilds at the preset's starting standing, all mechanised, with no petition waiting.
 - Snapshots hold the soot and grime fields as base64 `Float32Array`s, and the wind in `weather`.
 - Local slots and an autosave (every 3 minutes, on pause and on exit) live in IndexedDB. Six cloud slots are
   available per account (`/api/saves`).

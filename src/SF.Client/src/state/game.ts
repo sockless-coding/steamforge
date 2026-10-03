@@ -77,6 +77,40 @@ export interface CitizenInfo {
   carrying: string | null
   /** Clockwork automatons: months of winding left out of a full winding. */
   automaton: { wind: number; windMonths: number } | null
+  /** The citizen's guild, and whether it is on strike. */
+  guild: { name: string; color: string; striking: boolean } | null
+}
+
+/** A guild's standing for the badges and the Guild panel. */
+export interface GuildRow {
+  id: string
+  name: string
+  short: string
+  color: string
+  description: string
+  standing: number
+  /** Where standing is heading, and what makes it up. */
+  target: number
+  parts: [string, number][]
+  mood: 'proud' | 'content' | 'grumbling' | 'workToRule' | 'striking'
+  members: number
+  automatonsInTrade: number
+  mechanise: boolean
+  /** Automatons please (positive) or anger (negative) this guild. */
+  automatonWeight: number
+  hall: boolean
+}
+
+/** A guild petition waiting for an answer. */
+export interface GuildPetitionInfo {
+  guild: string
+  short: string
+  color: string
+  title: string
+  text: string
+  choices: string[]
+  /** Share of the guild's patience left (1 when raised, 0 when unanswered counts as refused). */
+  patience: number
 }
 
 export interface ProfessionRow {
@@ -173,6 +207,10 @@ export interface HudState {
   /** A finished airship mast stands, so trade orders take effect. */
   hasMast: boolean
   air: AirInfo
+  guilds: GuildRow[]
+  guildPetition: GuildPetitionInfo | null
+  /** No automaton will be built for this many more months (a pledge to the guilds). */
+  automatonPledge: number
 }
 
 /** Coal smoke over the colony, for the barometer and wind vane. */
@@ -228,6 +266,9 @@ export const initialHud: HudState = {
   trade: {},
   hasMast: false,
   air: { homes: 0, worst: 0, safe: 0.25, windFrom: 0, windSpeed: 0, view: false },
+  guilds: [],
+  guildPetition: null,
+  automatonPledge: 0,
 }
 
 /** Snapshot of the running colony for React. The GameController publishes into it; components only read. */

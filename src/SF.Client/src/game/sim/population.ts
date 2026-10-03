@@ -1,3 +1,4 @@
+import { automatonsAllowed } from './guilds'
 import { familyName, firstName, surname } from './names'
 import type { Simulation } from './simulation'
 import { abortTask } from './tasks'
@@ -87,6 +88,7 @@ const causeText: Record<string, string> = {
   soot: 'died of black lung',
   fire: 'perished in a fire',
   wear: 'seized up for good',
+  sabotage: 'was smashed by saboteurs',
 }
 
 export function killCitizen(sim: Simulation, c: Citizen, cause: string): void {
@@ -102,6 +104,20 @@ export function killCitizen(sim: Simulation, c: Citizen, cause: string): void {
   sim.housingDirty = true
   sim.emit({ type: 'citizen', id: c.id, change: 'died', cause })
   sim.notify(cause === 'age' || cause === 'wear' ? 'info' : 'bad', `${c.name} ${causeText[cause] ?? 'died'}.`, sim.world.index(Math.floor(c.x), Math.floor(c.y)))
+}
+
+/** A citizen leaves the colony for good (not a death): their job, home and partner are given up. */
+export function emigrate(sim: Simulation, c: Citizen): void {
+  abortTask(sim, c)
+  if (c.workplace) fireWorker(sim, c.id)
+  leaveHome(sim, c)
+  const partner = sim.citizens.get(c.partner)
+  if (partner) partner.partner = 0
+  sim.citizens.delete(c.id)
+  sim.stats.departures = (sim.stats.departures ?? 0) + 1
+  sim.jobsDirty = true
+  sim.housingDirty = true
+  sim.emit({ type: 'citizen', id: c.id, change: 'left' })
 }
 
 function leaveHome(sim: Simulation, c: Citizen): void {
@@ -162,16 +178,19 @@ export function assignJobs(sim: Simulation): void {
   }
   for (const b of sim.buildings.values()) {
     if (b.site || b.fire > 0 || !sim.def(b).components.workplace) continue
+    const bots = automatonsAllowed(sim, b)
     while (b.workers.length < b.workerTarget && pool.length > 0) {
-      let best = 0
+      let best = -1
       let bestD = Infinity
       for (let i = 0; i < pool.length; i++) {
+        if (!bots && pool[i].automaton) continue
         const d = Math.abs(pool[i].x - (sim.world.xOf(b.door) + 0.5)) + Math.abs(pool[i].y - (sim.world.yOf(b.door) + 0.5))
         if (d < bestD) {
           bestD = d
           best = i
         }
       }
+      if (best < 0) break
       hire(sim, pool.splice(best, 1)[0], b)
     }
   }

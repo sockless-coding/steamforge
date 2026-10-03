@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLoadedContent } from '../../api/content'
 import type { BuildingCategory, BuildingDef } from '../../api/types'
 import type { GameController } from '../../game/GameController'
-import { useHud, type AirInfo, type HudState, type PetitionInfo, type Tool } from '../../state/game'
+import { useHud, type AirInfo, type GuildPetitionInfo, type GuildRow, type HudState, type PetitionInfo, type Tool } from '../../state/game'
 import { useSettings } from '../../state/settings'
 import { Button } from '../../ui/components'
 import { Icon, type IconName } from '../../ui/Icon'
@@ -97,6 +97,33 @@ function AirChip({ air, onToggle }: { air: AirInfo; onToggle: () => void }) {
         <b>{label}</b>
       </span>
     </button>
+  )
+}
+
+const MOOD_LABEL: Record<GuildRow['mood'], string> = {
+  proud: 'Proud',
+  content: 'Content',
+  grumbling: 'Grumbling',
+  workToRule: 'Working to rule',
+  striking: 'On strike',
+}
+
+/** A guild's enamel badge: a shield in its colours bearing its standing, with an arrow for where it is heading. */
+function GuildBadge({ guild }: { guild: GuildRow }) {
+  const trend = guild.target > guild.standing + 2 ? 'up' : guild.target < guild.standing - 2 ? 'down' : ''
+  return (
+    <span
+      className={`guild-badge mood-${guild.mood}`}
+      title={`${guild.name}: ${MOOD_LABEL[guild.mood].toLowerCase()}, standing ${Math.round(guild.standing)}${trend ? `, heading for ${Math.round(guild.target)}` : ''}. ${guild.members} members.`}
+    >
+      <svg viewBox="0 0 22 24" width={21} height={23} aria-hidden="true">
+        <path d="M2 2 H20 V12 C20 17 16 20.5 11 22.5 C6 20.5 2 17 2 12 Z" fill={guild.color} stroke="var(--brass-hi)" strokeWidth="1.3" />
+        <text x="11" y="15" textAnchor="middle" fontSize="9" fontWeight="700" fill="#1c1612">
+          {Math.round(guild.standing)}
+        </text>
+        {trend && <path d={trend === 'up' ? 'M17 3.5 L19.5 7 H14.5 Z' : 'M17 7 L19.5 3.5 H14.5 Z'} className={`trend ${trend}`} />}
+      </svg>
+    </span>
   )
 }
 
@@ -253,9 +280,17 @@ function TopBar({ hud, controller, onMenu, open }: { hud: HudState; controller: 
 
       <div className="top-right">
         <Button size="sm" variant="iron" icon="book" onClick={() => open({ kind: 'dispatches' })} title="Dispatches from the Company" aria-label="Dispatches" />
-        <Button size="sm" variant="iron" icon="people" onClick={() => open({ kind: 'guild' })} title="Professions">
-          Guild
-        </Button>
+        {hud.guilds.length > 0 ? (
+          <button type="button" className="guild-badges" onClick={() => open({ kind: 'guild' })} title="Guilds and professions">
+            {hud.guilds.map((g) => (
+              <GuildBadge key={g.id} guild={g} />
+            ))}
+          </button>
+        ) : (
+          <Button size="sm" variant="iron" icon="people" onClick={() => open({ kind: 'guild' })} title="Professions">
+            Guild
+          </Button>
+        )}
         <div className="speed">
           <button type="button" className={`speed-btn ${hud.paused ? 'active' : ''}`} onClick={() => controller.togglePause()} title="Pause (Space)">
             <Icon name={hud.paused ? 'play' : 'pause'} size={16} />
@@ -278,6 +313,7 @@ function Notices({ hud, controller, openLetter }: { hud: HudState; controller: G
   return (
     <ul className="notices">
       {hud.petition && <PetitionCard petition={hud.petition} controller={controller} />}
+      {hud.guildPetition && <GuildPetitionCard petition={hud.guildPetition} controller={controller} />}
       {recent.map((n) => (
         <li key={n.id} className={`notice notice-${n.level}`}>
           {n.dispatch ? (
@@ -292,6 +328,30 @@ function Notices({ hud, controller, openLetter }: { hud: HudState; controller: G
         </li>
       ))}
     </ul>
+  )
+}
+
+function GuildPetitionCard({ petition: p, controller }: { petition: GuildPetitionInfo; controller: GameController }) {
+  return (
+    <li className="petition-card guild-petition" style={{ borderColor: p.color }}>
+      <div className="petition-head">
+        <i className="guild-dot" style={{ background: p.color }} />
+        <b>{p.title}</b>
+      </div>
+      <p className="petition-text">
+        <em>{p.guild}:</em> {p.text}
+      </p>
+      <div className="petition-patience" title="How long they will wait before taking silence as a refusal">
+        <span style={{ width: `${Math.max(0, Math.min(1, p.patience)) * 100}%` }} />
+      </div>
+      <div className="petition-actions">
+        {p.choices.map((label, i) => (
+          <Button key={label} size="sm" variant={i === p.choices.length - 1 ? 'iron' : undefined} onClick={() => controller.perform({ type: 'answerGuildPetition', choice: i })}>
+            {label}
+          </Button>
+        ))}
+      </div>
+    </li>
   )
 }
 

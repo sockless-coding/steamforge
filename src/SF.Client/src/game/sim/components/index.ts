@@ -12,5 +12,6 @@ import './assembler'
 import './logistics'
 import './health'
 import './soot'
+import './guild'
 
 export { componentHandler, knownComponents, registerComponent, type ComponentHandler } from './registry'

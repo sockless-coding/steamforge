@@ -67,6 +67,12 @@
       "when": { "research": "sanitation" }
     },
     {
+      "id": "guild-hall",
+      "title": "Dispatch: On the Guilds",
+      "text": "The Board hears that {colony} has given its guilds a hall. Mind them, Chief Engineer. The Brotherhood brought Forge No. 11 to a standstill over a single clockwork stoker, and the Board would rather not hear of it twice. Feed them, keep them warm, keep the smoke off them, and answer their petitions; they will work for you like no machine can.",
+      "when": { "building": "guild-hall" }
+    },
+    {
       "id": "airship-mast",
       "title": "Dispatch: The Mooring Mast",
       "text": "A mooring mast at {colony}! The airship Endeavour will call on a regular schedule from now on. Send us your surplus and we will credit the colony fairly, or near enough. Mind that the winches have steam, or the captain will not risk the approach.",

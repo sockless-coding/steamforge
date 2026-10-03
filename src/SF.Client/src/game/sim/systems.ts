@@ -4,6 +4,7 @@ import { clinicByHome } from './components/health'
 import type { ShelterConfig } from './components/basic'
 import { solveEnergy } from './energy'
 import { rollEvents, updateFires, updatePetition } from './events'
+import { updateGuildPetition, updateGuilds } from './guilds'
 import { computeTotals, foodIds } from './inventory'
 import { assignHousing, assignJobs, births, killCitizen } from './population'
 import type { Simulation } from './simulation'
@@ -316,6 +317,7 @@ registerSystem({
 registerSystem({ id: 'fire', second: updateFires })
 registerSystem({ id: 'events', second: updatePetition, month: rollEvents })
 registerSystem({ id: 'story', month: (sim) => checkDispatches(sim, {}) })
+registerSystem({ id: 'guilds', second: updateGuildPetition, month: updateGuilds })
 
 // ---------------------------------------------------------------- outcome and warnings
 

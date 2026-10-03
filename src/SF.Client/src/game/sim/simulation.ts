@@ -27,6 +27,7 @@ import { conduitGrades, EnergyState, gradeIndex } from './energy'
 import { answerPetition } from './events'
 import { createFounders, fireWorker } from './population'
 import { canResearch, isUnlocked, lockedBy, researchPlan } from './research'
+import { answerGuildPetition, foundGuilds, guildState, releaseAutomatons, temperament } from './guilds'
 import { Rng } from './rng'
 import { setWind, shiftWind, SootField, type SootSnapshot } from './soot'
 import type { StoryState } from './story'
@@ -40,6 +41,8 @@ import type {
   ConduitJob,
   NewColonyOptions,
   Notice,
+  GuildPetition,
+  GuildState,
   Petition,
   ResearchState,
   RoadJob,
@@ -49,7 +52,7 @@ import type {
 } from './types'
 import { MARK_CLEAR, World, type WorldSnapshot } from './world'
 
-export const SAVE_VERSION = 6
+export const SAVE_VERSION = 7
 
 export interface ColonySnapshot {
   v: number
@@ -78,6 +81,10 @@ export interface ColonySnapshot {
   lastDisaster: number
   /** Airborne soot and settled grime (from version 5). */
   soot?: SootSnapshot
+  /** Guild standings and policies, a waiting guild petition, and the automaton pledge (from version 7). */
+  guilds: Record<string, GuildState>
+  guildPetition: GuildPetition | null
+  noAutomatonsUntil: number
 }
 
 const MAX_NOTICES = 60
@@ -130,6 +137,12 @@ export class Simulation {
   readonly soot: SootField
   /** Travellers waiting at the gate for the player's answer. */
   petition: Petition | null = null
+  /** Each guild's standing and policy. */
+  guilds: Record<string, GuildState> = {}
+  /** A guild petition waiting for the player's answer. */
+  guildPetition: GuildPetition | null = null
+  /** No automaton is assembled before this month index (a pledge to the guilds). */
+  noAutomatonsUntil = 0
   /** Month index of the last disaster (spacing between disasters). */
   lastDisaster = -1000
   outcome: 'playing' | 'lost' = 'playing'
@@ -175,6 +188,7 @@ export class Simulation {
     }
     refreshRipeness(sim)
     shiftWind(sim)
+    sim.guilds = foundGuilds(sim, temperament(sim).startingStanding)
     placeStartingBuildings(sim, map.spawnX, map.spawnY)
     createFounders(sim, map.spawnX, map.spawnY)
     for (const system of systems) system.restore?.(sim)
@@ -502,6 +516,18 @@ export class Simulation {
         else this.limits[action.res] = Math.min(99999, Math.round(action.limit))
         return { ok: true }
       }
+      case 'answerGuildPetition': {
+        if (!this.guildPetition) return { ok: false, reason: 'No guild is waiting for an answer.' }
+        return answerGuildPetition(this, action.choice) ? { ok: true } : { ok: false, reason: 'No such answer.' }
+      }
+      case 'setGuildPolicy': {
+        const guild = this.content.guilds.get(action.guild)
+        if (!guild) return { ok: false, reason: 'No such guild.' }
+        guildState(this, guild.id).mechanise = action.mechanise
+        if (!action.mechanise) releaseAutomatons(this, guild.id)
+        this.jobsDirty = true
+        return { ok: true }
+      }
       case 'answerPetition': {
         if (!this.petition) return { ok: false, reason: 'Nobody is waiting at the gate.' }
         answerPetition(this, action.accept)
@@ -596,6 +622,9 @@ export class Simulation {
       petition: this.petition,
       lastDisaster: this.lastDisaster,
       soot: this.soot.serialize(),
+      guilds: this.guilds,
+      guildPetition: this.guildPetition,
+      noAutomatonsUntil: this.noAutomatonsUntil,
     }
   }
 
@@ -628,6 +657,9 @@ export class Simulation {
     sim.petition = s.petition
     sim.lastDisaster = s.lastDisaster
     sim.soot.load(s.soot)
+    sim.guilds = s.guilds
+    sim.guildPetition = s.guildPetition
+    sim.noAutomatonsUntil = s.noAutomatonsUntil
     rebuildClaims(sim)
     // Rebuild derived caches only; advancing anything here would make a loaded colony diverge.
     for (const system of systems) system.restore?.(sim)
@@ -663,7 +695,7 @@ export class Simulation {
  * Guildhall becomes the headquarters, every research counts as done (a legacy colony keeps what it had built) and
  * every dispatch as already received. Version 2 predates airship trade. Version 3 predates day and night (40-second
  * months), petitions and disaster spacing. Version 4 predates soot and wind. Version 5 predates feedwater, conduit
- * grades and the food rework (see migrateV5).
+ * grades and the food rework (see migrateV5). Version 6 predates the guilds.
  */
 function migrate(content: Content, s: ColonySnapshot): ColonySnapshot {
   if (s.v === SAVE_VERSION) return s
@@ -686,6 +718,14 @@ function migrate(content: Content, s: ColonySnapshot): ColonySnapshot {
     s.v = 5
   }
   if (s.v === 5) migrateV5(content, s)
+  // Version 6 predates the guilds: they start at the preset's standing, with no petition waiting.
+  if (s.v === 6) {
+    const preset = content.presets.get(s.options.difficulty) ?? content.presets.get(content.bundle.difficulty.defaultPreset)
+    s.guilds = foundGuilds({ content }, preset?.guildTemperament?.startingStanding ?? 55)
+    s.guildPetition = null
+    s.noAutomatonsUntil = 0
+    s.v = 7
+  }
   if (s.v !== SAVE_VERSION) throw new Error(`Unsupported save version ${s.v}.`)
   return s
 }

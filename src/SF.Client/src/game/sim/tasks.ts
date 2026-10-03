@@ -1,3 +1,4 @@
+import { guildWorkFactor } from './guilds'
 import { isLit } from './components/lighting'
 import { runEffect } from './effects'
 import { energyFactor } from './energy'
@@ -139,6 +140,8 @@ export function workSpeed(sim: Simulation, c: Citizen, at?: number): number {
     if (c.sick > 0) s *= 0.6
     // Only lamplit work goes on after dark, and it goes slower (automatons do not need light).
     if (sim.isNight) s *= sim.rules.day.nightWorkFactor
+    // A proud guild works harder; one working to rule, or granted rest, slower.
+    s *= guildWorkFactor(sim, c)
   }
   if (at) {
     const b = sim.buildings.get(at)

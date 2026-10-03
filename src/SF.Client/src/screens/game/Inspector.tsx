@@ -169,6 +169,15 @@ function CitizenPanel({ info, controller }: { info: CitizenInfo; controller: Gam
             <b>{info.workplace}</b>
           </li>
         )}
+        {info.guild && (
+          <li>
+            <span>Guild</span>
+            <b>
+              <i className="guild-dot" style={{ background: info.guild.color }} /> {info.guild.name}
+              {info.guild.striking && <span className="warn"> · on strike</span>}
+            </b>
+          </li>
+        )}
         {info.carrying && (
           <li>
             <span>Carrying</span>

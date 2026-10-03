@@ -49,7 +49,8 @@ registerEffect('assemble', (sim, _c, [id]) => {
 registerComponent<AssemblerConfig>({
   kind: 'assembler',
   work: (sim, b, cfg, c) => {
-    if (energyBlocked(sim, b) || automatonCount(sim) >= target(b)) return null
+    // A pledge to the guilds holds the works idle.
+    if (energyBlocked(sim, b) || automatonCount(sim) >= target(b) || sim.monthIndex < sim.noAutomatonsUntil) return null
     const ready = Object.entries(cfg.inputs).every(([res, qty]) => available(b, res) >= qty)
     if (ready) {
       return task('work', 'Assembling an automaton', b.id, [

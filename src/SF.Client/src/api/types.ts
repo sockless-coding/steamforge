@@ -170,6 +170,7 @@ export interface RulesDef {
   trade: TradeRules
   wind: WindRules
   soot: SootRules
+  guilds: GuildRules
   startingBuilders: number
   startingArea: number
 }
@@ -279,6 +280,98 @@ export interface ProfessionDef {
   id: string
   name: string
   color: string
+  /** The guild this trade belongs to (guilds.json); laborers, builders and children belong to none. */
+  guild?: string
+}
+
+/** A guild: the trades it speaks for, and how it feels about automatons. */
+export interface GuildDef {
+  id: string
+  name: string
+  short: string
+  color: string
+  description: string
+  /**
+   * Standing gained (negative: lost) at full mechanisation: `trade` counts automatons working the guild's own trades
+   * (as a share of its workforce), `colony` counts automatons anywhere (as a share of all adult workers).
+   */
+  automatons: { weight: number; scope: 'trade' | 'colony' }
+}
+
+/** What answering a petition does. `guild` defaults to the petitioning guild. */
+export type PetitionEffect =
+  | { kind: 'standing'; guild?: string; amount: number }
+  /** Adds to the guild's standing target for some months (a lingering grievance or goodwill). */
+  | { kind: 'mood'; guild?: string; amount: number; months: number }
+  /** Multiplies the work speed of the guild's members for some months. */
+  | { kind: 'workFactor'; guild?: string; factor: number; months: number }
+  /** Allows or forbids automatons in the guild's trades. */
+  | { kind: 'mechanise'; guild?: string; value: boolean }
+  /** No automaton is assembled for some months. */
+  | { kind: 'noAutomatons'; months: number }
+  /** Adds (or, negative, takes) a resource from storage; `food` takes a mix of foods. */
+  | { kind: 'resource'; resource: string; amount: number }
+  | { kind: 'credit'; amount: number }
+  /** Adds to every citizen's happiness at once. */
+  | { kind: 'happiness'; amount: number }
+
+/** When a petition can be raised; every field that is set must hold. */
+export interface PetitionCondition {
+  season?: string
+  minMembers?: number
+  minStanding?: number
+  maxStanding?: number
+  /** A finished building of this kind stands. */
+  building?: string
+  /** At least this many automatons work the guild's trades. */
+  automatonsInTrade?: number
+  resource?: { id: string; min: number }
+  credit?: number
+  /** Food in storage. */
+  food?: number
+  /** Mean soot exposure of the guild's members. */
+  sootAbove?: number
+}
+
+export interface PetitionDef {
+  id: string
+  guild: string
+  title: string
+  text: string
+  weight: number
+  when: PetitionCondition
+  /** The last choice is taken if the petition goes unanswered. */
+  choices: { label: string; effects: PetitionEffect[] }[]
+}
+
+/** Guild standing: a monthly drift towards a target built from members' conditions, and its thresholds. */
+export interface GuildRules {
+  /** Share of the gap between standing and its target closed each month. */
+  drift: number
+  base: number
+  /** Target points per factor at full strength (fed, warm, health, happiness, soot, nightShift: shares or means 0-1; hall: 0/1). */
+  weights: Record<'fed' | 'warm' | 'health' | 'happiness' | 'soot' | 'nightShift' | 'hall', number>
+  /** At or above: members work faster by highWorkBonus. */
+  high: number
+  highWorkBonus: number
+  /** Below: members work to rule at workToRuleFactor. */
+  workToRule: number
+  workToRuleFactor: number
+  /** Below: the guild strikes, until it is 5 points above again. */
+  strike: number
+  /** At or below: monthly chances of sabotage and of a household emigrating. */
+  unrest: number
+  sabotageChance: number
+  emigrationChance: number
+  /** Months a petition waits for an answer before it counts as refused. */
+  petitionWaitMonths: number
+}
+
+export interface GuildTemperament {
+  startingStanding: number
+  /** Multiplies how fast standing falls (not how fast it recovers). */
+  standingDrift: number
+  petitionsPerYear: number
 }
 
 export interface EventDef {
@@ -316,6 +409,7 @@ export interface DifficultyPreset {
   /** Research already completed when the colony is founded. */
   startingResearch?: string[]
   modifiers: DifficultyModifiers
+  guildTemperament?: GuildTemperament
 }
 
 export interface DifficultyCatalog {
@@ -397,6 +491,8 @@ export interface ContentBundle {
   mapgen: MapGenDef
   research: ResearchDef[]
   story: StoryDef
+  guilds: GuildDef[]
+  petitions: PetitionDef[]
 }
 
 export interface AuthResponse {

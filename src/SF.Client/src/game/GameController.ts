@@ -24,6 +24,7 @@ import { currentRecipe, type ProducerConfig } from './sim/components/producer'
 import { conduitGrades, gradeIndex, networkIndex, participates, touchesGrid, type ConsumerConfig, type GeneratorConfig } from './sim/energy'
 import { canPlace, doorTile, footprintSize, totalWork } from './sim/placement'
 import { canResearch, currentResearch, isUnlocked, lockedBy, unlockNames } from './sim/research'
+import { guildFactors, guildMood, guildOfCitizen, guildState, guildTarget } from './sim/guilds'
 import { Simulation, type ColonySnapshot } from './sim/simulation'
 import { sootExposure, windFrom, windVector } from './sim/soot'
 import type { Action, ActionResult, Building, Citizen, NewColonyOptions, Rotation, SimEvent } from './sim/types'
@@ -835,6 +836,9 @@ export class GameController {
       trade: { ...sim.trade },
       hasMast: [...sim.buildings.values()].some((b) => !b.site && !!sim.def(b).components.airship),
       air: this.airInfo(),
+      guilds: this.guildRows(),
+      guildPetition: this.guildPetitionInfo(),
+      automatonPledge: Math.max(0, sim.noAutomatonsUntil - sim.monthIndex),
     })
   }
 
@@ -962,6 +966,52 @@ export class GameController {
       sick: c.sick > 0,
       carrying: c.carry ? Object.entries(c.carry).map(([r, q]) => `${Math.round(q)} ${sim.resource(r)?.name ?? r}`).join(', ') : null,
       automaton: c.automaton ? { wind: c.wind ?? 0, windMonths: sim.rules.automaton.windMonths } : null,
+      guild: (() => {
+        const g = guildOfCitizen(sim, c)
+        return g ? { name: g.name, color: g.color, striking: sim.guilds[g.id]?.striking === true } : null
+      })(),
+    }
+  }
+
+  private guildRows(): HudState['guilds'] {
+    const sim = this.sim
+    return (sim.content.bundle.guilds ?? []).map((g) => {
+      const f = guildFactors(sim, g)
+      const { target, parts } = guildTarget(sim, g, f)
+      const s = guildState(sim, g.id)
+      return {
+        id: g.id,
+        name: g.name,
+        short: g.short,
+        color: g.color,
+        description: g.description,
+        standing: s.standing,
+        target,
+        parts,
+        mood: guildMood(sim, g.id),
+        members: f.members,
+        automatonsInTrade: f.automatonsInTrade,
+        mechanise: s.mechanise,
+        automatonWeight: g.automatons.weight,
+        hall: f.hall > 0,
+      }
+    })
+  }
+
+  private guildPetitionInfo(): HudState['guildPetition'] {
+    const sim = this.sim
+    const w = sim.guildPetition
+    const p = w ? sim.content.petitions.get(w.id) : undefined
+    const g = p ? sim.content.guilds.get(p.guild) : undefined
+    if (!w || !p || !g) return null
+    return {
+      guild: g.name,
+      short: g.short,
+      color: g.color,
+      title: p.title,
+      text: p.text,
+      choices: p.choices.map((c) => c.label),
+      patience: (w.expires - sim.tick) / Math.max(1, w.expires - w.arrived),
     }
   }
 
@@ -988,6 +1038,14 @@ export class GameController {
         label: 'Build automatons until there are',
         value: target,
         values: [{ id: 'none', name: 'No limit' }, ...[0, 2, 4, 6, 8, 10, 15, 20, 30].map((n) => ({ id: String(n), name: String(n) }))],
+      })
+    }
+    if (sim.def(b).components.guildHall) {
+      options.push({
+        key: 'guild',
+        label: 'Guild meeting here',
+        value: (b.data.guild as string) ?? '',
+        values: (sim.content.bundle.guilds ?? []).map((g) => ({ id: g.id, name: g.name })),
       })
     }
     const field = sim.component<FieldConfig>(b, 'field')

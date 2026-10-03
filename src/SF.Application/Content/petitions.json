@@ -1,0 +1,110 @@
+[
+  {
+    "id": "winter-rest",
+    "guild": "brotherhood",
+    "title": "A Rest After the Winter Shift",
+    "text": "The Brotherhood has stoked the fires all winter. They ask for a fortnight's rest now the thaw has come, with their places held.",
+    "weight": 3,
+    "when": { "season": "spring", "minMembers": 3 },
+    "choices": [
+      { "label": "Grant the rest", "effects": [{ "kind": "standing", "amount": 14 }, { "kind": "workFactor", "factor": 0.7, "months": 1 }] },
+      { "label": "The fires cannot wait", "effects": [{ "kind": "standing", "amount": -12 }] }
+    ]
+  },
+  {
+    "id": "machine-breakers",
+    "guild": "brotherhood",
+    "title": "Clockwork in the Pits",
+    "text": "The Brotherhood demands that the clockwork men be taken out of the pits, the quarries and the boiler rooms. 'A stoker's place is a stoker's,' their spokesman says.",
+    "weight": 4,
+    "when": { "automatonsInTrade": 1 },
+    "choices": [
+      { "label": "Withdraw the automatons", "effects": [{ "kind": "mechanise", "value": false }, { "kind": "standing", "amount": 15 }, { "kind": "standing", "guild": "institute", "amount": -8 }] },
+      { "label": "The machines stay", "effects": [{ "kind": "standing", "amount": -20 }, { "kind": "mood", "amount": -10, "months": 6 }] }
+    ]
+  },
+  {
+    "id": "no-new-automata",
+    "guild": "brotherhood",
+    "title": "No More Automata",
+    "text": "Word of the Automaton Works has gone round the pits. The Brotherhood asks that no new automaton be built for half a year.",
+    "weight": 2,
+    "when": { "building": "automaton-works", "maxStanding": 65 },
+    "choices": [
+      { "label": "Pledge it", "effects": [{ "kind": "noAutomatons", "months": 6 }, { "kind": "standing", "amount": 15 }, { "kind": "standing", "guild": "artisans", "amount": 6 }, { "kind": "standing", "guild": "institute", "amount": -12 }] },
+      { "label": "Refuse", "effects": [{ "kind": "standing", "amount": -18 }] }
+    ]
+  },
+  {
+    "id": "fair-price",
+    "guild": "artisans",
+    "title": "A Fair Price for Fair Work",
+    "text": "The Artisans' Guild notes that the Company pays good credit for the colony's goods. They ask for a share of it for the workshops.",
+    "weight": 2,
+    "when": { "credit": 25, "minMembers": 2 },
+    "choices": [
+      { "label": "Pay 25 credit", "effects": [{ "kind": "credit", "amount": -25 }, { "kind": "standing", "amount": 16 }] },
+      { "label": "The credit is the colony's", "effects": [{ "kind": "standing", "amount": -12 }] }
+    ]
+  },
+  {
+    "id": "apprentices",
+    "guild": "artisans",
+    "title": "Apprentices",
+    "text": "The masters would take the colony's youngsters on as apprentices. The workshops would run slower while they learn, but the Guild would think well of it.",
+    "weight": 2,
+    "when": { "minMembers": 3 },
+    "choices": [
+      { "label": "Take on apprentices", "effects": [{ "kind": "workFactor", "factor": 0.85, "months": 2 }, { "kind": "standing", "amount": 12 }, { "kind": "happiness", "amount": 0.05 }] },
+      { "label": "No time for teaching", "effects": [{ "kind": "standing", "amount": -8 }] }
+    ]
+  },
+  {
+    "id": "engine-cycles",
+    "guild": "institute",
+    "title": "Spare Cycles",
+    "text": "The Institute asks that the drafting tables be given over to their own studies for a season. They promise faster research, and the Union grumbles that the engineers think only of themselves.",
+    "weight": 2,
+    "when": { "minMembers": 1 },
+    "choices": [
+      { "label": "Give them the season", "effects": [{ "kind": "workFactor", "factor": 1.3, "months": 3 }, { "kind": "standing", "amount": 12 }, { "kind": "standing", "guild": "union", "amount": -8 }] },
+      { "label": "Research serves the colony", "effects": [{ "kind": "standing", "amount": -10 }] }
+    ]
+  },
+  {
+    "id": "clockwork-trials",
+    "guild": "institute",
+    "title": "Clockwork Trials",
+    "text": "The Institute asks for a crate of cogs to build trial mechanisms. 'Every colony that falls behind in clockwork falls behind,' they write.",
+    "weight": 2,
+    "when": { "resource": { "id": "cogs", "min": 10 } },
+    "choices": [
+      { "label": "Send ten cogs", "effects": [{ "kind": "resource", "resource": "cogs", "amount": -10 }, { "kind": "standing", "amount": 16 }] },
+      { "label": "Cogs are for engines", "effects": [{ "kind": "standing", "amount": -10 }] }
+    ]
+  },
+  {
+    "id": "harvest-feast",
+    "guild": "union",
+    "title": "Harvest Feast",
+    "text": "The harvest is in. The Union asks for a feast in the square, from the colony's stores, to mark it.",
+    "weight": 3,
+    "when": { "season": "autumn", "minMembers": 3, "food": 120 },
+    "choices": [
+      { "label": "Hold the feast", "effects": [{ "kind": "resource", "resource": "food", "amount": -40 }, { "kind": "happiness", "amount": 0.1 }, { "kind": "standing", "amount": 14 }] },
+      { "label": "Every crumb is needed", "effects": [{ "kind": "standing", "amount": -10 }] }
+    ]
+  },
+  {
+    "id": "smoke-on-the-fields",
+    "guild": "union",
+    "title": "Smoke on the Fields",
+    "text": "Union men come in coughing from fields black with soot. They ask for a month's rest and the apothecary's tonic, and they want it known whose chimneys did it.",
+    "weight": 4,
+    "when": { "sootAbove": 0.25, "minMembers": 2 },
+    "choices": [
+      { "label": "Rest and tonic", "effects": [{ "kind": "workFactor", "factor": 0.8, "months": 1 }, { "kind": "standing", "amount": 12 }, { "kind": "standing", "guild": "brotherhood", "amount": -5 }] },
+      { "label": "They must bear it", "effects": [{ "kind": "standing", "amount": -15 }, { "kind": "mood", "amount": -8, "months": 4 }] }
+    ]
+  }
+]

@@ -11,9 +11,68 @@ import { usePendingGame } from '../../state/pending'
 import { type QualityTier, useSettings } from '../../state/settings'
 import { Button, Modal, Tabs } from '../../ui/components'
 
+const MOODS: Record<string, string> = { proud: 'Proud', content: 'Content', grumbling: 'Grumbling', workToRule: 'Working to rule', striking: 'On strike' }
+
+/** The four guilds: standing, where it is heading and why, and whether automatons may work their trades. */
+function GuildStandings({ hud, controller }: { hud: HudState; controller: GameController }) {
+  if (hud.guilds.length === 0) return null
+  return (
+    <section className="guild-standings">
+      <h3>Guilds</h3>
+      <p className="muted small">
+        Each trade belongs to a guild. A guild&apos;s standing drifts each month towards what its members live through. Proud guilds (70+) work
+        faster; below 30 they work to rule, below 15 they strike, and a guild with nothing left to lose turns to sabotage and leaves the
+        colony.{hud.automatonPledge > 0 ? ` You have pledged to build no automatons for ${hud.automatonPledge} more months.` : ''}
+      </p>
+      <div className="guild-grid">
+        {hud.guilds.map((g) => (
+          <article key={g.id} className={`guild-card mood-${g.mood}`} style={{ borderColor: g.color }}>
+            <header>
+              <i className="guild-dot" style={{ background: g.color }} />
+              <b>{g.name}</b>
+              <span className={`guild-mood mood-${g.mood}`}>{MOODS[g.mood]}</span>
+            </header>
+            <div className="guild-meter" title={`Standing ${Math.round(g.standing)}, heading for ${Math.round(g.target)}`}>
+              <span className="fill" style={{ width: `${g.standing}%`, background: g.color }} />
+              <span className="goal" style={{ left: `${g.target}%` }} />
+              <span className="mark strike" style={{ left: '15%' }} />
+              <span className="mark rule" style={{ left: '30%' }} />
+              <span className="mark proud" style={{ left: '70%' }} />
+            </div>
+            <p className="muted small">
+              Standing <b>{Math.round(g.standing)}</b>, heading for <b>{Math.round(g.target)}</b> · {g.members} members{g.hall ? ' · has a hall' : ''}
+            </p>
+            <ul className="guild-parts small">
+              {g.parts
+                .filter(([, v]) => Math.abs(v) >= 0.5)
+                .map(([label, v]) => (
+                  <li key={label} className={v >= 0 ? 'up' : 'down'}>
+                    {label} {v >= 0 ? '+' : ''}
+                    {Math.round(v)}
+                  </li>
+                ))}
+            </ul>
+            <label className="guild-policy small">
+              <input
+                type="checkbox"
+                checked={g.mechanise}
+                onChange={(e) => controller.perform({ type: 'setGuildPolicy', guild: g.id, mechanise: e.target.checked })}
+              />{' '}
+              Automatons may work these trades
+              {g.automatonsInTrade > 0 ? ` (${g.automatonsInTrade} do)` : ''}
+              <span className="muted"> · the {g.short} {g.automatonWeight < 0 ? 'resents' : 'welcomes'} them</span>
+            </label>
+          </article>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 export function GuildPanel({ hud, controller, onClose }: { hud: HudState; controller: GameController; onClose: () => void }) {
   return (
-    <Modal title="Professions" onClose={onClose} wide>
+    <Modal title="Guilds and Professions" onClose={onClose} wide>
+      <GuildStandings hud={hud} controller={controller} />
       <p className="muted small">
         Everyone without a trade works as a laborer, hauling materials and clearing land. Builders raise construction sites and lay roads. Raising a
         profession assigns idle laborers to that trade&apos;s workplaces.

@@ -6,7 +6,7 @@
     "tier": 1,
     "points": 15,
     "requires": [],
-    "unlocks": { "roads": ["cobble"], "buildings": ["rowhouse"] }
+    "unlocks": { "roads": ["cobble"], "buildings": ["rowhouse", "guild-hall"] }
   },
   {
     "id": "mining",
@@ -209,10 +209,10 @@
   {
     "id": "automata",
     "name": "Clockwork Automata",
-    "description": "Brass automatons that work without food or warmth. They need winding with coal, and they wear out in time.",
-    "tier": 6,
-    "points": 120,
-    "requires": ["engines", "copper"],
+    "description": "Brass automatons that take a place in any trade and work without food or warmth. They need winding with coal and wear out in time, and the guilds whose trades they take will not thank you.",
+    "tier": 4,
+    "points": 80,
+    "requires": ["precision"],
     "unlocks": { "buildings": ["automaton-works"] }
   }
 ]

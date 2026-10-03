@@ -1,3 +1,4 @@
+import { guildHall, guildOfCitizen, onStrike } from './guilds'
 import { isLit } from './components/lighting'
 import { conduitGrades, gradeIndex } from './energy'
 import { amount, available, foodIds, foodIn, nearestStorageFor, nearestStorageWith } from './inventory'
@@ -36,7 +37,8 @@ export function chooseTask(sim: Simulation, c: Citizen): Task | null {
     if (t) return t
   }
   if (c.sick > 0 && c.home && sim.rng.chance(0.5)) return restTask(sim, c, 15)
-  if (sim.isNight) return nightWorkTask(sim, c) ?? sleepTask(sim, c)
+  const striking = onStrike(sim, c)
+  if (sim.isNight) return (striking ? null : nightWorkTask(sim, c)) ?? sleepTask(sim, c)
   if (c.age < r.adultAge * 12) return childTask(sim, c)
 
   const supplies = suppliesTask(sim, c)
@@ -44,10 +46,22 @@ export function chooseTask(sim: Simulation, c: Citizen): Task | null {
   const provision = provisionTask(sim, c)
   if (provision) return provision
 
+  if (striking) return strikeTask(sim, c)
   let t: Task | null = null
   if (c.workplace) t = workplaceTask(sim, c)
   else if (c.profession === 'builder') t = builderTask(sim, c)
   return t ?? laborTask(sim, c) ?? idleTask(sim, c)
+}
+
+/** Strikers gather at their guild hall (or the Steamforge) and stand about with their placards. */
+function strikeTask(sim: Simulation, c: Citizen): Task | null {
+  const guild = guildOfCitizen(sim, c)
+  const place = (guild && guildHall(sim, guild.id)) ?? sim.headquarters()
+  if (!place) return idleTask(sim, c)
+  const x = sim.world.xOf(place.door) + sim.rng.int(5) - 2
+  const y = sim.world.yOf(place.door) + sim.rng.int(3) + 1
+  const tile = sim.world.inBounds(x, y) && sim.world.walkable(sim.world.index(x, y)) ? sim.world.index(x, y) : place.door
+  return task('idle', 'On strike', place.id, [{ op: 'goto', tile }, { op: 'wait', seconds: 20 + sim.rng.int(10) }])
 }
 
 // ---------------------------------------------------------------- automatons

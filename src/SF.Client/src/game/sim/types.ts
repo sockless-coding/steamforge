@@ -203,6 +203,27 @@ export interface ColonyStats {
   /** Lifetime totals, for the overview and balancing. */
   produced: Stock
   consumed: Stock
+  /** Citizens who left the colony (guild emigration). */
+  departures?: number
+}
+
+/** A guild's standing and policy. */
+export interface GuildState {
+  /** 0-100; drifts each month towards a target built from its members' conditions. */
+  standing: number
+  striking: boolean
+  /** Automatons may work this guild's trades. */
+  mechanise: boolean
+  /** Lingering petition effects: a mood adds to the standing target, work multiplies members' work speed. */
+  effects: { kind: 'mood' | 'work'; value: number; until: number }[]
+}
+
+/** A guild petition waiting for the player's answer. */
+export interface GuildPetition {
+  /** petitions.json id. */
+  id: string
+  arrived: number
+  expires: number
 }
 
 /** Every player command. All are accepted while paused; none take effect until time runs. */
@@ -240,6 +261,9 @@ export type Action =
   | { type: 'setLimit'; res: string; limit: number }
   | { type: 'setOption'; building: number; key: string; value: string }
   | { type: 'answerPetition'; accept: boolean }
+  | { type: 'answerGuildPetition'; choice: number }
+  /** Allows or forbids automatons in a guild's trades (those already working them are let go). */
+  | { type: 'setGuildPolicy'; guild: string; mechanise: boolean }
 
 export type ActionResult = { ok: true; building?: number } | { ok: false; reason: string }
 
@@ -251,7 +275,7 @@ export type SimEvent =
   | { type: 'conduit'; tile: number }
   | { type: 'research'; tech: string }
   | { type: 'terrain'; x: number; y: number; w: number; h: number }
-  | { type: 'citizen'; id: number; change: 'born' | 'arrived' | 'died' | 'built'; cause?: string }
+  | { type: 'citizen'; id: number; change: 'born' | 'arrived' | 'died' | 'built' | 'left'; cause?: string }
   | { type: 'month'; month: number; year: number }
   | { type: 'fire'; building: number; active: boolean }
   | { type: 'outcome'; outcome: 'lost' }

@@ -88,6 +88,20 @@
     "variance": 50,
     "speed": [0.25, 1.0]
   },
+  "guilds": {
+    "drift": 0.3,
+    "base": 5,
+    "weights": { "fed": 15, "warm": 10, "health": 10, "happiness": 25, "soot": -25, "nightShift": -12, "hall": 15 },
+    "high": 70,
+    "highWorkBonus": 0.1,
+    "workToRule": 30,
+    "workToRuleFactor": 0.7,
+    "strike": 15,
+    "unrest": 8,
+    "sabotageChance": 0.35,
+    "emigrationChance": 0.2,
+    "petitionWaitMonths": 1
+  },
   "soot": {
     "cellSize": 4,
     "diffusion": 0.08,

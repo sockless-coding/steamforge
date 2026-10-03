@@ -1,0 +1,34 @@
+[
+  {
+    "id": "brotherhood",
+    "name": "Brotherhood of Stokers & Miners",
+    "short": "Brotherhood",
+    "color": "#b0503a",
+    "description": "The men and women who dig the coal, cut the stone, feed the fireboxes and fell the timber. Proud, hard-worked, and suspicious of any machine that does a stoker's job.",
+    "automatons": { "weight": -40, "scope": "trade" }
+  },
+  {
+    "id": "artisans",
+    "name": "Artisans' Guild",
+    "short": "Artisans",
+    "color": "#d4a24a",
+    "description": "Smiths, tailors, machinists, bakers, canners and apothecaries. They take pride in the work of their hands, and want a fair share of what it earns.",
+    "automatons": { "weight": -30, "scope": "trade" }
+  },
+  {
+    "id": "institute",
+    "name": "Engineers' Institute",
+    "short": "Institute",
+    "color": "#5ab8d8",
+    "description": "The colony's engineers and galvanists. They dream of a town run by clockwork and calculating engines, and like nothing better than seeing automatons at work anywhere in the colony.",
+    "automatons": { "weight": 20, "scope": "colony" }
+  },
+  {
+    "id": "union",
+    "name": "Land & Water Union",
+    "short": "Union",
+    "color": "#6aa060",
+    "description": "Farmers, fishers, hunters, foresters and glasshouse keepers. They feed the colony, and the smoke that blackens their fields and drives off the game is their first grievance.",
+    "automatons": { "weight": -20, "scope": "trade" }
+  }
+]

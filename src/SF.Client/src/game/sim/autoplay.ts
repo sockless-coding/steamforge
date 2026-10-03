@@ -134,6 +134,8 @@ export function autoplay(sim: Simulation): Autoplay {
       for (let m = 0; m < 12 && sim.outcome === 'playing'; m++) {
         runMonths(sim, 1)
         if (sim.petition) sim.perform({ type: 'answerPetition', accept: true })
+        // Guild petitions: grant the first (conciliatory) choice, as a careful player usually would.
+        if (sim.guildPetition) sim.perform({ type: 'answerGuildPetition', choice: 0 })
         if (m % 3 === 2) {
           staff(sim)
           chooseResearch(sim)

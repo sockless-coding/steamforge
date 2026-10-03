@@ -1,9 +1,9 @@
 # SteamForge: Identity Redesign
 
 Status:
-- **Phases 1 and 2** (soot and the industrial-amber look; pressure is life) are built and documented in
-  [GAME_DESIGN.md](GAME_DESIGN.md), except for the items listed as deferred under each phase below.
-- Phases 3 and 4 are proposals.
+- **Phases 1–3** (soot and the industrial-amber look; pressure is life; clockwork society) are built and documented
+  in [GAME_DESIGN.md](GAME_DESIGN.md), except for the items listed as deferred under each phase below.
+- Phase 4 is a proposal.
 
 As each phase lands, move its sections into GAME_DESIGN.md.
 
@@ -456,7 +456,31 @@ Original plan:
    mushrooms to rations. Bump `SAVE_VERSION` for each phase in turn.
 7. Rewrite the balance autoplay build order and retune.
 
-### Phase 3: Clockwork society
+### Phase 3: Clockwork society (built)
+
+Built:
+- `guilds.json` and `petitions.json` (new content kinds, validated on the server)
+- guild membership by profession
+- monthly standing that drifts towards a data-weighted target
+- pride, work-to-rule, strikes (members gather at their hall), sabotage and emigration
+- the Guild Hall
+- per-guild automaton policy, with automatons moved to tier 4
+- nine petitions with eight effect kinds, unanswered petitions counting as refusals
+- HUD guild shields, guild cards in the Guild panel, and the petition card
+- preset `guildTemperament`
+- save version 7
+
+Tuning: a fed, warm, unremarkable colony's guilds settle around 60 (`base` 5), so pride takes a hall or genuinely
+good conditions. On 16 seeds (Engineer, 12 years), the balance report gives a population of 43.3 at year 12 with
+one colony lost, against 43.1 and one before Phase 3. The scripted player now grants every guild petition's first
+choice.
+
+Deferred:
+- **Placards for strikers** (they gather at the hall, but carry nothing)
+- **Guild-coloured banners on the hall model**: materials are shared, so the banners are red whichever guild meets
+  there.
+
+Original plan:
 
 1. `guilds.json`, `guild` on professions, a monthly standing system with data-weighted factors.
 2. Guild Hall buildings, work-to-rule/strike/sabotage effects, emigration.

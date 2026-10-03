@@ -27,6 +27,8 @@ export const bundle: ContentBundle = {
   mapgen: read('mapgen'),
   research: read('research'),
   story: read('story'),
+  guilds: read('guilds'),
+  petitions: read('petitions'),
 }
 
 export const content: Content = indexContent(bundle)
