@@ -35,6 +35,8 @@ export class World {
   /** Bumped whenever walkability changes. */
   version = 0
   roadSpeeds: number[] = []
+  /** Per road index: true for bridges, which make the water under them walkable. */
+  roadBridges: boolean[] = []
 
   constructor(width: number, height: number, waterLevel: number) {
     this.width = width
@@ -81,14 +83,20 @@ export class World {
     return x >= 0 && y >= 0 && x < this.width && y < this.height
   }
 
-  /** Water and mountains can never be walked or built on. */
+  /** Dry ground. Water and mountains can never be built on, and water is only walked over on a bridge. */
   isLand(i: number): boolean {
     const t = this.terrain[i]
     return t !== Terrain.Water && t !== Terrain.Mountain
   }
 
+  /** A bridge deck spans this (water) tile. */
+  isBridge(i: number): boolean {
+    const r = this.road[i]
+    return r !== 0 && this.roadBridges[r - 1]
+  }
+
   walkable(i: number): boolean {
-    return this.isLand(i) && this.solid[i] === 0
+    return (this.isLand(i) || this.isBridge(i)) && this.solid[i] === 0
   }
 
   /** Movement speed multiplier on this tile. */

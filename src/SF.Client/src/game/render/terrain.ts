@@ -23,6 +23,10 @@ const TERRAIN_COLORS: Record<number, [number, number, number]> = {
 const HEATHER: [number, number, number] = [0.4, 0.33, 0.3]
 const BRACKEN: [number, number, number] = [0.46, 0.38, 0.24]
 
+/** Bridge decks sit this far above the water; ramps climb to them over the last RAMP of the bank tile. */
+const DECK_RISE = 0.42
+const RAMP = 0.5
+
 const ROAD_COLORS: [number, number, number][] = [
   [0.5, 0.39, 0.27],
   [0.48, 0.46, 0.43],
@@ -249,7 +253,8 @@ export class TerrainLayer {
   private paintTile(x: number, y: number): void {
     const w = this.world
     const i = y * w.width + x
-    const road = w.road[i]
+    // Bridge decks are modelled (see bridges.ts); the riverbed under them stays unpainted.
+    const road = w.isLand(i) ? w.road[i] : 0
     const tileColor = (tx: number, ty: number) => {
       const cx = Math.max(0, Math.min(w.width - 1, tx))
       const cy = Math.max(0, Math.min(w.height - 1, ty))
@@ -346,6 +351,37 @@ export class TerrainLayer {
     // Same diagonal split as the mesh triangles.
     if (tx + ty <= 1) return a + (b - a) * tx + (c - a) * ty
     return d + (c - d) * (1 - tx) + (b - d) * (1 - ty)
+  }
+
+  /** Height of a bridge deck above the water. */
+  get deckHeight(): number {
+    return this.world.waterLevel + DECK_RISE
+  }
+
+  /**
+   * Where a walker's feet are: the ground, a bridge deck over water, or the ramp up to a deck within half a tile
+   * of the bank.
+   */
+  walkHeightAt(x: number, y: number): number {
+    const w = this.world
+    const ground = this.heightAt(x, y)
+    const tx = Math.floor(x)
+    const ty = Math.floor(y)
+    if (!w.inBounds(tx, ty)) return ground
+    const deck = this.deckHeight
+    if (w.isBridge(ty * w.width + tx)) return deck
+    let h = ground
+    for (const [dx, dy, edge] of [[1, 0, tx + 1 - x], [-1, 0, x - tx], [0, 1, ty + 1 - y], [0, -1, y - ty]]) {
+      if (!w.inBounds(tx + dx, ty + dy) || !w.isBridge((ty + dy) * w.width + tx + dx)) continue
+      const k = Math.max(0, 1 - edge / RAMP)
+      h = Math.max(h, ground + (deck - ground) * k)
+    }
+    return h
+  }
+
+  /** The walkable surface, never below the water: for tool markers drawn over rivers and lakes. */
+  surfaceAt(x: number, y: number): number {
+    return Math.max(this.walkHeightAt(x, y), this.world.waterLevel)
   }
 
   /**

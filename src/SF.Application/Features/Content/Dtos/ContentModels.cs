@@ -19,7 +19,7 @@ public static class ContentJson
 
 public sealed record SeasonDef(string Id, string Name, IReadOnlyList<int> Months, bool Growing);
 
-public sealed record RoadDef(string Id, string Name, Dictionary<string, double> Cost, double Work, double Speed);
+public sealed record RoadDef(string Id, string Name, Dictionary<string, double> Cost, double Work, double Speed, bool? Bridge = null, int? MaxFromShore = null);
 
 /// <summary>One grade of conduit on a network: what it costs and how much head it loses per tile.</summary>
 public sealed record ConduitDef(string Id, string Name, Dictionary<string, double> Cost, double Work, double LossPerTile, string Style);

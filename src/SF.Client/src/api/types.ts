@@ -22,6 +22,10 @@ export interface RoadDef {
   /** Only this fast while a powered depot (a building with a `tramDepot` component) runs; otherwise `unpoweredSpeed`. */
   needsDepot?: boolean
   unpoweredSpeed?: number
+  /** Laid only over water, which it makes walkable. Builders work it outward from the bank. */
+  bridge?: boolean
+  /** Bridges only: the furthest a bridge tile may lie from dry land, in tiles (default 3). */
+  maxFromShore?: number
 }
 
 export interface AutomatonRules {

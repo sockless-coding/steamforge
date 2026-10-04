@@ -186,7 +186,7 @@ export class OverlayLayer {
     const n = Math.min(marks.length, this.tiles.instanceMatrix.count)
     for (let i = 0; i < n; i++) {
       const t = marks[i]
-      this.m.makeTranslation(t.x + 0.5, this.terrain.heightAt(t.x + 0.5, t.y + 0.5) + 0.06, t.y + 0.5)
+      this.m.makeTranslation(t.x + 0.5, this.terrain.surfaceAt(t.x + 0.5, t.y + 0.5) + 0.06, t.y + 0.5)
       this.tiles.setMatrixAt(i, this.m)
       this.tiles.setColorAt(i, t.head !== undefined ? headColor(t.head) : info ? INFO : t.ok ? OK : BAD)
     }
@@ -215,7 +215,7 @@ export class OverlayLayer {
     const n = Math.min(tiles.length, this.areaTiles.instanceMatrix.count)
     for (let i = 0; i < n; i++) {
       const t = tiles[i]
-      this.m.makeTranslation(t.x + 0.5, this.terrain.heightAt(t.x + 0.5, t.y + 0.5) + 0.05, t.y + 0.5)
+      this.m.makeTranslation(t.x + 0.5, this.terrain.surfaceAt(t.x + 0.5, t.y + 0.5) + 0.05, t.y + 0.5)
       this.areaTiles.setMatrixAt(i, this.m)
       this.areaTiles.setColorAt(i, shade.set(t.color))
     }

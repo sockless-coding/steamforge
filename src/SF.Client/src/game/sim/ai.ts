@@ -333,6 +333,8 @@ function builderTask(sim: Simulation, c: Citizen, litOnly = false): Task | null 
 
 interface LayJob {
   tile: number
+  /** Where the builder stands to work: the tile itself, or the bank (or finished deck) beside a bridge tile. */
+  stand: number
   cost: Record<string, number>
   work: number
   name: string
@@ -351,9 +353,12 @@ function roadTask(sim: Simulation, c: Citizen): Task | null {
     if (sim.claimed.has(job.tile) || world.feature[job.tile] !== 0) continue
     const d = world.distance(here, job.tile)
     if (d < bestD) {
+      // Bridges are built out from the bank one span at a time: a tile is workable once a neighbour has footing.
+      const stand = world.isLand(job.tile) ? job.tile : footing(sim, job.tile, here)
+      if (stand < 0) continue
       const road = sim.rules.roads.find((r) => r.id === job.road)!
       bestD = d
-      best = { tile: job.tile, cost: road.cost, work: road.work, name: road.name, effect: 'buildRoad', args: [job.tile] }
+      best = { tile: job.tile, stand, cost: road.cost, work: road.work, name: road.name, effect: 'buildRoad', args: [job.tile] }
     }
   }
   for (const job of sim.conduitJobs.values()) {
@@ -364,7 +369,7 @@ function roadTask(sim: Simulation, c: Citizen): Task | null {
       if (!at) continue
       const conduit = conduitGrades(sim.rules.networks[at.n])[at.g]
       bestD = d
-      best = { tile: job.tile, cost: conduit.cost, work: conduit.work, name: conduit.name, effect: 'buildConduit', args: [job.tile, at.n] }
+      best = { tile: job.tile, stand: job.tile, cost: conduit.cost, work: conduit.work, name: conduit.name, effect: 'buildConduit', args: [job.tile, at.n] }
     }
   }
   if (!best) return null
@@ -379,8 +384,28 @@ function roadTask(sim: Simulation, c: Citizen): Task | null {
     steps.push(gotoBuilding(store), { op: 'take', from: store.id, res: item, qty })
     res.push(reserveStock(store, item, qty))
   }
-  steps.push({ op: 'goto', tile: best.tile }, { op: 'work', seconds: best.work, effect: best.effect, args: best.args })
+  steps.push({ op: 'goto', tile: best.stand }, { op: 'work', seconds: best.work, effect: best.effect, args: best.args })
   return task('build', `Laying ${best.name.toLowerCase()}`, 0, steps, res)
+}
+
+/** The walkable tile beside a water tile (orthogonal neighbours only) nearest the builder, or -1. */
+function footing(sim: Simulation, tile: number, from: number): number {
+  const world = sim.world
+  const x = world.xOf(tile)
+  const y = world.yOf(tile)
+  let best = -1
+  let bestD = Infinity
+  for (const [dx, dy] of [[1, 0], [0, 1], [-1, 0], [0, -1]]) {
+    if (!world.inBounds(x + dx, y + dy)) continue
+    const i = world.index(x + dx, y + dy)
+    if (!world.walkable(i)) continue
+    const d = world.distance(from, i)
+    if (d < bestD) {
+      bestD = d
+      best = i
+    }
+  }
+  return best
 }
 
 /** General labour: supply construction sites, service buildings (fuel the Steamforge), clear land, haul goods. */

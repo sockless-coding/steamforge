@@ -21,8 +21,9 @@ import {
   placeStartingBuildings,
   removeBuilding,
   refund,
+  roadBlocked,
 } from './placement'
-import { abortTask, rebuildClaims } from './tasks'
+import { abortTask, approachTile, rebuildClaims, tileOf } from './tasks'
 import { decodeArray, encodeArray } from './codec'
 import { conduitGrades, EnergyState, gradeIndex } from './energy'
 import { answerPetition } from './events'
@@ -171,6 +172,7 @@ export class Simulation {
     this.mods = this.preset.modifiers
     this.world = world
     world.roadSpeeds = this.rules.roads.map((r) => r.speed)
+    world.roadBridges = this.rules.roads.map((r) => !!r.bridge)
     this.path = new Pathfinder(world)
     this.rng = new Rng(options.seed)
     this.tps = this.rules.ticksPerSecond
@@ -394,24 +396,31 @@ export class Simulation {
         if (road < 0) return { ok: false, reason: 'Unknown road.' }
         const roadLock = lockedBy(this, 'road', action.road)
         if (roadLock) return { ok: false, reason: `Requires research: ${roadLock.name}.` }
+        const def = this.rules.roads[road]
         let placed = 0
+        let reason: string | null = null
         for (const tile of action.tiles) {
-          if (tile < 0 || tile >= this.world.size) continue
-          if (!this.world.isLand(tile) || this.world.building[tile] !== 0) continue
+          const blocked = roadBlocked(this.world, def, tile)
+          if (blocked) {
+            reason ??= blocked
+            continue
+          }
           if (this.world.road[tile] === road + 1 || this.roadJobs.get(tile)?.road === action.road) continue
           this.roadJobs.set(tile, { tile, road: action.road, delivered: false })
           this.queueClear(tile)
           placed++
         }
-        return placed > 0 ? { ok: true } : { ok: false, reason: 'Nothing to build there.' }
+        return placed > 0 ? { ok: true } : { ok: false, reason: reason ?? 'Nothing to build there.' }
       }
       case 'removeRoad': {
         for (const tile of action.tiles) {
           if (this.roadJobs.delete(tile)) continue
           if (this.world.road[tile] !== 0) {
+            const bridge = this.world.isBridge(tile)
             this.world.road[tile] = 0
             this.world.version++
             this.emit({ type: 'road', tile })
+            if (bridge) this.rescueFrom(tile)
           }
         }
         return { ok: true }
@@ -564,6 +573,18 @@ export class Simulation {
         }
         return { ok: false, reason: 'Option not available.' }
       }
+    }
+  }
+
+  /** Citizens left standing on water when a bridge tile is pulled down scramble to the nearest dry footing. */
+  private rescueFrom(tile: number): void {
+    const to = approachTile(this, tile)
+    if (to < 0) return
+    for (const c of this.citizens.values()) {
+      if (c.inside || tileOf(c, this) !== tile) continue
+      c.x = c.px = this.world.xOf(to) + 0.5
+      c.y = c.py = this.world.yOf(to) + 0.5
+      c.path = null
     }
   }
 

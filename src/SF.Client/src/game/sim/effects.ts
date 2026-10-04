@@ -1,6 +1,6 @@
 import { conduitGrades, gradeIndex } from './energy'
 import { addStock, amount, available, foodIds } from './inventory'
-import { activateBuilding, deliveredFraction, totalWork } from './placement'
+import { activateBuilding, deliveredFraction, roadBlocked, totalWork } from './placement'
 import type { Simulation } from './simulation'
 import type { Citizen } from './types'
 import { MARK_CLEAR } from './world'
@@ -97,7 +97,7 @@ registerEffect('buildRoad', (sim, c, [tile]) => {
   for (const res in road.cost) addStock(c.carry!, res, -road.cost[res])
   if (c.carry && Object.keys(c.carry).length === 0) c.carry = null
   const world = sim.world
-  if (!world.isLand(tile) || world.building[tile] !== 0) {
+  if (roadBlocked(world, road, tile)) {
     sim.roadJobs.delete(tile)
     return true
   }

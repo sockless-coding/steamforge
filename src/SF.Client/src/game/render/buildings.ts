@@ -268,7 +268,7 @@ export class BuildingLayer {
     for (const tile of sim.roadJobs.keys()) {
       const x = world.xOf(tile) + 0.5
       const y = world.yOf(tile) + 0.5
-      this.matrix.makeTranslation(x, this.terrain.heightAt(x, y) + 0.07, y)
+      this.matrix.makeTranslation(x, this.terrain.surfaceAt(x, y) + 0.07, y)
       this.roadPlans.setMatrixAt(n++, this.matrix)
     }
     this.roadPlans.count = n

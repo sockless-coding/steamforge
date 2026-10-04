@@ -24,7 +24,7 @@ import type { FieldConfig } from './sim/components/field'
 import { gatherRadius, type GathererConfig } from './sim/components/gatherer'
 import { currentRecipe, type ProducerConfig } from './sim/components/producer'
 import { conduitGrades, gradeIndex, networkIndex, participates, touchesGrid, type ConsumerConfig, type GeneratorConfig } from './sim/energy'
-import { canPlace, doorTile, footprintSize, totalWork } from './sim/placement'
+import { canPlace, doorTile, footprintSize, roadBlocked, totalWork } from './sim/placement'
 import { canResearch, currentResearch, isUnlocked, lockedBy, unlockNames } from './sim/research'
 import { guildFactors, guildMood, guildOfCitizen, guildState, guildTarget } from './sim/guilds'
 import { airshipYard, chart, fateOf, finaleBlocker, launchBlocker, telegraphOnline, voyageMonths } from './sim/saga'
@@ -729,10 +729,15 @@ export class GameController {
     if (t.kind === 'road') {
       const tiles = dragging ? this.roadPath(dragging, tile) : [sim.world.index(tile[0], tile[1])]
       const w = sim.world
-      overlays.setTiles(tiles.map((i) => ({ x: w.xOf(i), y: w.yOf(i), ok: w.isLand(i) && w.building[i] === 0 })))
       const road = sim.rules.roads.find((r) => r.id === t.road)
-      const stone = road?.cost.stone ? ` · ${tiles.length * road.cost.stone} stone` : ''
-      this.hint = `${tiles.length} tiles${stone}`
+      // A bridge dragged from bank to bank only spans the water; the land tiles at either end are left out.
+      const span = road?.bridge ? tiles.filter((i) => !w.isLand(i)) : tiles
+      const blocked = span.map((i) => (road ? roadBlocked(w, road, i) : 'Unknown road.'))
+      overlays.setTiles(span.map((i, k) => ({ x: w.xOf(i), y: w.yOf(i), ok: !blocked[k] })))
+      const laid = blocked.filter((b) => !b).length
+      const cost = Object.entries(road?.cost ?? {}).map(([r, q]) => `${q * laid} ${sim.resource(r)?.name.toLowerCase() ?? r}`)
+      const why = road?.bridge && span.length === 0 ? 'Bridges are built over water.' : blocked.find(Boolean)
+      this.hint = `${laid} tiles${cost.length ? ` · ${cost.join(', ')}` : ''}${why ? ` · ${why}` : ''}`
       return
     }
     if (t.kind === 'conduit') {

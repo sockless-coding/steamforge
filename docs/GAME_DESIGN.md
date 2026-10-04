@@ -523,6 +523,13 @@ builds the land in layers:
 5. forests, boulders and ironstone
 6. a flattened founding site holding the Steamforge and a short road
 
+Water and mountains block movement. Rivers run from edge to edge, so the far bank is reached by **bridges**: a road
+type with `bridge: true` (the Trestle Bridge in `rules.json` → `roads`, available from the start). A bridge may only
+be laid over water within `maxFromShore` tiles of dry land (default 3), and it makes the tile walkable (`World.isBridge`).
+Dragging a bridge from bank to bank orders just the water tiles. Builders work each span from a walkable neighbour, so
+a bridge grows out from the bank one tile at a time. Nothing else can be built on a bridge. Anyone standing on a deck
+that is pulled down steps back to dry footing.
+
 ## Rendering
 
 - Three.js WebGL renderer.
@@ -549,6 +556,9 @@ builds the land in layers:
   - `wire`: copper power lines on insulated poles
 
   Where grades of different height meet, a riser joins them.
+- Bridges (`bridges.ts`): a plank deck on timber stringers above the water, a trestle bent standing in the riverbed
+  under each tile, riveted fascia and iron railings, and stone abutments with ramps and brass lamp posts where the
+  bridge meets the bank. Citizens walk on the deck (`TerrainLayer.walkHeightAt`).
 - Particles: chimney smoke, steam vents and valve hiss, fire and snowfall.
   - Coal-burning buildings belch thick black smoke in proportion to their soot, and stoves give off a grey wisp.
   - Plumes leave the chimney upright and lean with the simulation's wind.

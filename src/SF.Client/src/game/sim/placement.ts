@@ -1,4 +1,4 @@
-import type { BuildingDef } from '../../api/types'
+import type { BuildingDef, RoadDef } from '../../api/types'
 import { addStock, addToStorage } from './inventory'
 import { fireWorker } from './population'
 import { lockedBy } from './research'
@@ -96,6 +96,26 @@ export function canPlace(sim: Simulation, def: BuildingDef, x: number, y: number
     if (!world.inBounds(dx, dy) || !world.isLand(door) || world.building[door] !== 0) return fail('The entrance would be blocked.')
   }
   return { ok: true }
+}
+
+/**
+ * Why a road of this kind cannot be laid on the tile, or null when it can. Bridges span water within reach of dry
+ * land; every other road needs dry land.
+ */
+export function roadBlocked(world: World, road: RoadDef, tile: number): string | null {
+  if (tile < 0 || tile >= world.size) return 'Off the map.'
+  if (world.building[tile] !== 0) return 'Something is already built here.'
+  if (!road.bridge) return world.isLand(tile) ? null : world.terrain[tile] === TERRAIN_IDS.water ? 'Roads cannot cross water; build a bridge.' : 'Cannot build on a mountainside.'
+  if (world.terrain[tile] !== TERRAIN_IDS.water) return 'Bridges are built over water.'
+  const reach = road.maxFromShore ?? 3
+  const x = world.xOf(tile)
+  const y = world.yOf(tile)
+  for (let ty = Math.max(0, y - reach); ty <= Math.min(world.height - 1, y + reach); ty++) {
+    for (let tx = Math.max(0, x - reach); tx <= Math.min(world.width - 1, x + reach); tx++) {
+      if (world.isLand(world.index(tx, ty))) return null
+    }
+  }
+  return 'Too far from the shore for a bridge.'
 }
 
 /** Marks the building's tiles and door on the world grid. */

@@ -20,6 +20,7 @@ import type { QualityProfile } from './quality'
 import { GradeShader } from './grade'
 import { TerrainLayer } from './terrain'
 import { TramLayer } from './tramways'
+import { BridgeLayer } from './bridges'
 
 interface SeasonLook {
   sky: string
@@ -70,6 +71,7 @@ export class WorldRenderer {
   readonly conduits: ConduitLayer
   readonly airships: AirshipLayer
   readonly trams: TramLayer
+  readonly bridges: BridgeLayer
   readonly overlays: OverlayLayer
   readonly particles: Particles
   private readonly parent: HTMLElement
@@ -132,12 +134,14 @@ export class WorldRenderer {
     this.conduits = new ConduitLayer(this.terrain, this.particles)
     this.airships = new AirshipLayer(this.terrain, this.particles, world.width, world.height)
     this.trams = new TramLayer(this.terrain, this.particles)
+    this.bridges = new BridgeLayer(this.terrain)
     this.scene.add(
       this.terrain.group,
       this.nature.group,
       this.buildings.group,
       this.conduits.group,
       this.trams.group,
+      this.bridges.group,
       this.airships.group,
       this.citizens.group,
       this.overlays.group,
@@ -216,6 +220,7 @@ export class WorldRenderer {
         case 'road':
           this.terrain.repaint(e.tile)
           this.trams.markDirty()
+          this.bridges.markDirty()
           break
         case 'terrain':
           this.terrain.reshape(e.x, e.y, e.w, e.h)
@@ -321,6 +326,7 @@ export class WorldRenderer {
     this.buildings.sync(sim, this.time, dt)
     this.conduits.update(sim, this.time, dt)
     this.trams.update(sim, dt)
+    this.bridges.update(sim)
     this.airships.update(sim, dt, this.time)
     this.citizens.update(sim, alpha, this.time)
     this.particles.update(dt)
@@ -416,6 +422,7 @@ export class WorldRenderer {
     this.overlays.dispose()
     this.conduits.dispose()
     this.trams.dispose()
+    this.bridges.dispose()
     this.airships.dispose()
     this.particles.dispose()
     setBuildingEnvironment(null)

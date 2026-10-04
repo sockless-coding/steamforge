@@ -104,6 +104,7 @@ public static class ContentValidator
         {
             CheckStock($"Road {road.Id}", road.Cost.Keys);
             Check(road.Speed >= 1 && road.Work > 0, $"Road {road.Id} needs speed >= 1 and positive work.");
+            Check(road.MaxFromShore is null || (road.Bridge == true && road.MaxFromShore >= 1), $"Road {road.Id}: maxFromShore applies only to bridges and must be at least 1.");
         }
 
         Check(r.Networks.Count is >= 1 and <= 8, "Rules: 1-8 energy networks are supported.");

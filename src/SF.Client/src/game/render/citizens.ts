@@ -317,7 +317,7 @@ export class CitizenLayer {
       const child = c.age < adultMonths
       const scale = child ? 0.6 + (0.4 * c.age) / adultMonths : 1
       const pose = this.pose(c, moving, time, dt)
-      this.p.set(x, this.terrain.heightAt(x, y) + pose.bob, y)
+      this.p.set(x, this.terrain.walkHeightAt(x, y) + pose.bob, y)
       this.q.setFromAxisAngle(this.up, heading)
       this.s.set(scale, scale, scale)
       this.base.compose(this.p, this.q, this.s)
