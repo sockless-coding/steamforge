@@ -98,6 +98,14 @@ describe('airship trade', () => {
 })
 
 describe('automatons', () => {
+  it('are not counted towards the peak population', () => {
+    const sim = newColony({ difficulty: 'tinkerer' })
+    const forge = sim.headquarters()!
+    const peak = sim.stats.peakPopulation
+    createAutomaton(sim, sim.world.xOf(forge.door) + 0.5, sim.world.yOf(forge.door) + 0.5)
+    expect(sim.stats.peakPopulation).toBe(peak)
+  })
+
   it('work without food, warmth or a home, and wind themselves with coal', () => {
     const sim = newColony({ difficulty: 'tinkerer' })
     const forge = sim.headquarters()!

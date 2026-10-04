@@ -22,6 +22,17 @@ export interface GathererConfig {
   sootPenalty?: number
 }
 
+const DEFAULT_RADIUS = 12
+
+/**
+ * How far the building's work reaches: the felling or harvesting radius in feature mode, else the hunting grounds or
+ * fishing waters that scale its yield. Undefined for on-site gatherers such as quarries and mines.
+ */
+export function gatherRadius(cfg: GathererConfig): number | undefined {
+  if (cfg.features) return cfg.radius ?? DEFAULT_RADIUS
+  return cfg.scale?.radius
+}
+
 function centre(b: Building): [number, number] {
   return [b.x + b.w / 2, b.y + b.h / 2]
 }
@@ -72,7 +83,7 @@ function findTarget(sim: Simulation, b: Building, cfg: GathererConfig, c: Citize
   const py = c.y
   let best = -1
   let bestD = Infinity
-  world.forRadius(cx, cy, cfg.radius ?? 12, (i) => {
+  world.forRadius(cx, cy, cfg.radius ?? DEFAULT_RADIUS, (i) => {
     const code = world.feature[i]
     if (!codes.has(code) || sim.claimed.has(i) || world.building[i] !== 0) return
     const def = sim.featureDef(code)!
@@ -99,7 +110,7 @@ function plantTask(sim: Simulation, b: Building, cfg: GathererConfig): Task | nu
   let trees = 0
   let area = 0
   const empty: number[] = []
-  world.forRadius(cx, cy, cfg.radius ?? 12, (i) => {
+  world.forRadius(cx, cy, cfg.radius ?? DEFAULT_RADIUS, (i) => {
     if (!world.walkable(i) || world.building[i] !== 0) return
     area++
     if (world.feature[i] === code) trees++

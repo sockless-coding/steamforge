@@ -8,6 +8,7 @@ import {
   useHud,
   type BuildingInfo,
   type CitizenInfo,
+  type Demographics,
   type HudState,
   type NetworkRow,
   type OptionInfo,
@@ -20,6 +21,7 @@ import { Ambience } from './audio/ambience'
 import { MusicDirector } from './audio/music'
 import { play } from './audio/synth'
 import type { FieldConfig } from './sim/components/field'
+import { gatherRadius, type GathererConfig } from './sim/components/gatherer'
 import { currentRecipe, type ProducerConfig } from './sim/components/producer'
 import { conduitGrades, gradeIndex, networkIndex, participates, touchesGrid, type ConsumerConfig, type GeneratorConfig } from './sim/energy'
 import { canPlace, doorTile, footprintSize, totalWork } from './sim/placement'
@@ -29,7 +31,7 @@ import { airshipYard, chart, fateOf, finaleBlocker, launchBlocker, telegraphOnli
 import { Simulation, type ColonySnapshot } from './sim/simulation'
 import { sootExposure, windFrom, windVector } from './sim/soot'
 import type { Action, ActionResult, Building, Citizen, NewColonyOptions, Rotation, SimEvent } from './sim/types'
-import type { TileMark } from './render/overlays'
+import type { AreaRing, AreaTile, TileMark } from './render/overlays'
 import { FrameGovernor, lowerTier, resolveQuality, type QualityProfile } from './render/quality'
 import { WorldRenderer } from './render/WorldRenderer'
 
@@ -70,6 +72,20 @@ interface Drag {
  * Runs a colony: fixed-step simulation at the chosen speed (pause freezes time but every command still works,
  * Banished-style), interpolated rendering, mouse/touch/keyboard tools, HUD publishing and local autosave.
  */
+/**
+ * Components that act on everything within a radius of the building's centre, and the colour of their ring. A building
+ * with several (a gas lamp lights and cheers) shows one ring per distinct radius.
+ */
+const AREA_KINDS: { kind: string; color: string; radius: (cfg: never) => number | undefined }[] = [
+  { kind: 'firefighting', color: '#7fd4ff', radius: (c: { radius: number }) => c.radius },
+  { kind: 'gatherer', color: '#8ae07a', radius: (c: GathererConfig) => gatherRadius(c) },
+  { kind: 'tractor', color: '#e0a860', radius: (c: { radius: number }) => c.radius },
+  { kind: 'clinic', color: '#f08aa8', radius: (c: { radius: number }) => c.radius },
+  { kind: 'scrubber', color: '#b690ff', radius: (c: { radius: number }) => c.radius },
+  { kind: 'amenity', color: '#f6d98a', radius: (c: { radius: number }) => c.radius },
+  { kind: 'lighting', color: '#ffb860', radius: (c: { radius: number }) => c.radius },
+]
+
 export class GameController {
   readonly sim: Simulation
   readonly renderer: WorldRenderer
@@ -247,7 +263,51 @@ export class GameController {
   select(target: { kind: 'building' | 'citizen'; id: number } | null): void {
     this.selected = target
     this.renderer.buildings.selected = target?.kind === 'building' ? target.id : 0
+    this.showSelectedArea()
     this.publish()
+  }
+
+  /** Rings for the areas a building of this kind reaches from (cx, cy), in tile coordinates; `only` limits the kinds. */
+  private areaRings(def: BuildingDef, cx: number, cy: number, faint = false, only?: string[]): AreaRing[] {
+    const rings: AreaRing[] = []
+    for (const area of AREA_KINDS) {
+      if (only && !only.includes(area.kind)) continue
+      const cfg = def.components[area.kind]
+      const radius = cfg ? area.radius(cfg as never) : undefined
+      if (!radius || rings.some((r) => r.radius === radius)) continue
+      rings.push({ x: cx, y: cy, radius, color: area.color, faint })
+    }
+    return rings
+  }
+
+  /** Faint rings for the buildings (and sites) already covering what a new building of this kind would cover. */
+  private coverRings(def: BuildingDef): AreaRing[] {
+    const kinds = AREA_KINDS.filter((a) => def.components[a.kind]).map((a) => a.kind)
+    const rings: AreaRing[] = []
+    for (const b of this.sim.buildings.values()) rings.push(...this.areaRings(this.sim.def(b), b.x + b.w / 2, b.y + b.h / 2, true, kinds))
+    return rings
+  }
+
+  /** The selected building's reach stays drawn on the ground until the selection changes. */
+  private showSelectedArea(): void {
+    const overlays = this.renderer.overlays
+    const b = this.selected?.kind === 'building' ? this.sim.buildings.get(this.selected.id) : undefined
+    if (!b) {
+      overlays.setArea([], [])
+      return
+    }
+    const rings = this.areaRings(this.sim.def(b), b.x + b.w / 2, b.y + b.h / 2)
+    const tiles: AreaTile[] = []
+    const seen = new Set<number>()
+    const w = this.sim.world
+    for (const r of rings) {
+      w.forRadius(r.x, r.y, r.radius, (i) => {
+        if (seen.has(i)) return
+        seen.add(i)
+        tiles.push({ x: w.xOf(i), y: w.yOf(i), color: r.color })
+      })
+    }
+    overlays.setArea(rings, tiles)
   }
 
   focusTile(tile: number): void {
@@ -662,16 +722,8 @@ export class GameController {
       for (let y = f.y; y < f.y + f.h; y++) for (let x = f.x; x < f.x + f.w; x++) marks.push({ x, y, ok: check.ok })
       const network = this.energyNetworkOf(def)
       overlays.setTiles(network ? [...this.gridMarks(network), ...marks] : marks)
-      const radius =
-        sim.component<{ radius?: number }>(def.id, 'gatherer')?.radius ??
-        sim.component<{ radius: number }>(def.id, 'boiler')?.radius ??
-        sim.component<{ radius: number }>(def.id, 'firefighting')?.radius ??
-        sim.component<{ radius: number }>(def.id, 'lighting')?.radius ??
-        sim.component<{ radius: number }>(def.id, 'amenity')?.radius ??
-        sim.component<{ radius: number }>(def.id, 'scrubber')?.radius ??
-        sim.component<{ radius: number }>(def.id, 'clinic')?.radius ??
-        0
-      overlays.setRing(f.x + f.w / 2, f.y + f.h / 2, radius)
+      const rings = this.areaRings(def, f.x + f.w / 2, f.y + f.h / 2)
+      if (rings.length > 0) overlays.setRings([...rings, ...this.coverRings(def)])
       return
     }
     if (t.kind === 'road') {
@@ -816,6 +868,7 @@ export class GameController {
       temperature: sim.temperature,
       population: sim.population(),
       peakPopulation: sim.stats.peakPopulation,
+      demographics: this.demographics(),
       resources,
       food,
       tool: this.tool,
@@ -842,6 +895,69 @@ export class GameController {
       automatonPledge: Math.max(0, sim.noAutomatonsUntil - sim.monthIndex),
       saga: this.sagaInfo(),
     })
+  }
+
+  private demographics(): Demographics {
+    const sim = this.sim
+    const r = sim.rules.citizen
+    const BAND = 5
+    const top = Math.floor(r.maxAge / BAND)
+    const bands = Array.from({ length: top + 1 }, (_, i) => ({ from: i * BAND, to: i === top ? null : i * BAND + BAND - 1, men: 0, women: 0 }))
+    const d: Demographics = {
+      ...initialHud.demographics,
+      bands,
+      work: { trades: 0, builders: 0, laborers: 0, children: 0 },
+      adultAge: r.adultAge,
+      elderAge: r.elderAge,
+    }
+    let people = 0
+    let months = 0
+    for (const c of sim.citizens.values()) {
+      if (c.automaton) continue
+      people++
+      months += c.age
+      const band = bands[Math.min(top, Math.floor(c.age / 12 / BAND))]
+      if (c.female) {
+        band.women++
+        d.women++
+      } else {
+        band.men++
+        d.men++
+      }
+      if (c.female && c.partner && sim.citizens.has(c.partner)) d.couples++
+      if (c.profession === 'child') d.work.children++
+      else if (c.profession === 'builder') d.work.builders++
+      else if (c.profession === 'laborer') d.work.laborers++
+      else d.work.trades++
+      d.health += c.health
+      d.happiness += c.happiness
+      if (c.sick > 0) d.sick++
+      if (c.hunger < r.hungerThreshold) d.hungry++
+      if (c.warmth < r.warmthThreshold) d.cold++
+      if (c.profession !== 'child') {
+        if (c.tools <= 0) d.noTools++
+        if (c.coat <= 0) d.noCoat++
+      }
+    }
+    if (people > 0) {
+      d.averageAge = months / 12 / people
+      d.health /= people
+      d.happiness /= people
+    }
+    for (const b of sim.buildings.values()) {
+      const housing = sim.component<{ capacity: number }>(b, 'housing')
+      if (!housing || b.site) continue
+      d.homes++
+      d.beds += housing.capacity
+      if (b.residents.length > 0) d.households++
+    }
+    const s = sim.stats
+    d.births = s.births
+    d.deaths = s.deaths
+    d.arrivals = s.arrivals
+    d.departures = s.departures ?? 0
+    d.deathsBy = Object.entries(s.deathsBy).filter(([cause, n]) => n > 0 && cause !== 'wear')
+    return d
   }
 
   private researchRows(): ResearchRow[] {
@@ -938,6 +1054,7 @@ export class GameController {
     if (!b) {
       this.selected = null
       this.renderer.buildings.selected = 0
+      this.renderer.overlays.setArea([], [])
       return null
     }
     return this.buildingInfo(b)

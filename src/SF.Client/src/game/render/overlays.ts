@@ -18,13 +18,102 @@ const INFO = new THREE.Color('#f6d98a')
 const AMBER = new THREE.Color('#f0a040')
 const shade = new THREE.Color()
 
+/** A building's reach drawn on the ground: centre and radius in tiles. Faint rings show other buildings' cover. */
+export interface AreaRing {
+  x: number
+  y: number
+  radius: number
+  color: string
+  faint?: boolean
+}
+
+/** A tile inside a selected building's reach, tinted like its ring. */
+export interface AreaTile {
+  x: number
+  y: number
+  color: string
+}
+
+const RING_SEGMENTS = 160
+const RING_WIDTH = 0.16
+const MAX_RINGS = 64
+
+/** Rings that follow the ground, drawn as flat ribbons on a fixed pool of meshes. */
+class RingSet {
+  readonly group = new THREE.Group()
+  private readonly terrain: TerrainLayer
+  private readonly meshes: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>[] = []
+
+  constructor(terrain: TerrainLayer) {
+    this.terrain = terrain
+  }
+
+  set(rings: AreaRing[]): void {
+    const n = Math.min(rings.length, MAX_RINGS)
+    for (let i = 0; i < n; i++) {
+      const mesh = this.meshes[i] ?? this.add()
+      const r = rings[i]
+      this.shape(mesh.geometry, r)
+      mesh.material.color.set(r.color)
+      mesh.material.opacity = r.faint ? 0.35 : 0.9
+      mesh.visible = true
+    }
+    for (let i = n; i < this.meshes.length; i++) this.meshes[i].visible = false
+  }
+
+  private add(): THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial> {
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array((RING_SEGMENTS + 1) * 2 * 3), 3))
+    const index: number[] = []
+    for (let s = 0; s < RING_SEGMENTS; s++) {
+      const a = s * 2
+      index.push(a, a + 1, a + 2, a + 1, a + 3, a + 2)
+    }
+    geometry.setIndex(index)
+    const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide }))
+    mesh.frustumCulled = false
+    mesh.renderOrder = 5
+    this.meshes.push(mesh)
+    this.group.add(mesh)
+    return mesh
+  }
+
+  private shape(geometry: THREE.BufferGeometry, r: AreaRing): void {
+    const pos = geometry.getAttribute('position') as THREE.BufferAttribute
+    const inner = Math.max(0, r.radius - RING_WIDTH)
+    for (let s = 0; s <= RING_SEGMENTS; s++) {
+      const a = (s / RING_SEGMENTS) * Math.PI * 2
+      const cos = Math.cos(a)
+      const sin = Math.sin(a)
+      const ox = r.x + cos * r.radius
+      const oy = r.y + sin * r.radius
+      const ix = r.x + cos * inner
+      const iy = r.y + sin * inner
+      pos.setXYZ(s * 2, ox, this.terrain.heightAt(ox, oy) + 0.1, oy)
+      pos.setXYZ(s * 2 + 1, ix, this.terrain.heightAt(ix, iy) + 0.1, iy)
+    }
+    pos.needsUpdate = true
+  }
+
+  dispose(): void {
+    for (const m of this.meshes) {
+      m.geometry.dispose()
+      m.material.dispose()
+    }
+  }
+}
+
 /** Red at no pressure, amber at half, green at full. */
 function headColor(head: number): THREE.Color {
   const h = Math.max(0, Math.min(1, head))
   return h < 0.5 ? shade.copy(BAD).lerp(AMBER, h * 2) : shade.copy(AMBER).lerp(OK, (h - 0.5) * 2)
 }
 
-/** Tool feedback drawn over the world: build ghost, tile highlights (footprints, roads, areas) and radius ring. */
+/**
+ * Tool feedback drawn over the world: build ghost, tile highlights (footprints, roads, areas) and reach rings. The
+ * selected building's reach (ring plus a faint fill) stays up until the selection changes; the rest is redrawn as the
+ * pointer moves.
+ */
 export class OverlayLayer {
   readonly group = new THREE.Group()
   private readonly terrain: TerrainLayer
@@ -32,7 +121,9 @@ export class OverlayLayer {
   private ghostDef = ''
   private ghostValid = true
   private readonly tiles: THREE.InstancedMesh
-  private readonly ring: THREE.Mesh
+  private readonly rings: RingSet
+  private readonly areaRings: RingSet
+  private readonly areaTiles: THREE.InstancedMesh
   private readonly door: THREE.Mesh
   private readonly m = new THREE.Matrix4()
 
@@ -43,19 +134,19 @@ export class OverlayLayer {
     this.tiles.count = 0
     this.tiles.frustumCulled = false
     this.tiles.renderOrder = 4
-    this.ring = new THREE.Mesh(
-      new THREE.RingGeometry(0.97, 1, 96).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicMaterial({ color: '#f6d98a', transparent: true, opacity: 0.55, depthWrite: false }),
-    )
-    this.ring.visible = false
-    this.ring.renderOrder = 4
+    this.rings = new RingSet(terrain)
+    this.areaRings = new RingSet(terrain)
+    this.areaTiles = new THREE.InstancedMesh(quad, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.13, depthWrite: false }), 8192)
+    this.areaTiles.count = 0
+    this.areaTiles.frustumCulled = false
+    this.areaTiles.renderOrder = 3
     this.door = new THREE.Mesh(
       entranceArrowGeometry().scale(1.3, 1, 1.3),
       new THREE.MeshBasicMaterial({ color: '#f6d98a', transparent: true, opacity: 0.95, depthWrite: false, depthTest: false, side: THREE.DoubleSide }),
     )
     this.door.visible = false
     this.door.renderOrder = 6
-    this.group.add(this.tiles, this.ring, this.door)
+    this.group.add(this.tiles, this.rings.group, this.areaRings.group, this.areaTiles, this.door)
   }
 
   /** Shows the building ghost at a footprint, tinted by validity. */
@@ -113,23 +204,38 @@ export class OverlayLayer {
     this.door.rotation.y = Math.atan2(cx - x, cy - y)
   }
 
-  setRing(x: number, y: number, radius: number): void {
-    this.ring.visible = radius > 0
-    if (radius <= 0) return
-    this.ring.scale.set(radius, 1, radius)
-    this.ring.position.set(x, this.terrain.heightAt(x, y) + 0.12, y)
+  /** Reach rings for the tool preview (cleared with the rest of the preview). */
+  setRings(rings: AreaRing[]): void {
+    this.rings.set(rings)
+  }
+
+  /** The selected building's reach: rings and the tiles inside them. Empty arrays hide it. */
+  setArea(rings: AreaRing[], tiles: AreaTile[]): void {
+    this.areaRings.set(rings)
+    const n = Math.min(tiles.length, this.areaTiles.instanceMatrix.count)
+    for (let i = 0; i < n; i++) {
+      const t = tiles[i]
+      this.m.makeTranslation(t.x + 0.5, this.terrain.heightAt(t.x + 0.5, t.y + 0.5) + 0.05, t.y + 0.5)
+      this.areaTiles.setMatrixAt(i, this.m)
+      this.areaTiles.setColorAt(i, shade.set(t.color))
+    }
+    this.areaTiles.count = n
+    this.areaTiles.instanceMatrix.needsUpdate = true
+    if (this.areaTiles.instanceColor) this.areaTiles.instanceColor.needsUpdate = true
   }
 
   clear(): void {
     if (this.ghost) this.ghost.visible = false
     this.tiles.count = 0
-    this.ring.visible = false
+    this.rings.set([])
     this.door.visible = false
   }
 
   dispose(): void {
     this.door.geometry.dispose()
     this.tiles.dispose()
-    this.ring.geometry.dispose()
+    this.areaTiles.dispose()
+    this.rings.dispose()
+    this.areaRings.dispose()
   }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLoadedContent } from '../../api/content'
 import type { BuildingCategory, BuildingDef } from '../../api/types'
 import type { GameController } from '../../game/GameController'
@@ -9,6 +9,7 @@ import { Icon, type IconName } from '../../ui/Icon'
 import { GameMenu, GuildPanel, Outcome, StoresPanel } from './Panels'
 import { ChartPanel, FinaleCard } from './Chart'
 import { Inspector } from './Inspector'
+import { PopulationPanel } from './Population'
 import { Charter, DispatchPanel, ResearchPanel } from './Progression'
 
 interface HudProps {
@@ -128,7 +129,7 @@ function GuildBadge({ guild }: { guild: GuildRow }) {
   )
 }
 
-type PanelKind = { kind: 'chart' } | { kind: 'guild' } | { kind: 'stores' } | { kind: 'research' } | { kind: 'dispatches'; letter?: string }
+type PanelKind = { kind: 'population' } | { kind: 'chart' } | { kind: 'guild' } | { kind: 'stores' } | { kind: 'research' } | { kind: 'dispatches'; letter?: string }
 
 export function Hud({ controller, menu, setMenu }: HudProps) {
   const hud = useHud()
@@ -150,7 +151,8 @@ export function Hud({ controller, menu, setMenu }: HudProps) {
       {hud.paused && !charter && (
         <div className="pause-banner">
           <Icon name="pause" size={18} />
-          <span>Paused: you can still build, plan and give orders.</span>
+          <span className="pause-long">Paused: you can still build, plan and give orders.</span>
+          <span className="pause-short">Paused</span>
           <kbd>Space</kbd>
         </div>
       )}
@@ -162,6 +164,7 @@ export function Hud({ controller, menu, setMenu }: HudProps) {
       )}
       {panel?.kind === 'guild' && <GuildPanel hud={hud} controller={controller} onClose={close} />}
       {panel?.kind === 'chart' && hud.saga && <ChartPanel hud={hud} controller={controller} onClose={close} />}
+      {panel?.kind === 'population' && <PopulationPanel hud={hud} onClose={close} />}
       {panel?.kind === 'stores' && <StoresPanel hud={hud} controller={controller} onClose={close} />}
       {panel?.kind === 'research' && <ResearchPanel hud={hud} controller={controller} onClose={close} />}
       {panel?.kind === 'dispatches' && <DispatchPanel hud={hud} initial={panel.letter} onClose={close} />}
@@ -186,8 +189,18 @@ function TopBar({ hud, controller, onMenu, open }: { hud: HudState; controller: 
   const rows = key.map((id) => hud.resources.find((r) => r.id === id)).filter((r): r is NonNullable<typeof r> => r !== undefined && (r.id !== 'copper' || r.amount > 0))
   const p = hud.population
   const r = hud.researching
+  const bar = useRef<HTMLElement>(null)
+  // Panels below hang from the bar's bottom edge, which moves as the bar wraps onto more rows.
+  useEffect(() => {
+    const el = bar.current
+    const hud = el?.parentElement
+    if (!el || !hud) return
+    const observer = new ResizeObserver(() => hud.style.setProperty('--top-bar-bottom', `${el.offsetTop + el.offsetHeight}px`))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
   return (
-    <header className="top-bar">
+    <header className="top-bar" ref={bar}>
       <div className="top-left">
         <div className="colony-name">
           <b className="engraved">{hud.colonyName}</b>
@@ -217,17 +230,22 @@ function TopBar({ hud, controller, onMenu, open }: { hud: HudState; controller: 
         </div>
       </div>
 
+      <button
+        type="button"
+        className="population-chip res"
+        onClick={() => open({ kind: 'population' })}
+        title={`Population: ${p.adults} adults, ${p.children} children, ${p.elders} elders. Click for demographics.`}
+      >
+        <Icon name="people" size={16} />
+        <b>{p.total}</b>
+        {p.homeless > 0 && <em className="warn">{p.homeless} homeless</em>}
+        {p.automatons > 0 && (
+          <em className="automatons" title="Clockwork automatons">
+            <Icon name="gear" size={12} /> {p.automatons}
+          </em>
+        )}
+      </button>
       <button type="button" className="resource-strip" onClick={() => open({ kind: 'stores' })} title="Stores and production limits">
-        <span className="res" title="Population (homeless)">
-          <Icon name="people" size={16} />
-          <b>{p.total}</b>
-          {p.homeless > 0 && <em className="warn">{p.homeless} homeless</em>}
-          {p.automatons > 0 && (
-            <em className="automatons" title="Clockwork automatons">
-              <Icon name="gear" size={12} /> {p.automatons}
-            </em>
-          )}
-        </span>
         <span className={`res ${hud.food < p.total * 8 ? 'low' : ''}`} title="Food">
           <Icon name="wheat" size={16} />
           <b>{Math.floor(hud.food)}</b>

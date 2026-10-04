@@ -209,6 +209,39 @@ export interface PetitionInfo {
   patience: number
 }
 
+/** Who lives in the colony, for the Population panel. Automatons are counted apart from the people. */
+export interface Demographics {
+  /** Age bands from youngest to oldest (the last is open-ended), with men and women in each. */
+  bands: { from: number; to: number | null; men: number; women: number }[]
+  men: number
+  women: number
+  averageAge: number
+  /** Ages at which children come of age and adults become elders. */
+  adultAge: number
+  elderAge: number
+  /** Occupied homes, married couples, finished homes and the beds in them. */
+  households: number
+  couples: number
+  homes: number
+  beds: number
+  /** People by occupation: in a trade, building, hauling as laborers, and too young to work. */
+  work: { trades: number; builders: number; laborers: number; children: number }
+  /** Averages (0-1) over the people, and how many are in want. */
+  health: number
+  happiness: number
+  sick: number
+  hungry: number
+  cold: number
+  /** Working-age people without tools or a coat. */
+  noTools: number
+  noCoat: number
+  births: number
+  deaths: number
+  arrivals: number
+  departures: number
+  deathsBy: [string, number][]
+}
+
 export interface HudState {
   ready: boolean
   colonyName: string
@@ -230,6 +263,7 @@ export interface HudState {
   temperature: number
   population: { total: number; adults: number; children: number; elders: number; homeless: number; automatons: number }
   peakPopulation: number
+  demographics: Demographics
   resources: ResourceRow[]
   food: number
   tool: Tool
@@ -295,6 +329,31 @@ export const initialHud: HudState = {
   temperature: 0,
   population: { total: 0, adults: 0, children: 0, elders: 0, homeless: 0, automatons: 0 },
   peakPopulation: 0,
+  demographics: {
+    bands: [],
+    men: 0,
+    women: 0,
+    averageAge: 0,
+    adultAge: 0,
+    elderAge: 0,
+    households: 0,
+    couples: 0,
+    homes: 0,
+    beds: 0,
+    work: { trades: 0, builders: 0, laborers: 0, children: 0 },
+    health: 0,
+    happiness: 0,
+    sick: 0,
+    hungry: 0,
+    cold: 0,
+    noTools: 0,
+    noCoat: 0,
+    births: 0,
+    deaths: 0,
+    arrivals: 0,
+    departures: 0,
+    deathsBy: [],
+  },
   resources: [],
   food: 0,
   tool: { kind: 'select' },

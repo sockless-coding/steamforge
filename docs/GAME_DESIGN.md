@@ -570,6 +570,20 @@ builds the land in layers:
   - a label: Clean, Hazy, Smoky or Choking
 
   Clicking the chip toggles the soot map.
+- **Reach rings**: a building that acts on an area (wells and fire stations, gatherers' grounds, tractor sheds,
+  apothecaries, precipitators, amenities, lamps) shows its radius as a coloured ring that follows the ground:
+  - while placing it, with faint rings for the existing buildings of the same kind, so gaps in cover show
+  - while it is selected, with the tiles inside the ring faintly tinted
+  - one ring per distinct radius, coloured by kind (fire blue, gathering green, tractors amber, clinics rose,
+    scrubbers violet, amenities brass, lighting orange)
+- The **population chip** (people, homeless, automatons) opens the Population panel:
+  - totals of children, adults, elders and automatons, and the average age
+  - an age pyramid (five-year bands, men left, women right) with the child and elder bands marked
+  - households (occupied homes, married couples, beds in use) and occupations (trades, builders, laborers,
+    children)
+  - wellbeing: average health and happiness, and how many are homeless, hungry, cold, sick, or of working age
+    without tools or a coat
+  - vital records since the founding: births, arrivals, departures, deaths by cause and the peak population
 - Seasonal light and fog, with a shadow frustum that follows the camera.
 - Quality tiers (low, medium, high, ultra) adapt automatically.
 

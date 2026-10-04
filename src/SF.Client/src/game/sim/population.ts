@@ -13,6 +13,8 @@ export interface NewCitizen {
   mother?: number
   father?: number
   home?: number
+  /** A clockwork automaton: never counted as a person. */
+  automaton?: boolean
 }
 
 export function createCitizen(sim: Simulation, n: NewCitizen): Citizen {
@@ -49,6 +51,7 @@ export function createCitizen(sim: Simulation, n: NewCitizen): Citizen {
     diet: [],
     wait: sim.rng.int(20),
   }
+  if (n.automaton) c.automaton = true
   sim.citizens.set(c.id, c)
   if (n.home) moveInto(sim, c, n.home)
   sim.jobsDirty = true
@@ -72,8 +75,8 @@ export function createAutomaton(sim: Simulation, x: number, y: number): Citizen 
     ageMonths: sim.rules.citizen.adultAge * 12,
     x,
     y,
+    automaton: true,
   })
-  c.automaton = true
   c.wind = r.windMonths
   c.hunger = 1
   c.happiness = 0.6

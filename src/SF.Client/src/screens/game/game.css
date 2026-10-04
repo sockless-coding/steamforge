@@ -48,6 +48,11 @@
 
 /* ---------------------------------------------------------------- top bar */
 
+/* The top bar's bottom edge (measured by the HUD as the bar wraps); panels below it hang from here. */
+.hud {
+  --top-bar-bottom: calc(56px + var(--safe-top));
+}
+
 .top-bar {
   position: absolute;
   top: calc(8px + var(--safe-top));
@@ -233,7 +238,7 @@
 
 .notices {
   position: absolute;
-  top: calc(64px + var(--safe-top));
+  top: calc(var(--top-bar-bottom) + 8px);
   left: calc(10px + var(--safe-left));
   width: min(340px, 40vw);
   margin: 0;
@@ -657,7 +662,7 @@
 
 .pause-banner {
   position: absolute;
-  top: calc(66px + var(--safe-top));
+  top: calc(var(--top-bar-bottom) + 10px);
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -671,6 +676,34 @@
   font-size: 14px;
   color: var(--brass-hi);
   animation: pause-pulse 2.4s ease-in-out infinite;
+}
+
+.pause-short {
+  display: none;
+}
+
+/* Too narrow for the full banner between the notices and the inspector: just "Paused". */
+@media (max-width: 1280px) {
+  .pause-long {
+    display: none;
+  }
+
+  .pause-short {
+    display: inline;
+  }
+}
+
+/* Phones: the notices fill the left and the inspector sits at the bottom, so the banner moves to the right. */
+@media (max-width: 820px) {
+  .pause-banner {
+    left: auto;
+    right: calc(10px + var(--safe-right));
+    transform: none;
+  }
+
+  .pause-banner kbd {
+    display: none;
+  }
 }
 
 @keyframes pause-pulse {
@@ -691,7 +724,7 @@ kbd {
 .hint-chip {
   position: absolute;
   /* Above the map, clear of build trays of any height. */
-  top: calc(112px + var(--safe-top));
+  top: calc(var(--top-bar-bottom) + 56px);
   left: 50%;
   transform: translateX(-50%);
   padding: 6px 14px;
@@ -704,7 +737,7 @@ kbd {
 
 .controls-hint {
   position: absolute;
-  top: calc(66px + var(--safe-top));
+  top: calc(var(--top-bar-bottom) + 10px);
   left: 50%;
   transform: translateX(-50%);
   padding: 4px 10px;
@@ -1154,7 +1187,7 @@ kbd {
 
 .hud .inspector {
   position: absolute;
-  top: calc(64px + var(--safe-top));
+  top: calc(var(--top-bar-bottom) + 8px);
   right: calc(10px + var(--safe-right));
   width: min(320px, 44vw);
   max-height: calc(100vh - 230px);
@@ -1263,6 +1296,208 @@ kbd {
   width: 90px;
 }
 
+/* ---------------------------------------------------------------- population */
+
+.population-chip {
+  flex: none;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.population-chip:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.pop-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pop-summary > div {
+  flex: 1 1 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(200, 146, 62, 0.25);
+}
+
+.pop-summary b {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  color: var(--brass-hi);
+  font-variant-numeric: tabular-nums;
+}
+
+.pop-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 1fr);
+  gap: 18px;
+}
+
+.pop-grid h3 {
+  margin: 10px 0 4px;
+  font-family: var(--font-heading);
+  font-size: 15px;
+  color: var(--brass-hi);
+}
+
+.pop-grid section > h3:first-child {
+  margin-top: 0;
+}
+
+.kv li.sub {
+  padding-left: 12px;
+  font-size: 12px;
+}
+
+.pyramid {
+  --men: var(--tesla);
+  --women: var(--copper-hi);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+}
+
+.pyramid-head,
+.pyramid-row {
+  display: grid;
+  grid-template-columns: 1fr 34px 1fr;
+  align-items: center;
+}
+
+.pyramid-head span:nth-child(2),
+.pyramid-age {
+  text-align: center;
+}
+
+.pyramid-head span:last-child {
+  text-align: right;
+}
+
+.pyramid-side {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 13px;
+}
+
+.pyramid-side.men {
+  justify-content: flex-end;
+}
+
+.pyramid-side i {
+  height: 100%;
+  min-width: 0;
+  border-radius: 2px;
+  opacity: 0.85;
+}
+
+.pyramid-side.men i {
+  background: var(--men);
+  border-radius: 3px 0 0 3px;
+}
+
+.pyramid-side.women i {
+  background: var(--women);
+  border-radius: 0 3px 3px 0;
+}
+
+.pyramid-side em {
+  font-style: normal;
+  color: var(--parchment-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.pyramid-age {
+  color: var(--parchment-dim);
+  font-variant-numeric: tabular-nums;
+  border-radius: 3px;
+}
+
+.pyramid-row.stage-child .pyramid-age,
+.pyramid-key .key-child::before {
+  background: rgba(166, 224, 90, 0.18);
+}
+
+.pyramid-row.stage-elder .pyramid-age,
+.pyramid-key .key-elder::before {
+  background: rgba(182, 144, 255, 0.2);
+}
+
+.pyramid-key .key-adult::before {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.pyramid-row.stage-elder i {
+  opacity: 0.6;
+}
+
+.pyramid-key {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 12px;
+  margin-top: 6px;
+}
+
+.pyramid-key span::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  vertical-align: -1px;
+  border-radius: 2px;
+}
+
+.pop-stack {
+  display: flex;
+  height: 10px;
+  margin: 6px 0 2px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.pop-stack i {
+  flex-basis: 0;
+}
+
+.occ-trades {
+  background: var(--brass);
+}
+
+.occ-builders {
+  background: var(--copper);
+}
+
+.occ-laborers {
+  background: var(--steel);
+}
+
+.occ-children {
+  background: var(--acid);
+  opacity: 0.75;
+}
+
+@media (max-width: 760px) {
+  .pop-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ---------------------------------------------------------------- panels */
 
 .prof-table {
@@ -1351,9 +1586,6 @@ kbd {
     display: none;
   }
 
-  .notices {
-    top: calc(110px + var(--safe-top));
-  }
 
   .hud .inspector {
     top: auto;
@@ -1383,12 +1615,29 @@ kbd {
   }
 }
 
-@media (max-width: 1400px) and (min-width: 821px) {
+/* The stores strip keeps a usable width; when the bar is too full for it, the gauges and buttons wrap to a second row. */
+@media (min-width: 821px) {
+  .top-bar {
+    flex-wrap: wrap;
+  }
+
+  .top-left {
+    flex-shrink: 0;
+  }
+
   .resource-strip {
+    flex: 1 1 340px;
     flex-wrap: nowrap;
+    justify-content: flex-start;
     overflow: hidden;
   }
 
+  .top-right {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 1600px) and (min-width: 821px) {
   .res-name {
     display: none;
   }
