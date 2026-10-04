@@ -88,6 +88,9 @@ export class TerrainLayer {
         .replace(
           '#include <map_fragment>',
           `#include <map_fragment>
+          // The map's alpha is the road mask (the material is opaque, so it never reaches the output).
+          float roadMask = 1.0 - diffuseColor.a;
+          diffuseColor.a = 1.0;
           float slope = 1.0 - clamp(vWorldN.y, 0.0, 1.0);
           vec3 rock = vec3(0.36, 0.34, 0.31) * (0.85 + 0.3 * fract(sin(dot(floor(vMapUv * 512.0), vec2(12.9898, 78.233))) * 43758.5453));
           diffuseColor.rgb = mix(diffuseColor.rgb * uTint, rock, smoothstep(0.35, 0.6, slope));
@@ -99,6 +102,10 @@ export class TerrainLayer {
           float snow = uSnow * smoothstep(0.55, 0.25, slope);
           snow = max(snow, smoothstep(9.0, 12.0, vHeight) * smoothstep(0.75, 0.3, slope));
           vec3 snowColor = mix(vec3(0.92, 0.94, 0.97), vec3(0.36, 0.34, 0.32), clamp(grime * 0.9, 0.0, 0.85));
+          // Roads are trodden into grey-brown slush, banked by a darker rut along the verge, so they read under snow.
+          float rut = clamp(roadMask * (1.0 - roadMask) * 4.0, 0.0, 1.0);
+          snowColor = mix(snowColor, vec3(0.58, 0.55, 0.51), roadMask * 0.7) * (1.0 - 0.3 * rut * uSnow);
+          snow *= 1.0 - 0.45 * roadMask;
           diffuseColor.rgb = mix(diffuseColor.rgb, snowColor, clamp(snow, 0.0, 0.95));
           if (uSootView > 0.5) {
             // Soot view: clean air stays clear, haze turns ochre, harmful smoke (past the lung threshold) red-black.
@@ -275,19 +282,24 @@ export class TerrainLayer {
           const bracken = Math.max(0, Math.min(1, (0.4 - patch) * 5)) * 0.5
           c = c.map((v, k) => v + (HEATHER[k] - v) * heather + (BRACKEN[k] - v) * bracken) as [number, number, number]
         }
+        let onRoad = false
         if (road) {
           // Roads fill the tile but leave a soft verge where the neighbour has no road.
           const edge = Math.min(tx, ty, TEXELS - 1 - tx, TEXELS - 1 - ty) === 0
           const nx = tx === 0 ? -1 : tx === TEXELS - 1 ? 1 : 0
           const ny = ty === 0 ? -1 : ty === TEXELS - 1 ? 1 : 0
           const neighbour = (nx || ny) && w.inBounds(x + nx, y + ny) ? w.road[(y + ny) * w.width + x + nx] : 0
-          if (!edge || neighbour || (nx && ny && (w.road[y * w.width + x + nx] || w.road[(y + ny) * w.width + x]))) c = ROAD_COLORS[road - 1] ?? ROAD_COLORS[0]
+          if (!edge || neighbour || (nx && ny && (w.road[y * w.width + x + nx] || w.road[(y + ny) * w.width + x]))) {
+            c = ROAD_COLORS[road - 1] ?? ROAD_COLORS[0]
+            onRoad = true
+          }
         }
         const o = (py * tw + px) * 4
         this.colorData[o] = Math.min(255, c[0] * n * 255)
         this.colorData[o + 1] = Math.min(255, c[1] * n * 255)
         this.colorData[o + 2] = Math.min(255, c[2] * n * 255)
-        this.colorData[o + 3] = 255
+        // Alpha carries the road mask (0 on roads) so the snow shader can keep roads trodden clear.
+        this.colorData[o + 3] = onRoad ? 0 : 255
       }
     }
   }
