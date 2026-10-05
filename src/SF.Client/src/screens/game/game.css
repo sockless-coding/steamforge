@@ -1262,6 +1262,34 @@ kbd {
   gap: 8px;
 }
 
+.names li {
+  display: flex;
+  align-items: center;
+}
+
+.names li:has(.pin) > button:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+.names .pin {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 0 6px 6px 0;
+  padding: 2px 5px;
+  color: var(--parchment-dim);
+  opacity: 0.55;
+}
+
+.names .pin:hover,
+.names .pinned .pin {
+  color: var(--brass-hi);
+  opacity: 1;
+}
+
+.kv .job-picker select {
+  max-width: 60%;
+}
+
 .need {
   display: grid;
   grid-template-columns: 70px 1fr;

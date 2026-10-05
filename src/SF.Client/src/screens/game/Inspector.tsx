@@ -1,5 +1,5 @@
 import type { GameController } from '../../game/GameController'
-import type { BuildingInfo, CitizenInfo } from '../../state/game'
+import type { BuildingInfo, CitizenInfo, JobChoice } from '../../state/game'
 import { Button, Panel, ProgressBar } from '../../ui/components'
 import { Icon } from '../../ui/Icon'
 
@@ -84,13 +84,40 @@ function BuildingPanel({ info, controller }: { info: BuildingInfo; controller: G
               </div>
               <ul className="names">
                 {info.workers.map((w) => (
-                  <li key={w.id}>
+                  <li key={w.id} className={w.pinned ? 'pinned' : ''}>
                     <button type="button" onClick={() => controller.focusCitizen(w.id)}>
                       {w.name}
+                    </button>
+                    <button
+                      type="button"
+                      className="pin"
+                      title={w.pinned ? 'Placed by you: click to let the overseer decide' : 'Keep them here'}
+                      aria-label={w.pinned ? `Let the overseer decide for ${w.name}` : `Keep ${w.name} here`}
+                      aria-pressed={w.pinned}
+                      onClick={() => controller.perform({ type: 'assignCitizen', citizen: w.id, job: w.pinned ? 'auto' : info.id })}
+                    >
+                      <Icon name="lock" size={12} />
                     </button>
                   </li>
                 ))}
               </ul>
+              {info.candidates.length > 0 && (
+                <label className="field">
+                  <span>Bring a worker</span>
+                  <select
+                    value=""
+                    onChange={(e) => e.target.value && controller.perform({ type: 'assignCitizen', citizen: Number(e.target.value), job: info.id })}
+                  >
+                    <option value="">Choose someone…</option>
+                    {info.candidates.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({c.job})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <p className="muted small">Workers you bring or lock stay put. The rest go wherever their trade needs hands.</p>
             </section>
           )}
           {info.residents.length > 0 && (
@@ -169,6 +196,7 @@ function CitizenPanel({ info, controller }: { info: CitizenInfo; controller: Gam
             <b>{info.workplace}</b>
           </li>
         )}
+        {info.job && <JobPicker id={info.id} job={info.job} controller={controller} />}
         {info.guild && (
           <li>
             <span>Guild</span>
@@ -206,6 +234,31 @@ function CitizenPanel({ info, controller }: { info: CitizenInfo; controller: Gam
   )
 }
 
+/** The player's job order for a citizen: the overseer decides, or a job of the player's choosing that sticks. */
+function JobPicker({ id, job, controller }: { id: number; job: JobChoice; controller: GameController }) {
+  const assign = (value: string) =>
+    controller.perform({ type: 'assignCitizen', citizen: id, job: value === 'auto' || value === 'laborer' || value === 'builder' ? value : Number(value) })
+  return (
+    <li className="job-picker">
+      <span>Job</span>
+      <select value={job.value} onChange={(e) => assign(e.target.value)} aria-label="Job">
+        <option value="auto">Overseer decides</option>
+        <option value="laborer">Laborer</option>
+        <option value="builder">Builder</option>
+        {job.trades.map((t) => (
+          <optgroup key={t.name} label={t.name}>
+            {t.places.map((p) => (
+              <option key={p.id} value={p.id} disabled={p.full}>
+                {p.label}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+    </li>
+  )
+}
+
 function AutomatonPanel({ info, automaton, controller }: { info: CitizenInfo; automaton: { wind: number; windMonths: number }; controller: GameController }) {
   return (
     <>
@@ -222,6 +275,7 @@ function AutomatonPanel({ info, automaton, controller }: { info: CitizenInfo; au
             <b>{info.workplace}</b>
           </li>
         )}
+        {info.job && <JobPicker id={info.id} job={info.job} controller={controller} />}
         {info.carrying && (
           <li>
             <span>Carrying</span>

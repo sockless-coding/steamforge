@@ -9,6 +9,7 @@ import {
   type BuildingInfo,
   type CitizenInfo,
   type Demographics,
+  type JobChoice,
   type HudState,
   type NetworkRow,
   type OptionInfo,
@@ -25,6 +26,7 @@ import { gatherRadius, type GathererConfig } from './sim/components/gatherer'
 import { currentRecipe, type ProducerConfig } from './sim/components/producer'
 import { conduitGrades, gradeIndex, networkIndex, participates, touchesGrid, type ConsumerConfig, type GeneratorConfig } from './sim/energy'
 import { canPlace, doorTile, footprintSize, roadBlocked, totalWork } from './sim/placement'
+import { canWorkAt } from './sim/population'
 import { canResearch, currentResearch, isUnlocked, lockedBy, unlockNames } from './sim/research'
 import { guildFactors, guildMood, guildOfCitizen, guildState, guildTarget } from './sim/guilds'
 import { airshipYard, chart, fateOf, finaleBlocker, launchBlocker, telegraphOnline, voyageMonths } from './sim/saga'
@@ -1095,7 +1097,52 @@ export class GameController {
         const g = guildOfCitizen(sim, c)
         return g ? { name: g.name, color: g.color, striking: sim.guilds[g.id]?.striking === true } : null
       })(),
+      job: c.age >= sim.rules.citizen.adultAge * 12 ? this.jobChoice(c) : null,
     }
+  }
+
+  /** The job picker for a citizen: their order, and every workplace they could be sent to, by trade, nearest first. */
+  private jobChoice(c: Citizen): JobChoice {
+    const sim = this.sim
+    const trades = new Map<string, { b: Building; d: number }[]>()
+    for (const b of sim.buildings.values()) {
+      if (!canWorkAt(sim, c, b)) continue
+      const prof = sim.component<{ profession: string }>(b, 'workplace')!.profession
+      const d = Math.abs(sim.world.xOf(b.door) - c.x) + Math.abs(sim.world.yOf(b.door) - c.y)
+      trades.set(prof, [...(trades.get(prof) ?? []), { b, d }])
+    }
+    const value = !c.pinned ? 'auto' : c.workplace ? String(c.workplace) : c.profession === 'builder' ? 'builder' : 'laborer'
+    return {
+      value,
+      trades: [...trades.entries()]
+        .map(([prof, list]) => ({
+          name: sim.content.professions.get(prof)?.name ?? prof,
+          places: list
+            .sort((a, z) => a.d - z.d)
+            .map(({ b }) => ({
+              id: b.id,
+              label: `${sim.def(b).name} (${b.workers.length}/${sim.maxWorkers(b)})`,
+              full: b.id !== c.workplace && b.workers.length >= sim.maxWorkers(b) && b.workers.every((id) => sim.citizens.get(id)?.pinned),
+            })),
+        }))
+        .sort((a, z) => a.name.localeCompare(z.name)),
+    }
+  }
+
+  /** Adults who could be brought to a workplace: idle laborers first, then the nearest, with the job they would leave. */
+  private candidatesFor(b: Building): BuildingInfo['candidates'] {
+    const sim = this.sim
+    if (b.site || sim.maxWorkers(b) === 0) return []
+    const x = sim.world.xOf(b.door)
+    const y = sim.world.yOf(b.door)
+    const out: { id: number; name: string; job: string; rank: number }[] = []
+    for (const c of sim.citizens.values()) {
+      if (c.workplace === b.id || c.age < sim.rules.citizen.adultAge * 12 || !canWorkAt(sim, c, b)) continue
+      const idle = !c.workplace && c.profession === 'laborer'
+      const job = c.workplace ? (sim.content.professions.get(c.profession)?.name ?? c.profession) : c.profession === 'builder' ? 'Builder' : 'Laborer'
+      out.push({ id: c.id, name: c.name, job: c.pinned ? `${job}, chosen` : job, rank: (idle ? 0 : 10000) + Math.abs(c.x - x) + Math.abs(c.y - y) })
+    }
+    return out.sort((a, z) => a.rank - z.rank).map(({ id, name, job }) => ({ id, name, job }))
   }
 
   private sagaInfo(): HudState['saga'] {
@@ -1271,7 +1318,8 @@ export class GameController {
             priority: b.site.priority,
           }
         : null,
-      workers: b.workers.map((id) => ({ id, name: sim.citizens.get(id)?.name ?? '?' })),
+      workers: b.workers.map((id) => ({ id, name: sim.citizens.get(id)?.name ?? '?', pinned: !!sim.citizens.get(id)?.pinned })),
+      candidates: this.candidatesFor(b),
       workerTarget: b.workerTarget,
       maxWorkers: b.site ? 0 : sim.maxWorkers(b),
       residents: b.residents.map((id) => {

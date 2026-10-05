@@ -46,7 +46,10 @@ export interface BuildingInfo {
   name: string
   description: string
   site: SiteInfo | null
-  workers: { id: number; name: string }[]
+  /** Pinned workers were placed by the player; the overseer leaves them be. */
+  workers: { id: number; name: string; pinned: boolean }[]
+  /** Adults who could be brought here, idle laborers first, then nearest first, with the job they would leave. */
+  candidates: { id: number; name: string; job: string }[]
   workerTarget: number
   maxWorkers: number
   residents: { id: number; name: string; age: number }[]
@@ -79,6 +82,15 @@ export interface CitizenInfo {
   automaton: { wind: number; windMonths: number } | null
   /** The citizen's guild, and whether it is on strike. */
   guild: { name: string; color: string; striking: boolean } | null
+  /** Job orders for adults; null for children. */
+  job: JobChoice | null
+}
+
+export interface JobChoice {
+  /** 'auto' while the overseer decides, else the job the player chose: 'laborer', 'builder' or a workplace id. */
+  value: string
+  /** Workplaces the citizen could be sent to, grouped by trade, nearest first. */
+  trades: { name: string; places: { id: number; label: string; full: boolean }[] }[]
 }
 
 /** A guild's standing for the badges and the Guild panel. */

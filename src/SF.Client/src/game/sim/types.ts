@@ -151,6 +151,8 @@ export interface Citizen {
   automaton?: boolean
   /** Automatons: months of winding left; at 0 it has run down. */
   wind?: number
+  /** The player chose this citizen's job: the overseer neither moves them nor lets them go to fill other places. */
+  pinned?: boolean
   /** Work put down at nightfall, resumed when the same job is taken up again. */
   shelved?: { effect: string; args: number[]; t: number }
 }
@@ -310,6 +312,11 @@ export type Action =
   | { type: 'prioritise'; building: number; priority: boolean }
   | { type: 'setWorkers'; building: number; count: number }
   | { type: 'setBuilders'; count: number }
+  /**
+   * Puts a citizen to a job of the player's choosing (a workplace by id, building or labour) and keeps them there, or
+   * with 'auto' hands them back to the overseer.
+   */
+  | { type: 'assignCitizen'; citizen: number; job: number | 'laborer' | 'builder' | 'auto' }
   | { type: 'setLimit'; res: string; limit: number }
   | { type: 'setOption'; building: number; key: string; value: string }
   | { type: 'answerPetition'; accept: boolean }

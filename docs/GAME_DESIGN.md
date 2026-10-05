@@ -40,6 +40,15 @@ telegrams, and the Forge Papers. Each letter signs with `from` (the Board's sign
    workers (food workplaces win ties), so every trade gets a hand before any gets a second. With less than
    `workplace.foodFirstMonths` (6) months of food in store, food workplaces still short of hands take them from other
    trades, one at a time from the busiest, never a trade's last.
+   - **A trade, not a building:** a worker with nothing to do at their own workplace (a field in winter, a workshop
+     out of inputs, a full output buffer) moves to the nearest workplace of the same trade that is short of hands
+     and has work (of the four closest), before turning to labour.
+   - **Direct orders:** the player can put any adult to a job of their choosing: a workplace (from the citizen's
+     inspector, or "Bring a worker" on the workplace), building, or labour. That citizen is pinned. The overseer
+     never moves them, never hires a pinned laborer, and never takes pinned workers for food. When a target falls,
+     pinned workers are let go last. Placing someone at a full workplace replaces its last worker the overseer
+     placed and raises the worker or builder target if need be. "Overseer decides" (or the lock on the worker list)
+     releases them, and losing the job (demolition, fire, guild policy) also clears the pin.
 4. Research: engineers at a Drafting Office unlock new buildings, roads, conduits and recipes.
 5. Survive the seasons: crops grow from spring to autumn, and winter drains warmth and food.
 6. Grow: couples need empty homes to marry and have children, and travellers sometimes ask to join.
@@ -91,6 +100,7 @@ Every command goes through `Simulation.perform` and is accepted while paused:
 - choose or clear research
 - demolish, cancel a site, or prioritise a site
 - set workers, builders, production limits, and building options (crop or recipe)
+- put a citizen to a job of the player's choosing, or hand them back to the overseer
 
 A placed building is a site. Its stages are:
 

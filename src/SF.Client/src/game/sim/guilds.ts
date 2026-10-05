@@ -183,6 +183,7 @@ export function releaseAutomatons(sim: Simulation, guild: string): void {
     b.workers = b.workers.filter((w) => w !== c.id)
     c.workplace = 0
     c.profession = 'laborer'
+    delete c.pinned
     if (c.task?.kind === 'work') {
       c.task = null
       c.path = null

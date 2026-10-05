@@ -27,7 +27,7 @@ import { abortTask, approachTile, rebuildClaims, tileOf } from './tasks'
 import { decodeArray, encodeArray } from './codec'
 import { conduitGrades, EnergyState, gradeIndex } from './energy'
 import { answerPetition } from './events'
-import { createFounders, fireWorker } from './population'
+import { assignCitizen, createFounders, fireWorker, workerToLetGo } from './population'
 import { canResearch, isUnlocked, lockedBy, researchPlan } from './research'
 import { answerGuildPetition, foundGuilds, guildState, releaseAutomatons, temperament } from './guilds'
 import { Rng } from './rng'
@@ -55,7 +55,7 @@ import type {
 } from './types'
 import { MARK_CLEAR, World, type WorldSnapshot } from './world'
 
-export const SAVE_VERSION = 8
+export const SAVE_VERSION = 9
 
 export interface ColonySnapshot {
   v: number
@@ -518,9 +518,15 @@ export class Simulation {
         const max = b ? this.maxWorkers(b) : 0
         if (!b || max === 0) return { ok: false, reason: 'This building has no workers.' }
         b.workerTarget = Math.max(0, Math.min(max, Math.round(action.count)))
-        while (b.workers.length > b.workerTarget) fireWorker(this, b.workers[b.workers.length - 1])
+        while (b.workers.length > b.workerTarget) fireWorker(this, workerToLetGo(this, b))
         this.jobsDirty = true
         return { ok: true }
+      }
+      case 'assignCitizen': {
+        const c = this.citizens.get(action.citizen)
+        if (!c) return { ok: false, reason: 'Nobody by that name.' }
+        const refused = assignCitizen(this, c, action.job)
+        return refused ? { ok: false, reason: refused } : { ok: true }
       }
       case 'setBuilders': {
         this.builderTarget = Math.max(0, Math.min(500, Math.round(action.count)))
@@ -774,6 +780,8 @@ function migrate(content: Content, s: ColonySnapshot): ColonySnapshot {
     s.saga = foundSaga(content)
     s.v = 8
   }
+  // Version 8 predates jobs chosen by the player: everyone is left to the overseer.
+  if (s.v === 8) s.v = 9
   if (s.v !== SAVE_VERSION) throw new Error(`Unsupported save version ${s.v}.`)
   return s
 }

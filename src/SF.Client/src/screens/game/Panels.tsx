@@ -75,7 +75,8 @@ export function GuildPanel({ hud, controller, onClose }: { hud: HudState; contro
       <GuildStandings hud={hud} controller={controller} />
       <p className="muted small">
         Everyone without a trade works as a laborer, hauling materials and clearing land. Builders raise construction sites and lay roads. Raising a
-        profession assigns idle laborers to that trade&apos;s workplaces.
+        profession assigns idle laborers to that trade&apos;s workplaces, and a trade&apos;s workers move between its workplaces to wherever there is
+        work. To move one person, select them and choose their job, or use &quot;Bring a worker&quot; on a workplace.
       </p>
       <table className="prof-table">
         <thead>

@@ -169,6 +169,7 @@ export function fireWorker(sim: Simulation, id: number): void {
   const b = sim.buildings.get(c.workplace)
   if (b) b.workers = b.workers.filter((w) => w !== id)
   c.workplace = 0
+  delete c.pinned
   if (c.profession !== 'child') c.profession = 'laborer'
   if (c.task?.kind === 'work') abortTask(sim, c)
   sim.jobsDirty = true
@@ -180,6 +181,79 @@ function hire(sim: Simulation, c: Citizen, b: Building): void {
   c.profession = workplace.profession
   b.workers.push(c.id)
   if (c.task && (c.task.kind === 'labor' || c.task.kind === 'idle' || c.task.kind === 'build')) abortTask(sim, c)
+}
+
+/** The worker a workplace lets go first when it has too many: the last the overseer placed, else the last of all. */
+export function workerToLetGo(sim: Simulation, b: Building): number {
+  for (let i = b.workers.length - 1; i >= 0; i--) if (!sim.citizens.get(b.workers[i])?.pinned) return b.workers[i]
+  return b.workers[b.workers.length - 1]
+}
+
+/**
+ * Moves a worker to another workplace of the same trade, keeping any task under way (the caller hands them their
+ * next one). Used when their own workplace has nothing for them to do.
+ */
+export function transferWorker(sim: Simulation, c: Citizen, to: Building): void {
+  const from = sim.buildings.get(c.workplace)
+  if (from) from.workers = from.workers.filter((w) => w !== c.id)
+  c.workplace = to.id
+  to.workers.push(c.id)
+  sim.jobsDirty = true
+}
+
+/** Whether a citizen could take a place at a workplace (ignoring how many already work there). */
+export function canWorkAt(sim: Simulation, c: Citizen, b: Building): boolean {
+  if (b.site || b.fire > 0 || !sim.def(b).components.workplace || sim.maxWorkers(b) === 0) return false
+  return !c.automaton || automatonsAllowed(sim, b)
+}
+
+/** Builders on the payroll. */
+function builderCount(sim: Simulation): number {
+  let n = 0
+  for (const c of sim.citizens.values()) if (c.profession === 'builder') n++
+  return n
+}
+
+/**
+ * The player's direct order: puts a citizen to a workplace (raising its worker target if need be), to building or
+ * to labour, and pins them there; or with 'auto' hands them back to the overseer in their current job.
+ */
+export function assignCitizen(sim: Simulation, c: Citizen, job: number | 'laborer' | 'builder' | 'auto'): string | null {
+  if (!isAdult(sim, c)) return 'Children cannot work.'
+  if (job === 'auto') {
+    delete c.pinned
+    sim.jobsDirty = true
+    return null
+  }
+  if (typeof job === 'number') {
+    const b = sim.buildings.get(job)
+    if (!b || !canWorkAt(sim, c, b)) return c.automaton && b && !automatonsAllowed(sim, b) ? 'The guild will not have automatons in this trade.' : 'Nobody can work there.'
+    if (c.workplace !== b.id) {
+      const max = sim.maxWorkers(b)
+      if (b.workers.length >= max && b.workers.every((id) => sim.citizens.get(id)?.pinned)) return 'Every place there is taken.'
+      if (c.workplace) fireWorker(sim, c.id)
+      else if (c.profession === 'builder') c.profession = 'laborer'
+      if (b.workers.length >= max) fireWorker(sim, workerToLetGo(sim, b))
+      if (c.task?.kind === 'work') abortTask(sim, c)
+      hire(sim, c, b)
+      b.workerTarget = Math.max(b.workerTarget, b.workers.length)
+    }
+  } else {
+    if (c.workplace) fireWorker(sim, c.id)
+    if (job === 'builder') {
+      if (c.profession !== 'builder') {
+        c.profession = 'builder'
+        if (c.task?.kind === 'labor' || c.task?.kind === 'idle') abortTask(sim, c)
+      }
+      sim.builderTarget = Math.max(sim.builderTarget, builderCount(sim))
+    } else if (c.profession === 'builder') {
+      c.profession = 'laborer'
+      if (c.task?.kind === 'build') abortTask(sim, c)
+    }
+  }
+  c.pinned = true
+  sim.jobsDirty = true
+  return null
 }
 
 function isAdult(sim: Simulation, c: Citizen): boolean {
@@ -239,24 +313,27 @@ function fill(sim: Simulation, workplaces: Building[], pool: Citizen[]): void {
  * Fills workplaces up to their targets and keeps the builder count at the player's setting. Every workplace gets a
  * hand before any gets a second, food workplaces first on a tie; while the stores run short of food, food
  * workplaces still short-handed take hands from other trades: one at a time from the trade with the most workers,
- * never its last.
+ * never its last. Citizens the player placed themselves are never moved, and are let go last when a target falls.
  */
 export function assignJobs(sim: Simulation): void {
   sim.jobsDirty = false
   for (const b of sim.buildings.values()) {
-    while (b.workers.length > b.workerTarget) fireWorker(sim, b.workers[b.workers.length - 1])
+    while (b.workers.length > b.workerTarget) fireWorker(sim, workerToLetGo(sim, b))
   }
   const builders: Citizen[] = []
   for (const c of sim.citizens.values()) if (c.profession === 'builder') builders.push(c)
+  // Builders the player chose go last.
+  builders.sort((a, z) => Number(!!a.pinned) - Number(!!z.pinned))
   while (builders.length > sim.builderTarget) {
     const c = builders.pop()!
     c.profession = 'laborer'
+    delete c.pinned
     if (c.task?.kind === 'build') abortTask(sim, c)
   }
 
   const pool: Citizen[] = []
   for (const c of sim.citizens.values()) {
-    if (isAdult(sim, c) && c.profession === 'laborer' && !c.workplace) pool.push(c)
+    if (isAdult(sim, c) && c.profession === 'laborer' && !c.workplace && !c.pinned) pool.push(c)
   }
   const food: Building[] = []
   const other: Building[] = []
@@ -266,12 +343,15 @@ export function assignJobs(sim: Simulation): void {
   }
   fill(sim, [...food, ...other], pool)
   if (pool.length === 0 && monthsOfFood(sim) < sim.rules.workplace.foodFirstMonths) {
+    const movable = (o: Building) => o.workers.map((id) => sim.citizens.get(id)!).filter((c) => c && !c.pinned)
     for (const b of food) {
       while (b.workers.length < b.workerTarget) {
         let donor: Building | null = null
-        for (const o of other) if (o.workers.length > 1 && (!donor || o.workers.length > donor.workers.length)) donor = o
+        for (const o of other) {
+          if (o.workers.length > 1 && (!donor || o.workers.length > donor.workers.length) && movable(o).length > 0) donor = o
+        }
         if (!donor) break
-        const hands = donor.workers.map((id) => sim.citizens.get(id)!).filter(Boolean)
+        const hands = movable(donor)
         const i = nearestFor(sim, hands, b)
         if (i < 0) break
         fireWorker(sim, hands[i].id)

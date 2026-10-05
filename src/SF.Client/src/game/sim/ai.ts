@@ -3,6 +3,7 @@ import { isLit } from './components/lighting'
 import { conduitGrades, gradeIndex, type GeneratorConfig } from './energy'
 import { accepts, amount, available, breadth, foodIds, foodIn, freeSpace, nearestStorageFor, nearestStorageWith, storageConfig } from './inventory'
 import { deliveredFraction, totalWork } from './placement'
+import { canWorkAt, transferWorker } from './population'
 import type { Simulation } from './simulation'
 import {
   approachTile,
@@ -48,7 +49,7 @@ export function chooseTask(sim: Simulation, c: Citizen): Task | null {
 
   if (striking) return strikeTask(sim, c)
   let t: Task | null = null
-  if (c.workplace) t = workplaceTask(sim, c)
+  if (c.workplace) t = workplaceTask(sim, c) ?? spareHandTask(sim, c)
   else if (c.profession === 'builder') t = builderTask(sim, c)
   return t ?? laborTask(sim, c) ?? idleTask(sim, c)
 }
@@ -82,7 +83,7 @@ function automatonTask(sim: Simulation, c: Citizen): Task | null {
     if (wind <= 0) return task('idle', 'Run down', 0, [{ op: 'wait', seconds: 20 }])
   }
   let t: Task | null = null
-  if (c.workplace) t = workplaceTask(sim, c)
+  if (c.workplace) t = workplaceTask(sim, c) ?? spareHandTask(sim, c)
   else if (c.profession === 'builder') t = builderTask(sim, c)
   return t ?? laborTask(sim, c) ?? task('idle', 'Ticking over', 0, [{ op: 'wait', seconds: 6 + sim.rng.int(6) }])
 }
@@ -295,12 +296,44 @@ function randomNearbyTile(sim: Simulation, center: number, radius: number): numb
 
 function workplaceTask(sim: Simulation, c: Citizen): Task | null {
   const b = sim.buildings.get(c.workplace)
-  if (!b || b.site || b.fire > 0) return null
+  return b ? workAt(sim, c, b) : null
+}
+
+function workAt(sim: Simulation, c: Citizen, b: Building): Task | null {
+  if (b.site || b.fire > 0) return null
   for (const [handler, cfg] of sim.components(b)) {
     const t = handler.work?.(sim, b, cfg, c)
     if (t) return t
   }
   return haulOutputTask(sim, c, b, 1)
+}
+
+/** How many of the nearest same-trade workplaces a worker with nothing to do looks over. */
+const SPARE_HAND_REACH = 4
+
+/**
+ * A trade's workers are not tied to one building: one with nothing to do at their own workplace moves to the nearest
+ * workplace of the same trade that is short of hands and has work, before turning to labour. Those the player placed
+ * themselves stay put.
+ */
+function spareHandTask(sim: Simulation, c: Citizen): Task | null {
+  if (c.pinned) return null
+  const here = tileOf(c, sim)
+  const options: { b: Building; d: number }[] = []
+  for (const b of sim.buildings.values()) {
+    if (b.id === c.workplace || b.workers.length >= b.workerTarget || !canWorkAt(sim, c, b)) continue
+    if (sim.component<{ profession: string }>(b, 'workplace')!.profession !== c.profession) continue
+    options.push({ b, d: sim.world.distance(here, b.door) })
+  }
+  options.sort((a, z) => a.d - z.d)
+  for (const { b } of options.slice(0, SPARE_HAND_REACH)) {
+    const t = workAt(sim, c, b)
+    if (t) {
+      transferWorker(sim, c, b)
+      return t
+    }
+  }
+  return null
 }
 
 /** Builders raise construction sites and lay roads; with nothing to build they labour. After dark only lit sites. */
