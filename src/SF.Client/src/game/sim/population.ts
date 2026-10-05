@@ -1,8 +1,10 @@
 import { automatonsAllowed } from './guilds'
 import { familyName, firstName, surname } from './names'
 import type { Simulation } from './simulation'
+import { foodIds } from './inventory'
 import { abortTask } from './tasks'
 import type { Building, Citizen } from './types'
+import { outputsOf } from './work'
 
 export interface NewCitizen {
   name: string
@@ -184,7 +186,61 @@ function isAdult(sim: Simulation, c: Citizen): boolean {
   return c.age >= sim.rules.citizen.adultAge * 12
 }
 
-/** Fills workplaces up to their targets and keeps the builder count at the player's setting. */
+/** Whether a workplace feeds the colony: it produces a food (fields, hunters, fishers, glasshouses, bakeries). */
+function feedsColony(sim: Simulation, b: Building): boolean {
+  return outputsOf(sim, b).some((res) => sim.resource(res)?.category === 'food')
+}
+
+/** Months of meals the stores hold for the current population. */
+export function monthsOfFood(sim: Simulation): number {
+  const r = sim.rules.citizen
+  const pop = sim.population().total
+  if (pop === 0) return Infinity
+  let food = 0
+  for (const f of foodIds(sim)) food += sim.totals[f] ?? 0
+  return food / (pop * r.mealSize * r.hungerPerMonth * sim.mods.hungerRate)
+}
+
+/** The free worker nearest a workplace's door who may work there, or -1. */
+function nearestFor(sim: Simulation, pool: Citizen[], b: Building): number {
+  const bots = automatonsAllowed(sim, b)
+  const x = sim.world.xOf(b.door) + 0.5
+  const y = sim.world.yOf(b.door) + 0.5
+  let best = -1
+  let bestD = Infinity
+  for (let i = 0; i < pool.length; i++) {
+    if (!bots && pool[i].automaton) continue
+    const d = Math.abs(pool[i].x - x) + Math.abs(pool[i].y - y)
+    if (d < bestD) {
+      bestD = d
+      best = i
+    }
+  }
+  return best
+}
+
+/**
+ * Hires from the pool into the short-handed workplace with the fewest workers (earlier in `workplaces` on a tie), so
+ * every trade gets a hand before any gets a second and a workplace finished late is not left empty.
+ */
+function fill(sim: Simulation, workplaces: Building[], pool: Citizen[]): void {
+  const open = workplaces.filter((b) => b.workers.length < b.workerTarget)
+  while (pool.length > 0 && open.length > 0) {
+    let k = 0
+    for (let j = 1; j < open.length; j++) if (open[j].workers.length < open[k].workers.length) k = j
+    const b = open[k]
+    const i = nearestFor(sim, pool, b)
+    if (i >= 0) hire(sim, pool.splice(i, 1)[0], b)
+    if (i < 0 || b.workers.length >= b.workerTarget) open.splice(k, 1)
+  }
+}
+
+/**
+ * Fills workplaces up to their targets and keeps the builder count at the player's setting. Every workplace gets a
+ * hand before any gets a second, food workplaces first on a tie; while the stores run short of food, food
+ * workplaces still short-handed take hands from other trades: one at a time from the trade with the most workers,
+ * never its last.
+ */
 export function assignJobs(sim: Simulation): void {
   sim.jobsDirty = false
   for (const b of sim.buildings.values()) {
@@ -202,22 +258,25 @@ export function assignJobs(sim: Simulation): void {
   for (const c of sim.citizens.values()) {
     if (isAdult(sim, c) && c.profession === 'laborer' && !c.workplace) pool.push(c)
   }
+  const food: Building[] = []
+  const other: Building[] = []
   for (const b of sim.buildings.values()) {
     if (b.site || b.fire > 0 || !sim.def(b).components.workplace) continue
-    const bots = automatonsAllowed(sim, b)
-    while (b.workers.length < b.workerTarget && pool.length > 0) {
-      let best = -1
-      let bestD = Infinity
-      for (let i = 0; i < pool.length; i++) {
-        if (!bots && pool[i].automaton) continue
-        const d = Math.abs(pool[i].x - (sim.world.xOf(b.door) + 0.5)) + Math.abs(pool[i].y - (sim.world.yOf(b.door) + 0.5))
-        if (d < bestD) {
-          bestD = d
-          best = i
-        }
+    ;(feedsColony(sim, b) ? food : other).push(b)
+  }
+  fill(sim, [...food, ...other], pool)
+  if (pool.length === 0 && monthsOfFood(sim) < sim.rules.workplace.foodFirstMonths) {
+    for (const b of food) {
+      while (b.workers.length < b.workerTarget) {
+        let donor: Building | null = null
+        for (const o of other) if (o.workers.length > 1 && (!donor || o.workers.length > donor.workers.length)) donor = o
+        if (!donor) break
+        const hands = donor.workers.map((id) => sim.citizens.get(id)!).filter(Boolean)
+        const i = nearestFor(sim, hands, b)
+        if (i < 0) break
+        fireWorker(sim, hands[i].id)
+        hire(sim, hands[i], b)
       }
-      if (best < 0) break
-      hire(sim, pool.splice(best, 1)[0], b)
     }
   }
   while (builders.length < sim.builderTarget && pool.length > 0) {

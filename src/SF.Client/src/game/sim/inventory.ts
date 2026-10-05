@@ -77,16 +77,22 @@ export function nearestStorageWith(sim: Simulation, res: string, near: number, m
   return best
 }
 
+/** How many kinds of goods a store takes: the Steamforge takes everything, a stockyard only materials and fuel. */
+export function breadth(sim: Simulation, b: Building): number {
+  return storageConfig(sim, b)?.accepts.length ?? 0
+}
+
 /**
  * Puts goods straight into storages near a tile (refunds, dropped loads, starting supplies), filling the nearest
- * first. Returns the quantity that did not fit.
+ * first, or with `specialisedFirst` the stores that take the fewest kinds of goods first. Returns the quantity that
+ * did not fit.
  */
-export function addToStorage(sim: Simulation, res: string, qty: number, near: number, exclude = 0): number {
+export function addToStorage(sim: Simulation, res: string, qty: number, near: number, exclude = 0, specialisedFirst = false): number {
   let left = qty
   const candidates = sim
     .storages()
     .filter((b) => b.id !== exclude && accepts(sim, b, res))
-    .sort((a, b) => doorDistance(sim, a, near) - doorDistance(sim, b, near) || a.id - b.id)
+    .sort((a, b) => (specialisedFirst ? breadth(sim, a) - breadth(sim, b) : 0) || doorDistance(sim, a, near) - doorDistance(sim, b, near) || a.id - b.id)
   for (const b of candidates) {
     if (left <= 0) break
     const room = Math.max(0, freeSpace(sim, b))

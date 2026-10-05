@@ -1,7 +1,7 @@
 import { guildHall, guildOfCitizen, onStrike } from './guilds'
 import { isLit } from './components/lighting'
-import { conduitGrades, gradeIndex } from './energy'
-import { amount, available, foodIds, foodIn, nearestStorageFor, nearestStorageWith } from './inventory'
+import { conduitGrades, gradeIndex, type GeneratorConfig } from './energy'
+import { accepts, amount, available, breadth, foodIds, foodIn, freeSpace, nearestStorageFor, nearestStorageWith, storageConfig } from './inventory'
 import { deliveredFraction, totalWork } from './placement'
 import type { Simulation } from './simulation'
 import {
@@ -408,9 +408,12 @@ function footing(sim: Simulation, tile: number, from: number): number {
   return best
 }
 
-/** General labour: supply construction sites, service buildings (fuel the Steamforge), clear land, haul goods. */
+/**
+ * General labour: supply construction sites, service buildings (fuel the Steamforge), clear land, haul goods, and
+ * tidy crowded stores.
+ */
 export function laborTask(sim: Simulation, c: Citizen): Task | null {
-  return supplySiteTask(sim, c) ?? serviceTask(sim, c) ?? clearTask(sim, c) ?? haulAnyTask(sim, c)
+  return supplySiteTask(sim, c) ?? serviceTask(sim, c) ?? clearTask(sim, c) ?? haulAnyTask(sim, c) ?? tidyStoresTask(sim)
 }
 
 /** Tasks buildings offer to any laborer through their components' labor hooks. */
@@ -500,4 +503,57 @@ function haulAnyTask(sim: Simulation, c: Citizen): Task | null {
     }
   }
   return best ? haulOutputTask(sim, c, best, min, 'labor') : null
+}
+
+/** Share of a general store kept free for whatever comes in next; past it, laborers move goods out. */
+const TIDY_FREE_SHARE = 0.2
+const TIDY_HAULERS = 2
+
+/**
+ * Keeps general stores (the Steamforge) from clogging with logs and stone: when one is nearly full, laborers carry its
+ * goods to a nearby store that takes fewer kinds of goods (a stockyard or warehouse) and has room, so the hunters,
+ * fishers and farms always have somewhere to bring food. Goods only ever move to a narrower store, so they never
+ * shuttle back and forth.
+ */
+function tidyStoresTask(sim: Simulation): Task | null {
+  const carry = sim.rules.citizen.carry
+  for (const from of sim.storages()) {
+    if (from.fire > 0 || slotCount(from, 'tidying') >= TIDY_HAULERS) continue
+    if (freeSpace(sim, from) >= storageConfig(sim, from)!.capacity * TIDY_FREE_SHARE) continue
+    // A store that burns fuel (the Steamforge) keeps a firebox's worth of it.
+    const generator = sim.component<GeneratorConfig>(from, 'generator')
+    let best: { res: string; to: Building; qty: number } | null = null
+    for (const res in from.stock) {
+      const keep = generator?.fuel?.[res] !== undefined ? (generator.capacity ?? 0) : 0
+      const qty = Math.min(carry, available(from, res) - keep)
+      if (qty < 1 || (best && qty <= best.qty)) continue
+      const to = narrowerStore(sim, from, res)
+      if (to) best = { res, to, qty: Math.min(qty, Math.floor(freeSpace(sim, to))) }
+    }
+    if (!best || best.qty < 1) continue
+    const { res, to, qty } = best
+    return task('labor', `Moving ${sim.resource(res)?.name.toLowerCase() ?? res} to the ${sim.def(to).name}`, from.id, [
+      gotoBuilding(from),
+      { op: 'take', from: from.id, res, qty },
+      gotoBuilding(to),
+      { op: 'give', to: to.id },
+    ], [reserveStock(from, res, qty), reserveIncoming(to, res, qty), takeSlot(from, 'tidying')])
+  }
+  return null
+}
+
+/** The nearest store that takes the resource, takes fewer kinds of goods than `from`, and has room. */
+function narrowerStore(sim: Simulation, from: Building, res: string): Building | null {
+  const width = breadth(sim, from)
+  let best: Building | null = null
+  let bestD = Infinity
+  for (const s of sim.storages()) {
+    if (s.fire > 0 || breadth(sim, s) >= width || freeSpace(sim, s) < 1 || !accepts(sim, s, res)) continue
+    const d = sim.world.distance(s.door, from.door)
+    if (d < bestD) {
+      bestD = d
+      best = s
+    }
+  }
+  return best
 }

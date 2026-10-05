@@ -36,7 +36,10 @@ telegrams, and the Forge Papers. Each letter signs with `from` (the Board's sign
    Pressure falls along every tile of pipe, so a town grows compact around its boilers. Every site goes through
    clearing, then material delivery, then building.
 3. Staff: assign professions in the Guild panel. Anyone without a job is a laborer. Every trade belongs to a guild,
-   and the guilds must be kept on side (see Guilds).
+   and the guilds must be kept on side (see Guilds). Free adults go to the short-handed workplace with the fewest
+   workers (food workplaces win ties), so every trade gets a hand before any gets a second. With less than
+   `workplace.foodFirstMonths` (6) months of food in store, food workplaces still short of hands take them from other
+   trades, one at a time from the busiest, never a trade's last.
 4. Research: engineers at a Drafting Office unlock new buildings, roads, conduits and recipes.
 5. Survive the seasons: crops grow from spring to autumn, and winter drains warmth and food.
 6. Grow: couples need empty homes to marry and have children, and travellers sometimes ask to join.
@@ -122,7 +125,7 @@ Prioritised sites are served first. Cancelling refunds the delivered materials. 
   3. collecting tools or coats
   4. stocking the home pantry and firewood
   5. the job (workplace or builder)
-  6. labour: supply sites, service buildings (keep the Steamforge fuelled), clear land, haul goods
+  6. labour: supply sites, service buildings (keep the Steamforge fuelled), clear land, haul goods, tidy crowded stores
   7. idle
 
   Tasks are plain data (steps plus reservations), so they serialize.
@@ -140,7 +143,7 @@ All values live in content JSON.
 | Leather → coats | Hunter's Lodge byproduct → Tailor's Shop |
 | Energy | Steamforge, Boiler House, Galvanic Dynamo, Pump House and Windpump Well (feedwater), Booster Pump (see below) |
 | Research | Drafting Office, Analytical Engine (needs power) |
-| Storage | Steamforge (all goods), Stockyard (materials, fuel), Warehouse (food, goods) |
+| Storage | Steamforge (all goods, 500), Stockyard (materials, fuel), Warehouse (food, goods). Starting supplies fill the specialised stores first (the Steamforge keeps a firebox of fuel); when a general store is over 80% full, laborers move goods to a narrower store with room. A workplace whose goods no store has room for stands idle, says so in the inspector, and is warned of (food workplaces every month) |
 | Housing | Settler's Cottage, Brick Rowhouse, Steam Tenement. All have radiators: on a steam grid they burn firewood only for the share of heat the steam does not supply |
 | Safety | Pump Well (radius 14) and Steam Fire Station (radius 24, puts fires out in seconds; needs steam). Otherwise a burning building is lost and the fire spreads |
 | Health | Apothecary (brews glasshouse herbs into lung tonic; homes within 16 tiles take 60% less soot damage while tonic lasts) |

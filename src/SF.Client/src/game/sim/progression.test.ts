@@ -44,13 +44,22 @@ describe('the Steamforge', () => {
     expect(sim.energy.totals[networkIndex(sim, 'steam')].supply).toBeGreaterThan(0)
   })
 
-  it('burns firewood from its own stores, and laborers top it up from other storage', () => {
+  it('burns fuel from its own stores, and laborers top it up from other storage', () => {
     const sim = newColony()
     const forge = hq(sim)
-    const before = forge.stock.firewood ?? 0
+    const fuel = () => (forge.stock.coal ?? 0) + (forge.stock.firewood ?? 0)
+    // Founded with a firebox's worth of its preferred fuel; the rest of the supplies go to the stockyard.
+    expect(forge.stock.coal ?? 0).toBeGreaterThan(0)
+    const before = fuel()
     runMonths(sim, 2)
-    expect(sim.stats.consumed.firewood ?? 0).toBeGreaterThan(0)
-    expect(forge.stock.firewood ?? 0).toBeLessThan(before + 1)
+    expect(sim.stats.consumed.coal ?? 0).toBeGreaterThan(0)
+    expect(fuel()).toBeLessThan(before)
+    // Nearly burned out: laborers bring more from the stockyard.
+    forge.stock.coal = 1
+    delete forge.stock.firewood
+    runMonths(sim, 0.5)
+    expect(forge.data.lit).toBe(true)
+    expect(fuel()).toBeGreaterThan(4)
   })
 })
 

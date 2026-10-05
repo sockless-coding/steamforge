@@ -29,6 +29,7 @@ import { canResearch, currentResearch, isUnlocked, lockedBy, unlockNames } from 
 import { guildFactors, guildMood, guildOfCitizen, guildState, guildTarget } from './sim/guilds'
 import { airshipYard, chart, fateOf, finaleBlocker, launchBlocker, telegraphOnline, voyageMonths } from './sim/saga'
 import { Simulation, type ColonySnapshot } from './sim/simulation'
+import { storageBlocked } from './sim/work'
 import { sootExposure, windFrom, windVector } from './sim/soot'
 import type { Action, ActionResult, Building, Citizen, NewColonyOptions, Rotation, SimEvent } from './sim/types'
 import type { AreaRing, AreaTile, TileMark } from './render/overlays'
@@ -1217,6 +1218,7 @@ export class GameController {
     const def = sim.def(b)
     const lines: string[] = []
     if (!b.site) for (const [handler, cfg] of sim.components(b)) lines.push(...(handler.describe?.(sim, b, cfg) ?? []))
+    if (!b.site && storageBlocked(sim, b)) lines.push('Idle: no storage has room for its goods')
     const options: OptionInfo[] = []
     const producer = sim.component<ProducerConfig>(b, 'producer')
     const recipes = producer?.recipes.filter((id) => isUnlocked(sim, 'recipe', id)) ?? []

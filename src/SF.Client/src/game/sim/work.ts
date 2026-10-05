@@ -23,6 +23,12 @@ export function outputFull(sim: Simulation, b: Building): boolean {
   return outputHeld(sim, b) >= sim.rules.workplace.outputBuffer
 }
 
+/** The output buffer is full and no storage has room for any of it, so the workers stand idle. */
+export function storageBlocked(sim: Simulation, b: Building): boolean {
+  if (!outputFull(sim, b)) return false
+  return outputsOf(sim, b).every((res) => available(b, res) < 1 || !nearestStorageFor(sim, res, b.door))
+}
+
 /** Carries a building's largest unreserved output to the nearest storage with room. */
 export function haulOutputTask(sim: Simulation, _c: Citizen, b: Building, min: number, kind: TaskKind = 'work'): Task | null {
   let best = ''

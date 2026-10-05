@@ -163,7 +163,11 @@ export interface RulesDef {
   temperatureJitter: number
   citizen: CitizenRules
   housing: { firewoodPerMonth: number; pantryMeals: number; pantryFirewood: number }
-  workplace: { outputBuffer: number; inputBatches: number }
+  /**
+   * `foodFirstMonths`: with less food in store than this many months of meals, food workplaces short of hands take
+   * them from other trades (never a trade's last hand).
+   */
+  workplace: { outputBuffer: number; inputBatches: number; foodFirstMonths: number }
   construction: { workChunkSeconds: number; buildersPerTile: number; refundOnDemolish: number }
   /** Day and night: daylight is the lit fraction of each month's day; outside it citizens go home to sleep. */
   day: DayRules

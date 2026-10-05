@@ -1,4 +1,5 @@
 import type { BuildingDef, RoadDef } from '../../api/types'
+import type { GeneratorConfig } from './energy'
 import { addStock, addToStorage } from './inventory'
 import { fireWorker } from './population'
 import { lockedBy } from './research'
@@ -334,8 +335,21 @@ export function placeStartingBuildings(sim: Simulation, sx: number, sy: number):
     }
   }
 
-  for (const [res, qty] of Object.entries(sim.preset.startingResources)) {
-    const left = addToStorage(sim, res, qty, forge.door)
+  // The Steamforge keeps a firebox's worth of its fuel; everything else goes to the specialised stores first, so it
+  // has room for the first hunts and harvests.
+  const supplies = { ...sim.preset.startingResources }
+  const generator = sim.component<GeneratorConfig>(forge, 'generator')
+  let firebox = generator?.capacity ?? 0
+  for (const res of Object.keys(generator?.fuel ?? {})) {
+    const qty = Math.min(firebox, supplies[res] ?? 0)
+    if (qty <= 0) continue
+    addStock(forge.stock, res, qty)
+    supplies[res] -= qty
+    firebox -= qty
+  }
+  for (const [res, qty] of Object.entries(supplies)) {
+    if (qty <= 0) continue
+    const left = addToStorage(sim, res, qty, forge.door, 0, true)
     if (left > 0) addStock(forge.stock, res, left)
   }
 }

@@ -54,7 +54,8 @@
   },
   "workplace": {
     "outputBuffer": 30,
-    "inputBatches": 3
+    "inputBatches": 3,
+    "foodFirstMonths": 6
   },
   "construction": {
     "workChunkSeconds": 4,

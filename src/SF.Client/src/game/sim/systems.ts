@@ -6,13 +6,14 @@ import type { ShelterConfig } from './components/basic'
 import { solveEnergy } from './energy'
 import { rollEvents, updateFires, updatePetition } from './events'
 import { updateGuildPetition, updateGuilds } from './guilds'
-import { computeTotals, foodIds } from './inventory'
-import { assignHousing, assignJobs, births, killCitizen } from './population'
+import { computeTotals } from './inventory'
+import { assignHousing, assignJobs, births, killCitizen, monthsOfFood } from './population'
 import type { Simulation } from './simulation'
 import { fadeGrime, shiftWind, sootExposure, updateSoot } from './soot'
 import { checkDispatches } from './story'
 import { runCitizen } from './tasks'
 import { MARK_CLEAR } from './world'
+import { outputsOf, storageBlocked } from './work'
 
 /**
  * A simulation system. Systems run in registration order: tick() every tick, second() once per game second,
@@ -335,18 +336,25 @@ registerSystem({
   },
   // Warnings come at the turn of each season, or every month once they are urgent, so they do not drown other news.
   month: (sim) => {
-    const r = sim.rules.citizen
     const pop = sim.population().total
     sim.stats.peakPopulation = Math.max(sim.stats.peakPopulation, pop)
     const seasonStart = sim.season.months[0] === sim.month
-    let food = 0
-    for (const f of foodIds(sim)) food += sim.totals[f] ?? 0
-    const monthsOfFood = pop > 0 ? food / (pop * r.mealSize * r.hungerPerMonth * sim.mods.hungerRate) : Infinity
-    if (monthsOfFood < 1) sim.notify('warn', 'Food stores will run out within the month.')
-    else if (monthsOfFood < 3 && seasonStart) sim.notify('warn', 'Food stores are running low.')
+    const months = monthsOfFood(sim)
+    if (months < 1) sim.notify('warn', 'Food stores will run out within the month.')
+    else if (months < 3 && seasonStart) sim.notify('warn', 'Food stores are running low.')
     const homeless = sim.population().homeless
     const coldAhead = sim.season.id === 'autumn' || sim.season.id === 'winter'
     if (homeless > 0 && coldAhead && seasonStart) sim.notify('warn', `${homeless} citizens have no home for the cold months.`)
     if (sim.season.id === 'autumn' && seasonStart && (sim.totals.firewood ?? 0) < pop * 2) sim.notify('warn', 'Firewood is short and winter is coming.')
+    // Workplaces whose output has nowhere to go stand idle; food going undelivered is warned of every month.
+    const blocked = [...sim.buildings.values()].filter((b) => !b.site && storageBlocked(sim, b))
+    if (blocked.length > 0) {
+      const food = blocked.find((b) => outputsOf(sim, b).some((res) => sim.resource(res)?.category === 'food'))
+      const first = food ?? blocked[0]
+      if (food || seasonStart) {
+        const more = blocked.length > 1 ? ` and ${blocked.length - 1} more workplace${blocked.length > 2 ? 's' : ''}` : ''
+        sim.notify('warn', `The stores are full: the ${sim.def(first).name}${more} cannot deliver and the workers stand idle. Build a warehouse or stockyard.`, first.door)
+      }
+    }
   },
 })

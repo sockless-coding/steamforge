@@ -11,7 +11,7 @@
     "headquarters": true,
     "components": {
       "emitter": { "soot": 1, "stack": 3 },
-      "storage": { "capacity": 400, "accepts": ["material", "fuel", "food", "goods"] },
+      "storage": { "capacity": 500, "accepts": ["material", "fuel", "food", "goods"] },
       "shelter": { "warmUpPerMonth": 2.25 },
       "generator": { "network": "steam", "output": 12, "fuel": { "coal": 1.2, "firewood": 3 }, "capacity": 12 }
     },
