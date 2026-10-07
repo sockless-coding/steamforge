@@ -23,13 +23,19 @@ interface BuildingView {
   /** Translucent full-size model and ground outline shown while the building is only planned. */
   blueprint: THREE.Group | null
   outline: THREE.Group | null
+  /** Footprint the outline was drawn for (a field site can be resized). */
+  outlineKey: string
 }
 
 interface FieldView {
   soil: THREE.Mesh
   crops: THREE.InstancedMesh
+  /** Footprint and terrain revision the soil was draped for. */
+  shape: string
   version: string
 }
+
+const footprintKey = (b: Building) => `${b.x},${b.y},${b.w},${b.h}`
 
 const cropGeometry = (() => {
   const blades = [0, 1, 2].map((i) => new THREE.ConeGeometry(0.08, 0.5, 4).translate(Math.cos(i * 2.1) * 0.12, 0.25, Math.sin(i * 2.1) * 0.12))
@@ -353,6 +359,7 @@ export class BuildingLayer {
       indicator: null,
       blueprint: null,
       outline: null,
+      outlineKey: footprintKey(b),
     }
     const def = sim.def(b)
     if (def.components.field) {
@@ -379,10 +386,7 @@ export class BuildingLayer {
   private remove(view: BuildingView): void {
     this.clearPlan(view)
     this.group.remove(view.group)
-    if (view.field) {
-      view.field.soil.geometry.dispose()
-      view.field.crops.dispose()
-    }
+    if (view.field) this.disposeField(view)
     for (const p of view.piles) p.removeFromParent()
     this.views.delete(view.id)
     this.poolsDirty = true
@@ -391,6 +395,12 @@ export class BuildingLayer {
   private animate(sim: Simulation, b: Building, view: BuildingView, time: number, dt: number): void {
     const def = sim.def(b)
     if (!b.site && view.outline) this.clearPlan(view)
+    if (b.site && view.outline && view.outlineKey !== footprintKey(b)) {
+      this.clearPlan(view)
+      view.outline = this.makeOutline(sim, b)
+      view.outlineKey = footprintKey(b)
+      this.group.add(view.outline)
+    }
     if (def.components.field) {
       this.updateField(sim, b, view)
       return
@@ -539,7 +549,19 @@ export class BuildingLayer {
     })
   }
 
+  private disposeField(view: BuildingView): void {
+    const field = view.field!
+    view.group.remove(field.soil, field.crops)
+    field.soil.geometry.dispose()
+    field.crops.dispose()
+    view.field = null
+  }
+
   private updateField(sim: Simulation, b: Building, view: BuildingView): void {
+    // The soil and crops are draped over the ground, so they are rebuilt when the field is resized or the terrain
+    // under its edges is reshaped by a neighbour.
+    const shape = `${footprintKey(b)}|${this.terrain.revision}`
+    if (view.field && view.field.shape !== shape) this.disposeField(view)
     const plots = (b.data.plots as number[] | undefined) ?? []
     const growth = (b.data.growth as number | undefined) ?? 0
     const crop = b.site ? null : fieldCrop(sim, b)
@@ -566,13 +588,13 @@ export class BuildingLayer {
       const crops = new THREE.InstancedMesh(cropGeometry, this.soilMat, b.w * b.h)
       crops.castShadow = true
       view.group.add(soil, crops)
-      view.field = { soil, crops, version: '' }
+      view.field = { soil, crops, shape, version: '' }
     }
     const field = view.field
     field.version = version
-    field.soil.material = this.soilMat
     if (!crop) {
       field.crops.count = 0
+      field.crops.computeBoundingSphere()
       return
     }
     let mat = this.cropMats.get(crop.id)
@@ -583,7 +605,7 @@ export class BuildingLayer {
     field.crops.material = mat
     let n = 0
     const s = 0.25 + growth * 0.9
-    for (let k = 0; k < plots.length; k++) {
+    for (let k = 0; k < plots.length && k < b.w * b.h; k++) {
       if (plots[k] !== 1) continue
       const x = b.x + (k % b.w) + 0.5
       const y = b.y + Math.floor(k / b.w) + 0.5
@@ -592,6 +614,9 @@ export class BuildingLayer {
     }
     field.crops.count = n
     field.crops.instanceMatrix.needsUpdate = true
+    // Three.js caches an instanced mesh's bounds the first time it is culled; a field first seen bare (a site, or
+    // fallow) would keep empty bounds and its crops would be culled for good.
+    field.crops.computeBoundingSphere()
   }
 
   dispose(): void {

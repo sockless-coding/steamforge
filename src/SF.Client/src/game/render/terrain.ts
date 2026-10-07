@@ -325,8 +325,12 @@ export class TerrainLayer {
     this.dirtyColors = true
   }
 
+  /** Bumped whenever ground heights change, so meshes draped over the ground know to follow. */
+  revision = 0
+
   /** Heights changed under a new building (flattened ground). */
   reshape(x: number, y: number, w: number, h: number): void {
+    this.revision++
     this.computeHeights(Math.max(0, x - 1), Math.max(0, y - 1), Math.min(this.world.width, x + w + 1), Math.min(this.world.height, y + h + 1))
     const cx0 = Math.floor(Math.max(0, x - 2) / CHUNK)
     const cy0 = Math.floor(Math.max(0, y - 2) / CHUNK)

@@ -13,6 +13,8 @@ export type Tool =
   | { kind: 'clear' }
   | { kind: 'unclear' }
   | { kind: 'demolish' }
+  /** Drag an edge or corner of a field to grow or shrink it. */
+  | { kind: 'resize'; building: number }
 
 export interface ResourceRow {
   id: string
@@ -57,6 +59,8 @@ export interface BuildingInfo {
   stock: { id: string; name: string; amount: number }[]
   options: OptionInfo[]
   canDemolish: boolean
+  /** A field: it can be grown or shrunk in place. */
+  canResize: boolean
   burning: boolean
 }
 

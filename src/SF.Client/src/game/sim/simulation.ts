@@ -21,6 +21,7 @@ import {
   placeStartingBuildings,
   removeBuilding,
   refund,
+  resizeBuilding,
   roadBlocked,
 } from './placement'
 import { abortTask, approachTile, rebuildClaims, tileOf } from './tasks'
@@ -490,6 +491,11 @@ export class Simulation {
           }
         }
         return { ok: true }
+      }
+      case 'resize': {
+        const b = this.buildings.get(action.building)
+        if (!b) return { ok: false, reason: 'No such building.' }
+        return resizeBuilding(this, b, action.x, action.y, action.w, action.h)
       }
       case 'demolish': {
         const b = this.buildings.get(action.building)

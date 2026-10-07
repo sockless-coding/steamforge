@@ -97,6 +97,8 @@ telegrams, and the Forge Papers. Each letter signs with `from` (the Board's sign
 Every command goes through `Simulation.perform` and is accepted while paused:
 
 - place a building, a road, a conduit (steam pipe or copper conduit), a field (drag to size), or a clearing mark
+- resize a field (or a field site) by dragging an edge or corner, 3×3 to 15×15, as long as the new footprint overlaps
+  the old one
 - choose or clear research
 - demolish, cancel a site, or prioritise a site
 - set workers, builders, production limits, and building options (crop or recipe)
@@ -147,7 +149,7 @@ All values live in content JSON.
 | Chain | Buildings |
 |---|---|
 | Logs → firewood | Forester's Lodge (fells and replants), Woodcutter's Shed, Steam Sawmill (needs steam) |
-| Food | Company rations (starting stock and supply airships; never spoil), Steam Glasshouse (tomatoes all year, or herbs; needs steam; available from the founding), Hunter's Lodge (scales with nearby forest), Fishing Dock and Steam Trawler Dock (three times the catch; needs steam), Crop Field (potatoes, cabbage, barley), Bakehouse (barley → bread), Steam Cannery (fish, venison or vegetables + iron → tinned food that never spoils; needs steam), Steam Tractor Shed (fields within 12 tiles planted and harvested 80% faster; needs steam) |
+| Food | Company rations (starting stock and supply airships; never spoil), Steam Glasshouse (tomatoes all year, or herbs; needs steam; available from the founding), Hunter's Lodge (scales with nearby forest), Fishing Dock and Steam Trawler Dock (three times the catch; needs steam), Crop Field (potatoes, cabbage, barley; see Crop fields below), Bakehouse (barley → bread), Steam Cannery (fish, venison or vegetables + iron → tinned food that never spoils; needs steam), Steam Tractor Shed (fields within 12 tiles planted and harvested 80% faster; needs steam) |
 | Stone / ore / coal | Quarry, Coal Pit (from the founding; a coal outcrop always lies near the founding site), Iron Mine and Copper Mine, each placed over a matching seam |
 | Metal → tools / cogs | Smelter (ore + coal → iron or copper), Arc Furnace (ore → twice the metal; needs power), Toolworks (iron + logs), Machine Works (iron → cogs; needs steam) |
 | Leather → coats | Hunter's Lodge byproduct → Tailor's Shop |
@@ -165,6 +167,16 @@ All values live in content JSON.
 | Logistics | Steam Tram Depot, Pneumatic Depot, Safety Valve (see below) |
 | Automatons | Automaton Works (see below) |
 | Guilds | Guild Hall (one guild meets there; see Guilds) |
+
+### Crop fields
+
+- One crop a year. A field is sown from the first growing month, or later while the crop can still ripen with a month
+  to spare before the first frost (cabbage, then potatoes, then barley run out of time first); otherwise it lies fallow
+  until spring. Once harvested it rests until next spring. Frost takes whatever is still in the ground.
+- The crop grows month by month once any plot is sown; plots sown later ripen with the rest.
+- Resizing keeps every plot's state by its ground. New ground is cleared by laborers first and is sown while the
+  field is planting or growing (a growing field goes back to planting for it); ground given up loses its crop. A full
+  crew grows with the field; a lowered worker target is kept unless the field shrinks below it.
 
 ## The Steamforge
 

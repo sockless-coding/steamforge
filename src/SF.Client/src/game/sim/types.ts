@@ -307,6 +307,8 @@ export type Action =
   | { type: 'clearResearch' }
   | { type: 'setTrade'; res: string; mode: 'export' | 'import' | 'none'; amount: number }
   | { type: 'markClear'; tiles: number[]; clear: boolean }
+  /** Grows or shrinks a variable-size building (a field) to a new footprint overlapping its old one. */
+  | { type: 'resize'; building: number; x: number; y: number; w: number; h: number }
   | { type: 'demolish'; building: number }
   | { type: 'cancelSite'; building: number }
   | { type: 'prioritise'; building: number; priority: boolean }

@@ -1,7 +1,7 @@
 import type { BuildingDef, RoadDef } from '../../api/types'
 import type { GeneratorConfig } from './energy'
 import { addStock, addToStorage } from './inventory'
-import { fireWorker } from './population'
+import { fireWorker, workerToLetGo } from './population'
 import { lockedBy } from './research'
 import { checkDispatches } from './story'
 import type { Simulation } from './simulation'
@@ -47,11 +47,14 @@ export function countBuildings(sim: Simulation, defId: string): number {
   return n
 }
 
-export function canPlace(sim: Simulation, def: BuildingDef, x: number, y: number, rot: Rotation, w?: number, h?: number, ignoreResearch = false): ActionResult {
-  if (def.buildable === false) return fail(`${def.name} cannot be built.`)
-  const lock = ignoreResearch ? null : lockedBy(sim, 'building', def.id)
-  if (lock) return fail(`Requires research: ${lock.name}.`)
-  if (def.limit && countBuildings(sim, def.id) >= def.limit) return fail(`Only ${def.limit} ${def.name} allowed.`)
+/** `self` checks a new footprint for an existing building (a resize): its own tiles count as free. */
+export function canPlace(sim: Simulation, def: BuildingDef, x: number, y: number, rot: Rotation, w?: number, h?: number, ignoreResearch = false, self = 0): ActionResult {
+  if (!self) {
+    if (def.buildable === false) return fail(`${def.name} cannot be built.`)
+    const lock = ignoreResearch ? null : lockedBy(sim, 'building', def.id)
+    if (lock) return fail(`Requires research: ${lock.name}.`)
+    if (def.limit && countBuildings(sim, def.id) >= def.limit) return fail(`Only ${def.limit} ${def.name} allowed.`)
+  }
   const world = sim.world
   const [fw, fh] = footprintSize(def, rot, w, h)
   if (x < 1 || y < 1 || x + fw > world.width - 1 || y + fh > world.height - 1) return fail('Too close to the edge of the map.')
@@ -65,7 +68,7 @@ export function canPlace(sim: Simulation, def: BuildingDef, x: number, y: number
     for (let tx = x; tx < x + fw; tx++) {
       const i = world.index(tx, ty)
       if (!world.isLand(i)) return fail(world.terrain[i] === TERRAIN_IDS.water ? 'Cannot build on water.' : 'Cannot build on a mountainside.')
-      if (world.building[i] !== 0) return fail('Something is already built here.')
+      if (world.building[i] !== 0 && world.building[i] !== self) return fail('Something is already built here.')
       if (world.door[i] !== 0) return fail("That would block a building's entrance.")
       if (world.terrain[i] === terrainId) terrainCount++
       lo = Math.min(lo, world.elevation[i])
@@ -149,11 +152,61 @@ function unoccupy(sim: Simulation, b: Building): void {
   world.version++
 }
 
-export function placeBuilding(sim: Simulation, def: BuildingDef, x: number, y: number, rot: Rotation, w: number, h: number, prebuilt: boolean): Building {
-  const world = sim.world
+function averageElevation(world: World, x: number, y: number, w: number, h: number): number {
   let sum = 0
   for (let ty = y; ty < y + h; ty++) for (let tx = x; tx < x + w; tx++) sum += world.elevation[world.index(tx, ty)]
-  const base = sum / (w * h)
+  return sum / (w * h)
+}
+
+type Rect = { x: number; y: number; w: number; h: number }
+
+const inRect = (r: Rect | undefined, x: number, y: number) => !!r && x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h
+
+/**
+ * Takes up the ground under a footprint (skipping `keep`, ground the building already stands on): roads, conduits and
+ * their jobs are lifted, and features are removed at once for a prebuilt building or queued for laborers to clear.
+ * Returns whether any features were queued.
+ */
+function takeGround(sim: Simulation, x: number, y: number, w: number, h: number, prebuilt: boolean, keep?: Rect): boolean {
+  const world = sim.world
+  let queued = false
+  for (let ty = y; ty < y + h; ty++) {
+    for (let tx = x; tx < x + w; tx++) {
+      if (inRect(keep, tx, ty)) continue
+      const i = world.index(tx, ty)
+      if (world.road[i] !== 0) {
+        world.road[i] = 0
+        sim.emit({ type: 'road', tile: i })
+      }
+      sim.roadJobs.delete(i)
+      if (world.conduit[i] !== 0) {
+        world.conduit[i] = 0
+        sim.energy.dirty = true
+        sim.emit({ type: 'conduit', tile: i })
+      }
+      for (let n = 0; n < sim.rules.networks.length; n++) {
+        if (sim.conduitJobs.delete(i * 8 + n)) sim.emit({ type: 'conduit', tile: i })
+      }
+      if (world.feature[i] !== 0) {
+        if (prebuilt) {
+          world.feature[i] = 0
+          world.growth[i] = 0
+          world.mark[i] &= ~MARK_CLEAR
+          sim.clearQueue.delete(i)
+          sim.emit({ type: 'feature', tile: i })
+        } else {
+          sim.queueClear(i)
+          queued = true
+        }
+      }
+    }
+  }
+  return queued
+}
+
+export function placeBuilding(sim: Simulation, def: BuildingDef, x: number, y: number, rot: Rotation, w: number, h: number, prebuilt: boolean): Building {
+  const world = sim.world
+  const base = averageElevation(world, x, y, w, h)
 
   const b: Building = {
     id: sim.nextId++,
@@ -177,38 +230,10 @@ export function placeBuilding(sim: Simulation, def: BuildingDef, x: number, y: n
     activeAt: -1,
   }
 
-  let hasFeatures = false
-  for (let ty = y; ty < y + h; ty++) {
-    for (let tx = x; tx < x + w; tx++) {
-      const i = world.index(tx, ty)
-      if (!def.walkable) world.elevation[i] = base
-      if (world.road[i] !== 0) {
-        world.road[i] = 0
-        sim.emit({ type: 'road', tile: i })
-      }
-      sim.roadJobs.delete(i)
-      if (world.conduit[i] !== 0) {
-        world.conduit[i] = 0
-        sim.energy.dirty = true
-        sim.emit({ type: 'conduit', tile: i })
-      }
-      for (let n = 0; n < sim.rules.networks.length; n++) {
-        if (sim.conduitJobs.delete(i * 8 + n)) sim.emit({ type: 'conduit', tile: i })
-      }
-      if (world.feature[i] !== 0) {
-        if (prebuilt) {
-          world.feature[i] = 0
-          world.growth[i] = 0
-          world.mark[i] &= ~MARK_CLEAR
-          sim.clearQueue.delete(i)
-          sim.emit({ type: 'feature', tile: i })
-        } else {
-          sim.queueClear(i)
-          hasFeatures = true
-        }
-      }
-    }
+  if (!def.walkable) {
+    for (let ty = y; ty < y + h; ty++) for (let tx = x; tx < x + w; tx++) world.elevation[world.index(tx, ty)] = base
   }
+  const hasFeatures = takeGround(sim, x, y, w, h, prebuilt)
   if (!def.walkable) sim.emit({ type: 'terrain', x, y, w, h })
   if (b.site && hasFeatures) b.site.stage = 'clearing'
 
@@ -217,6 +242,55 @@ export function placeBuilding(sim: Simulation, def: BuildingDef, x: number, y: n
   sim.emit({ type: 'building', id: b.id, change: 'added' })
   if (prebuilt) activateBuilding(sim, b)
   return b
+}
+
+/** Whether a building can be resized at all (walkable, variable-size buildings such as fields). */
+export function resizable(def: BuildingDef): boolean {
+  return !!def.placement?.variableSize && !!def.walkable
+}
+
+/** Whether a field can take a new footprint overlapping its old one. */
+export function canResize(sim: Simulation, b: Building, x: number, y: number, w: number, h: number): ActionResult {
+  const def = sim.def(b)
+  const variable = def.placement?.variableSize
+  if (!variable || !resizable(def)) return fail(`A ${def.name} cannot be resized.`)
+  if (b.fire > 0) return fail('It is on fire.')
+  const [fw, fh] = footprintSize(def, 0, w, h)
+  if (fw !== w || fh !== h) return fail(`A ${def.name} is ${variable.min[0]}×${variable.min[1]} to ${variable.max[0]}×${variable.max[1]} tiles.`)
+  if (x === b.x && y === b.y && w === b.w && h === b.h) return fail('It is that size already.')
+  if (x >= b.x + b.w || y >= b.y + b.h || x + w <= b.x || y + h <= b.y) return fail('It can only grow or shrink from its edges.')
+  return canPlace(sim, def, x, y, 0, w, h, true, b.id)
+}
+
+/**
+ * Grows or shrinks a field (any walkable, variable-size building) in place. The new footprint must overlap the old
+ * one. New ground is cleared like a new site; plots keep their state through the component `resize` hooks.
+ */
+export function resizeBuilding(sim: Simulation, b: Building, x: number, y: number, w: number, h: number): ActionResult {
+  const check = canResize(sim, b, x, y, w, h)
+  if (!check.ok) return check
+  const def = sim.def(b)
+
+  const old = { x: b.x, y: b.y, w: b.w, h: b.h }
+  const oldMax = sim.maxWorkers(b)
+  unoccupy(sim, b)
+  Object.assign(b, { x, y, w, h })
+  b.door = doorTile(sim.world, def, x, y, w, h, b.rot)
+  b.baseHeight = averageElevation(sim.world, x, y, w, h)
+  const queued = takeGround(sim, x, y, w, h, false, old)
+  if (b.site && queued) b.site.stage = 'clearing'
+  occupy(sim, b)
+
+  if (!b.site) {
+    for (const [handler, cfg] of sim.components(b)) handler.resize?.(sim, b, cfg, old)
+    // A full crew grows with the field; a target the player lowered stays put unless the field shrinks below it.
+    const max = sim.maxWorkers(b)
+    b.workerTarget = b.workerTarget >= oldMax ? max : Math.min(b.workerTarget, max)
+    while (b.workers.length > b.workerTarget) fireWorker(sim, workerToLetGo(sim, b))
+    sim.jobsDirty = true
+  }
+  sim.emit({ type: 'building', id: b.id, change: 'changed' })
+  return { ok: true, building: b.id }
 }
 
 /** Finishes construction: the building starts working. */

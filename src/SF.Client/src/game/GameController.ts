@@ -25,7 +25,7 @@ import type { FieldConfig } from './sim/components/field'
 import { gatherRadius, type GathererConfig } from './sim/components/gatherer'
 import { currentRecipe, type ProducerConfig } from './sim/components/producer'
 import { conduitGrades, gradeIndex, networkIndex, participates, touchesGrid, type ConsumerConfig, type GeneratorConfig } from './sim/energy'
-import { canPlace, doorTile, footprintSize, roadBlocked, totalWork } from './sim/placement'
+import { canPlace, canResize, doorTile, footprintSize, resizable, roadBlocked, totalWork } from './sim/placement'
 import { canWorkAt } from './sim/population'
 import { canResearch, currentResearch, isUnlocked, lockedBy, unlockNames } from './sim/research'
 import { guildFactors, guildMood, guildOfCitizen, guildState, guildTarget } from './sim/guilds'
@@ -255,12 +255,42 @@ export class GameController {
   }
 
   setTool(tool: Tool): void {
+    // Leaving the resize tool goes back to the field it was resizing.
+    const back = this.tool.kind === 'resize' && tool.kind === 'select' ? this.tool.building : 0
     this.tool = tool
     this.hint = null
     this.renderer.overlays.clear()
     if (tool.kind !== 'select') this.select(null)
+    else if (back && this.sim.buildings.has(back)) this.select({ kind: 'building', id: back })
     this.updatePreview()
     this.publish()
+  }
+
+  /** Starts resizing the selected field: drag one of its edges or corners. */
+  resizeSelected(): void {
+    if (this.selected?.kind !== 'building') return
+    const b = this.sim.buildings.get(this.selected.id)
+    if (b && resizable(this.sim.def(b))) this.setTool({ kind: 'resize', building: b.id })
+  }
+
+  /**
+   * The footprint a resize drag makes: the edges the drag started on (or beyond) follow the pointer, the others stay
+   * put. Null when the drag started inside the field, away from every edge.
+   */
+  private resizeRect(b: Building, start: [number, number], at: [number, number]): { x: number; y: number; w: number; h: number } | null {
+    const v = this.sim.def(b).placement!.variableSize!
+    const axis = (s: number, p: number, lo: number, size: number, min: number, max: number): [number, number, boolean] => {
+      const hi = lo + size - 1
+      if (s <= lo) {
+        const from = Math.max(hi - max + 1, Math.min(p, hi - min + 1))
+        return [from, hi - from + 1, true]
+      }
+      if (s >= hi) return [lo, Math.max(min, Math.min(max, p - lo + 1)), true]
+      return [lo, size, false]
+    }
+    const [x, w, gx] = axis(start[0], at[0], b.x, b.w, v.min[0], v.max[0])
+    const [y, h, gy] = axis(start[1], at[1], b.y, b.h, v.min[1], v.max[1])
+    return gx || gy ? { x, y, w, h } : null
   }
 
   select(target: { kind: 'building' | 'citizen'; id: number } | null): void {
@@ -538,7 +568,7 @@ export class GameController {
   private dragTool(): boolean {
     const t = this.tool
     if (t.kind === 'build') return !!this.sim.def(t.def).placement?.variableSize
-    return t.kind === 'road' || t.kind === 'removeRoad' || t.kind === 'clear' || t.kind === 'unclear' || t.kind === 'conduit' || t.kind === 'removeConduit'
+    return t.kind === 'resize' || t.kind === 'road' || t.kind === 'removeRoad' || t.kind === 'clear' || t.kind === 'unclear' || t.kind === 'conduit' || t.kind === 'removeConduit'
   }
 
   private onPointerMove(e: PointerEvent): void {
@@ -679,6 +709,15 @@ export class GameController {
       this.perform({ type: 'removeRoad', tiles: this.areaTiles(a, b) })
     } else if (t.kind === 'clear' || t.kind === 'unclear') {
       this.perform({ type: 'markClear', tiles: this.areaTiles(a, b), clear: t.kind === 'clear' })
+    } else if (t.kind === 'resize') {
+      const field = this.sim.buildings.get(t.building)
+      const r = field ? this.resizeRect(field, a, b) : null
+      if (!field || !r) return
+      const result = this.perform({ type: 'resize', building: field.id, ...r })
+      if (result.ok) {
+        play('hammer', { volume: 0.45 })
+        this.setTool({ kind: 'select' })
+      } else this.hint = result.reason
     } else if (t.kind === 'build') {
       const def = this.sim.def(t.def)
       const min = def.placement?.variableSize?.min ?? [3, 3]
@@ -727,6 +766,36 @@ export class GameController {
       overlays.setTiles(network ? [...this.gridMarks(network), ...marks] : marks)
       const rings = this.areaRings(def, f.x + f.w / 2, f.y + f.h / 2)
       if (rings.length > 0) overlays.setRings([...rings, ...this.coverRings(def)])
+      return
+    }
+    if (t.kind === 'resize') {
+      const b = sim.buildings.get(t.building)
+      if (!b) return
+      const r = dragging ? this.resizeRect(b, dragging, tile) : null
+      if (!r) {
+        const marks: TileMark[] = []
+        for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) marks.push({ x, y, ok: true })
+        overlays.setTiles(marks)
+        this.hint = dragging ? 'Start the drag on an edge or corner of the field' : `${b.w} × ${b.h} field · drag an edge or corner to resize it`
+        return
+      }
+      const check = canResize(sim, b, r.x, r.y, r.w, r.h)
+      const inside = (x: number, y: number) => x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h
+      const marks: TileMark[] = []
+      for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) marks.push({ x, y, ok: check.ok })
+      // Ground the field gives up, and any crop on it.
+      const plots = (b.data.plots as number[] | undefined) ?? []
+      let lost = 0
+      for (let k = 0; k < b.w * b.h; k++) {
+        const x = b.x + (k % b.w)
+        const y = b.y + Math.floor(k / b.w)
+        if (inside(x, y)) continue
+        marks.push({ x, y, ok: false })
+        if (plots[k] === 1) lost++
+      }
+      overlays.setTiles(marks)
+      const same = r.x === b.x && r.y === b.y && r.w === b.w && r.h === b.h
+      this.hint = same ? `${b.w} × ${b.h} field` : check.ok ? `${b.w} × ${b.h} → ${r.w} × ${r.h} field${lost ? ` · ${lost} planted plots dug up` : ''}` : check.reason
       return
     }
     if (t.kind === 'road') {
@@ -1333,6 +1402,7 @@ export class GameController {
         .map(([id, amount]) => ({ id, name: sim.resource(id)?.name ?? id, amount })),
       options,
       canDemolish: !def.components.shelter,
+      canResize: resizable(def),
       burning: b.fire > 0,
     }
   }

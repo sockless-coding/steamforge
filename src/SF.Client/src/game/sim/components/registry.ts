@@ -10,6 +10,8 @@ export interface ComponentHandler<C = unknown> {
   readonly kind: string
   /** Construction finished, or the building was created prebuilt. */
   activate?(sim: Simulation, b: Building, cfg: C): void
+  /** A variable-size building (a field) was resized; `old` is its previous footprint. */
+  resize?(sim: Simulation, b: Building, cfg: C, old: { x: number; y: number; w: number; h: number }): void
   /** The building is about to be removed (demolished, burned down). */
   remove?(sim: Simulation, b: Building, cfg: C): void
   /** Next task for a worker employed here, or null if nothing needs doing right now. */

@@ -57,6 +57,11 @@ function BuildingPanel({ info, controller }: { info: BuildingInfo; controller: G
             <Button size="sm" variant={site.priority ? 'copper' : 'iron'} icon="star" onClick={() => controller.perform({ type: 'prioritise', building: info.id, priority: !site.priority })}>
               {site.priority ? 'Priority' : 'Prioritise'}
             </Button>
+            {info.canResize && (
+              <Button size="sm" variant="iron" icon="wrench" onClick={() => controller.resizeSelected()}>
+                Resize
+              </Button>
+            )}
             <Button size="sm" variant="danger" icon="close" onClick={() => controller.demolishSelected()}>
               Cancel
             </Button>
@@ -159,11 +164,18 @@ function BuildingPanel({ info, controller }: { info: BuildingInfo; controller: G
               </ul>
             </section>
           )}
-          {info.canDemolish && (
+          {(info.canDemolish || info.canResize) && (
             <div className="row">
-              <Button size="sm" variant="danger" icon="trash" onClick={() => controller.demolishSelected()}>
-                Demolish
-              </Button>
+              {info.canResize && (
+                <Button size="sm" variant="iron" icon="wrench" onClick={() => controller.resizeSelected()}>
+                  Resize
+                </Button>
+              )}
+              {info.canDemolish && (
+                <Button size="sm" variant="danger" icon="trash" onClick={() => controller.demolishSelected()}>
+                  Demolish
+                </Button>
+              )}
             </div>
           )}
         </>
