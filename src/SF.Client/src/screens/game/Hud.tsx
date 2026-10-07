@@ -9,7 +9,9 @@ import { Icon, type IconName } from '../../ui/Icon'
 import { GameMenu, GuildPanel, Outcome, StoresPanel } from './Panels'
 import { ChartPanel, FinaleCard } from './Chart'
 import { Inspector } from './Inspector'
+import { lastMonthFlow, netClass } from '../../game/report'
 import { PopulationPanel } from './Population'
+import { ReportPanel, type ReportTab } from './Report'
 import { Charter, DispatchPanel, ResearchPanel } from './Progression'
 
 interface HudProps {
@@ -129,7 +131,7 @@ function GuildBadge({ guild }: { guild: GuildRow }) {
   )
 }
 
-type PanelKind = { kind: 'population' } | { kind: 'chart' } | { kind: 'guild' } | { kind: 'stores' } | { kind: 'research' } | { kind: 'dispatches'; letter?: string }
+type PanelKind = { kind: 'report'; tab?: ReportTab } | { kind: 'population' } | { kind: 'chart' } | { kind: 'guild' } | { kind: 'stores' } | { kind: 'research' } | { kind: 'dispatches'; letter?: string }
 
 export function Hud({ controller, menu, setMenu }: HudProps) {
   const hud = useHud()
@@ -162,10 +164,11 @@ export function Hud({ controller, menu, setMenu }: HudProps) {
           WASD pan · Q/E rotate · wheel zoom · right-drag pan · Space pause · 1–5 speed · R rotate building · Esc cancel
         </div>
       )}
+      {panel?.kind === 'report' && <ReportPanel hud={hud} controller={controller} onClose={close} initial={panel.tab} />}
       {panel?.kind === 'guild' && <GuildPanel hud={hud} controller={controller} onClose={close} />}
       {panel?.kind === 'chart' && hud.saga && <ChartPanel hud={hud} controller={controller} onClose={close} />}
       {panel?.kind === 'population' && <PopulationPanel hud={hud} onClose={close} />}
-      {panel?.kind === 'stores' && <StoresPanel hud={hud} controller={controller} onClose={close} />}
+      {panel?.kind === 'stores' && <StoresPanel hud={hud} controller={controller} onClose={close} openLedger={() => setPanel({ kind: 'report', tab: 'production' })} />}
       {panel?.kind === 'research' && <ResearchPanel hud={hud} controller={controller} onClose={close} />}
       {panel?.kind === 'dispatches' && <DispatchPanel hud={hud} initial={panel.letter} onClose={close} />}
       {menu && <GameMenu controller={controller} onClose={() => setMenu(false)} />}
@@ -190,6 +193,9 @@ function TopBar({ hud, controller, onMenu, open }: { hud: HudState; controller: 
   const p = hud.population
   const r = hud.researching
   const bar = useRef<HTMLElement>(null)
+  const last = hud.ledger.at(-1)
+  const foodNet = last ? hud.resources.filter((x) => x.category === 'food').reduce((s, x) => s + (lastMonthFlow(hud, x.id, () => x.name)?.net ?? 0), 0) : null
+  const urgent = hud.concerns.filter((c) => c.level !== 'info')
   // Panels below hang from the bar's bottom edge, which moves as the bar wraps onto more rows.
   useEffect(() => {
     const el = bar.current
@@ -246,17 +252,25 @@ function TopBar({ hud, controller, onMenu, open }: { hud: HudState; controller: 
         )}
       </button>
       <button type="button" className="resource-strip" onClick={() => open({ kind: 'stores' })} title="Stores and production limits">
-        <span className={`res ${hud.food < p.total * 8 ? 'low' : ''}`} title="Food">
+        <span
+          className={`res ${hud.foodMonths < 3 ? 'low' : ''}`}
+          title={`Food: ${Number.isFinite(hud.foodMonths) ? `enough for ${hud.foodMonths.toFixed(1)} months` : 'no mouths to feed'}${foodNet !== null ? `, ${foodNet >= 0 ? 'up' : 'down'} ${Math.abs(Math.round(foodNet))} last month` : ''}`}
+        >
           <Icon name="wheat" size={16} />
           <b>{Math.floor(hud.food)}</b>
+          <Trend net={foodNet} />
         </span>
-        {rows.map((res) => (
-          <span key={res.id} className={`res ${res.amount < 5 ? 'low' : ''}`} title={res.name}>
-            <i className="swatch" style={{ background: res.color }} />
-            <span className="res-name">{res.name}</span>
-            <b>{Math.floor(res.amount)}</b>
-          </span>
-        ))}
+        {rows.map((res) => {
+          const flow = lastMonthFlow(hud, res.id, () => res.name)
+          return (
+            <span key={res.id} className={`res ${res.amount < 5 ? 'low' : ''}`} title={flow?.title ?? res.name}>
+              <i className="swatch" style={{ background: res.color }} />
+              <span className="res-name">{res.name}</span>
+              <b>{Math.floor(res.amount)}</b>
+              {res.id === 'firewood' && <Trend net={flow?.net ?? null} />}
+            </span>
+          )
+        })}
       </button>
 
       <div className="energy-strip">
@@ -310,6 +324,16 @@ function TopBar({ hud, controller, onMenu, open }: { hud: HudState; controller: 
             aria-label="Hollowmere chart"
           />
         )}
+        <button
+          type="button"
+          className={`btn btn-iron btn-sm report-btn ${urgent.some((c) => c.level === 'bad') ? 'alert-bad' : urgent.length ? 'alert-warn' : ''}`}
+          onClick={() => open({ kind: 'report' })}
+          title={urgent.length ? `Overseer's report: ${urgent.map((c) => c.text).join(' ')}` : "Overseer's report: workplaces, production and the colony's books"}
+          aria-label="Overseer's report"
+        >
+          <Icon name="chart" size={15} />
+          {urgent.length > 0 && <em className="report-count">{urgent.length}</em>}
+        </button>
         <Button size="sm" variant="iron" icon="book" onClick={() => open({ kind: 'dispatches' })} title="Dispatches from the Company" aria-label="Dispatches" />
         {hud.guilds.length > 0 ? (
           <button type="button" className="guild-badges" onClick={() => open({ kind: 'guild' })} title="Guilds and professions">
@@ -336,6 +360,12 @@ function TopBar({ hud, controller, onMenu, open }: { hud: HudState; controller: 
       </div>
     </header>
   )
+}
+
+/** A small arrow for last month's net change: up, down or level. */
+function Trend({ net }: { net: number | null }) {
+  if (net === null || Math.abs(net) < 0.5) return null
+  return <span className={`trend-arrow ${netClass(net)}`}>{net > 0 ? '▲' : '▼'}</span>
 }
 
 function Notices({ hud, controller, openLetter }: { hud: HudState; controller: GameController; openLetter: (id: string) => void }) {

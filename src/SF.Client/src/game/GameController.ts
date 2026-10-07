@@ -19,6 +19,7 @@ import {
 } from '../state/game'
 import type { Settings } from '../state/settings'
 import { Ambience } from './audio/ambience'
+import { concerns, workplaceRows } from './report'
 import { MusicDirector } from './audio/music'
 import { play } from './audio/synth'
 import type { FieldConfig } from './sim/components/field'
@@ -26,7 +27,7 @@ import { gatherRadius, type GathererConfig } from './sim/components/gatherer'
 import { currentRecipe, type ProducerConfig } from './sim/components/producer'
 import { conduitGrades, gradeIndex, networkIndex, participates, touchesGrid, type ConsumerConfig, type GeneratorConfig } from './sim/energy'
 import { canPlace, canResize, doorTile, footprintSize, resizable, roadBlocked, totalWork } from './sim/placement'
-import { canWorkAt } from './sim/population'
+import { canWorkAt, monthsOfFood } from './sim/population'
 import { canResearch, currentResearch, isUnlocked, lockedBy, unlockNames } from './sim/research'
 import { guildFactors, guildMood, guildOfCitizen, guildState, guildTarget } from './sim/guilds'
 import { airshipYard, chart, fateOf, finaleBlocker, launchBlocker, telegraphOnline, voyageMonths } from './sim/saga'
@@ -918,6 +919,7 @@ export class GameController {
     }
     let sites = 0
     for (const b of sim.buildings.values()) if (b.site) sites++
+    const workplaces = workplaceRows(sim)
 
     useHud.setState({
       ready: true,
@@ -971,6 +973,11 @@ export class GameController {
       guildPetition: this.guildPetitionInfo(),
       automatonPledge: Math.max(0, sim.noAutomatonsUntil - sim.monthIndex),
       saga: this.sagaInfo(),
+      ledger: sim.stats.ledger.slice(),
+      ledgerNow: { made: { ...sim.stats.month.made }, used: { ...sim.stats.month.used } },
+      foodMonths: monthsOfFood(sim),
+      workplaces,
+      concerns: concerns(sim, workplaces),
     })
   }
 

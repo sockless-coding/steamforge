@@ -295,6 +295,7 @@ export function resizeBuilding(sim: Simulation, b: Building, x: number, y: numbe
 
 /** Finishes construction: the building starts working. */
 export function activateBuilding(sim: Simulation, b: Building): void {
+  if (b.site) for (const res in b.site.delivered) sim.recordConsumed(`built:${res}`, b.site.delivered[res])
   b.site = null
   b.workerTarget = sim.maxWorkers(b)
   for (const [handler, cfg] of sim.components(b)) handler.activate?.(sim, b, cfg)

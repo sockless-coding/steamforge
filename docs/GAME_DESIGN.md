@@ -178,6 +178,31 @@ All values live in content JSON.
   field is planting or growing (a growing field goes back to planting for it); ground given up loses its crop. A full
   crew grows with the field; a lowered worker target is kept unless the field shrinks below it.
 
+## The overseer's report
+
+The colony keeps books. At each month's end the simulation closes a ledger entry (`stats.ledger`, the last 120
+months): people, the stock in the stores, and what was made and used that month. Goods that leave the stores other
+than by use are booked apart: `built:` for construction materials (counted when a site completes), `spoiled:` and
+`export:`. Tools and coats count as used when a citizen takes a new one. The ledger is never read back by the
+simulation, so it cannot change the colony's future.
+
+The report (the chart button in the top bar, which shows how many urgent concerns there are) has three tabs:
+
+- **Overview**: headline figures (people and their change over a year, months of food, months of firewood at the
+  hungriest month of the past year, vacant homes, happiness, health), the overseer's notes, and charts of people,
+  food and firewood over time. The notes are ranked bad, warn, info, and clicking one shows the workplace or site:
+  food running out, firewood short for winter, homelessness, a full housing stock, hungry, cold or fevered citizens,
+  workers without tools or coats, guilds striking or working to rule, workplaces on fire, with full stores, without
+  energy or without materials anyone holds, posts nobody is free to fill, construction short of materials, sites
+  without builders, and idle drafting tables.
+- **Workplaces**: every workplace grouped by trade, with crew steppers for the trade and for each building, and a
+  status: working, idle, no workers, stood down, stores full, no power, no materials, at limit, on strike, on fire.
+- **Production**: per resource, last month's made, used and net change, the average net over the last year, a
+  sparkline, and charts of the stock and of monthly made against used.
+
+The Stores panel shows last month's net change and a year's sparkline beside each limit, and the top bar marks
+food and firewood with an arrow for last month's trend.
+
 ## The Steamforge
 
 The headquarters (`"headquarters": true` in `buildings.json`; exactly one) is placed at founding and can neither be
@@ -624,7 +649,7 @@ that is pulled down steps back to dry footing.
 
 ## Persistence and backend
 
-- Saves are full snapshots (gzip + base64), currently version 8, migrated one version at a time:
+- Saves are full snapshots (gzip + base64), currently version 10, migrated one version at a time:
   - Version 1: the Guildhall becomes the Steamforge, all research counts as done and all dispatches as received.
   - Version 2: gains empty trade orders and no credit.
   - Version 3: the clock is rescaled from 40- to 120-second months so the colony keeps its date. It gains no waiting
@@ -640,6 +665,8 @@ that is pulled down steps back to dry footing.
       feedwater.
   - Version 6: gains guilds at the preset's starting standing, all mechanised, with no petition waiting.
   - Version 7: gains the saga at Act I, with every forge as the Company knew it and no expeditions.
+  - Version 8: gains player-chosen jobs; everyone is left to the overseer.
+  - Version 9: gains the ledger, empty, with the books opening in the month the save is loaded.
 - Snapshots hold the soot and grime fields as base64 `Float32Array`s, and the wind in `weather`.
 - Local slots and an autosave (every 3 minutes, on pause and on exit) live in IndexedDB. Six cloud slots are
   available per account (`/api/saves`).

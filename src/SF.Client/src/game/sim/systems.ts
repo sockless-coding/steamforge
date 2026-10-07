@@ -8,7 +8,7 @@ import { rollEvents, updateFires, updatePetition } from './events'
 import { updateGuildPetition, updateGuilds } from './guilds'
 import { computeTotals } from './inventory'
 import { assignHousing, assignJobs, births, killCitizen, monthsOfFood } from './population'
-import type { Simulation } from './simulation'
+import { LEDGER_MONTHS, type Simulation } from './simulation'
 import { fadeGrime, shiftWind, sootExposure, updateSoot } from './soot'
 import { checkDispatches } from './story'
 import { runCitizen } from './tasks'
@@ -356,5 +356,33 @@ registerSystem({
         sim.notify('warn', `The stores are full: the ${sim.def(first).name}${more} cannot deliver and the workers stand idle. Build a warehouse or stockyard.`, first.door)
       }
     }
+  },
+})
+
+// ---------------------------------------------------------------- the ledger
+
+const tenths = (stock: Record<string, number>): Record<string, number> => {
+  const out: Record<string, number> = {}
+  for (const res in stock) {
+    const v = Math.round(stock[res] * 10) / 10
+    if (v !== 0) out[res] = v
+  }
+  return out
+}
+
+/** Closes the month's books: what the stores held, and what was made and used. The simulation never reads it back. */
+registerSystem({
+  id: 'ledger',
+  month: (sim) => {
+    const stats = sim.stats
+    stats.ledger.push({
+      m: sim.monthIndex - 1,
+      people: sim.population().total,
+      stock: tenths(sim.totals),
+      made: tenths(stats.month.made),
+      used: tenths(stats.month.used),
+    })
+    if (stats.ledger.length > LEDGER_MONTHS) stats.ledger.splice(0, stats.ledger.length - LEDGER_MONTHS)
+    stats.month = { made: {}, used: {} }
   },
 })

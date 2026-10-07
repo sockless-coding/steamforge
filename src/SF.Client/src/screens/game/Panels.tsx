@@ -9,7 +9,9 @@ import { useAuth } from '../../state/auth'
 import type { HudState } from '../../state/game'
 import { usePendingGame } from '../../state/pending'
 import { type QualityTier, useSettings } from '../../state/settings'
+import { lastMonthFlow, netClass, stockHistory } from '../../game/report'
 import { Button, Modal, Tabs } from '../../ui/components'
+import { Sparkline } from './Report'
 
 const MOODS: Record<string, string> = { proud: 'Proud', content: 'Content', grumbling: 'Grumbling', workToRule: 'Working to rule', striking: 'On strike' }
 
@@ -124,16 +126,33 @@ export function GuildPanel({ hud, controller, onClose }: { hud: HudState; contro
   )
 }
 
+const signed = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(Math.round(v))}`
+
 const CATEGORY_NAMES: Record<ResourceCategory, string> = { food: 'Food', fuel: 'Fuel', material: 'Materials', goods: 'Goods' }
 
-export function StoresPanel({ hud, controller, onClose }: { hud: HudState; controller: GameController; onClose: () => void }) {
+export function StoresPanel({ hud, controller, onClose, openLedger }: { hud: HudState; controller: GameController; onClose: () => void; openLedger: () => void }) {
   const [category, setCategory] = useState<ResourceCategory>('food')
+  const commitLimit = (res: string, value: string) => controller.perform({ type: 'setLimit', res, limit: Number(value) || 0 })
   const rows = hud.resources.filter((r) => r.category === category)
+  const flows = new Map(rows.map((r) => [r.id, lastMonthFlow(hud, r.id, () => r.name)]))
   const setTrade = (res: string, mode: 'export' | 'import' | 'none', amount: number) => controller.perform({ type: 'setTrade', res, mode, amount })
   return (
     <Modal title={hud.hasMast ? 'Stores, Limits and Airship Trade' : 'Stores and Production Limits'} onClose={onClose} wide>
       <Tabs tabs={(Object.keys(CATEGORY_NAMES) as ResourceCategory[]).map((c) => ({ id: c, label: CATEGORY_NAMES[c] }))} value={category} onChange={setCategory} />
-      <p className="muted small">Workers stop producing a resource once the stores hold its limit, and turn to labour instead. Clear the limit for no cap.</p>
+      <div className="report-toolbar">
+        <p className="muted small">
+          Workers stop producing a resource once the stores hold its limit, and turn to labour instead. Clear the limit for no cap.
+          {category === 'food' && Number.isFinite(hud.foodMonths) && (
+            <>
+              {' '}
+              The food in store would feed everyone for <b>{hud.foodMonths.toFixed(1)}</b> months.
+            </>
+          )}
+        </p>
+        <Button size="sm" variant="iron" icon="chart" onClick={openLedger}>
+          Production ledger
+        </Button>
+      </div>
       {hud.hasMast && (
         <p className="muted small">
           Airship trade: goods above an export amount are carried to the mast and credited at once. Imports are bought with Company credit (
@@ -145,6 +164,8 @@ export function StoresPanel({ hud, controller, onClose }: { hud: HudState; contr
           <tr>
             <th>Resource</th>
             <th>In storage</th>
+            <th title="Net change over the last month">Last month</th>
+            <th>Last year</th>
             <th>Limit</th>
             {hud.hasMast && <th>Airship trade</th>}
           </tr>
@@ -156,15 +177,23 @@ export function StoresPanel({ hud, controller, onClose }: { hud: HudState; contr
                 <i className="swatch" style={{ background: r.color }} /> {r.name}
               </td>
               <td>{Math.floor(r.amount)}</td>
+              <td className={netClass(flows.get(r.id)?.net ?? 0)} title={flows.get(r.id)?.title}>
+                {flows.get(r.id) ? signed(flows.get(r.id)!.net) : '–'}
+              </td>
+              <td>
+                <Sparkline values={stockHistory(hud, [r.id])} color={r.color} />
+              </td>
               <td>
                 <input
+                  key={`${r.id}-${r.limit ?? ''}`}
                   className="limit-input"
                   type="number"
                   min={0}
                   step={10}
                   placeholder="none"
                   defaultValue={r.limit ?? ''}
-                  onBlur={(e) => controller.perform({ type: 'setLimit', res: r.id, limit: Number(e.target.value) || 0 })}
+                  onBlur={(e) => commitLimit(r.id, e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
                 />
               </td>
               {hud.hasMast && (

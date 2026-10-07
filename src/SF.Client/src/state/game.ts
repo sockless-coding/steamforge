@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { ResourceCategory } from '../api/types'
-import type { Notice, TradeOrder } from '../game/sim/types'
+import type { LedgerMonth, Notice, Stock, TradeOrder } from '../game/sim/types'
 
 export type Tool =
   | { kind: 'select' }
@@ -187,6 +187,29 @@ export interface ProfessionRow {
   buildings: number[]
 }
 
+/** What a workplace is doing, for the overseer's report. */
+export type WorkStatus = 'working' | 'idle' | 'unstaffed' | 'stoodDown' | 'storesFull' | 'noPower' | 'waiting' | 'atLimit' | 'striking' | 'burning'
+
+export interface WorkplaceRow {
+  id: number
+  name: string
+  profession: string
+  professionName: string
+  color: string
+  workers: number
+  target: number
+  max: number
+  status: WorkStatus
+  detail: string
+}
+
+/** Something the overseer would bring to the governor's attention; `building` is focused when clicked. */
+export interface Concern {
+  level: 'bad' | 'warn' | 'info'
+  text: string
+  building?: number
+}
+
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 /** `salvage`: plans only an expedition can find. */
@@ -311,6 +334,13 @@ export interface HudState {
   /** No automaton will be built for this many more months (a pledge to the guilds). */
   automatonPledge: number
   saga: SagaInfo | null
+  /** Closed months of the colony's books (oldest first), and the month in progress so far. */
+  ledger: LedgerMonth[]
+  ledgerNow: { made: Stock; used: Stock }
+  /** Months the food in store would feed everyone. */
+  foodMonths: number
+  workplaces: WorkplaceRow[]
+  concerns: Concern[]
 }
 
 /** Coal smoke over the colony, for the barometer and wind vane. */
@@ -395,6 +425,11 @@ export const initialHud: HudState = {
   guildPetition: null,
   automatonPledge: 0,
   saga: null,
+  ledger: [],
+  ledgerNow: { made: {}, used: {} },
+  foodMonths: 0,
+  workplaces: [],
+  concerns: [],
 }
 
 /** Snapshot of the running colony for React. The GameController publishes into it; components only read. */

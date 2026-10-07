@@ -207,6 +207,24 @@ export interface ColonyStats {
   consumed: Stock
   /** Citizens who left the colony (guild emigration). */
   departures?: number
+  /** The month in progress: what was made and used so far (keys as in `produced` / `consumed`). */
+  month: { made: Stock; used: Stock }
+  /** One entry per finished month, oldest first, up to `LEDGER_MONTHS`. */
+  ledger: LedgerMonth[]
+}
+
+/**
+ * A closed month in the colony's books. `used` keys are resources, or `<how>:<resource>` for goods that left the
+ * stores another way (`spoiled:`, `export:`, `built:` for construction materials). Amounts are rounded to tenths.
+ */
+export interface LedgerMonth {
+  /** Absolute month index (0 = the founding month). */
+  m: number
+  /** People (automatons not counted), and stock in the stores at the month's end. */
+  people: number
+  stock: Stock
+  made: Stock
+  used: Stock
 }
 
 /** A guild's standing and policy. */

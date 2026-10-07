@@ -56,7 +56,10 @@ import type {
 } from './types'
 import { MARK_CLEAR, World, type WorldSnapshot } from './world'
 
-export const SAVE_VERSION = 9
+export const SAVE_VERSION = 10
+
+/** Months of history the colony's ledger keeps. */
+export const LEDGER_MONTHS = 120
 
 export interface ColonySnapshot {
   v: number
@@ -136,7 +139,7 @@ export class Simulation {
   limits: Record<string, number> = {}
   builderTarget = 0
   notices: Notice[] = []
-  stats: ColonyStats = { births: 0, deaths: 0, arrivals: 0, peakPopulation: 0, deathsBy: {}, produced: {}, consumed: {} }
+  stats: ColonyStats = { births: 0, deaths: 0, arrivals: 0, peakPopulation: 0, deathsBy: {}, produced: {}, consumed: {}, month: { made: {}, used: {} }, ledger: [] }
   /** Temperature jitter, cold snaps, and the wind (tiles per second, the direction it blows towards). */
   weather = { offset: 0, snapDegrees: 0, snapMonths: 0, windX: 0, windY: 0 }
   /** Coal smoke over the colony and the grime it leaves. */
@@ -723,10 +726,14 @@ export class Simulation {
 
   recordProduced(res: string, qty: number): void {
     this.stats.produced[res] = (this.stats.produced[res] ?? 0) + qty
+    const made = this.stats.month.made
+    made[res] = (made[res] ?? 0) + qty
   }
 
   recordConsumed(res: string, qty: number): void {
     this.stats.consumed[res] = (this.stats.consumed[res] ?? 0) + qty
+    const used = this.stats.month.used
+    used[res] = (used[res] ?? 0) + qty
   }
 
   /** Whether research has unlocked a building (or it never needed any). */
@@ -750,7 +757,8 @@ export class Simulation {
  * Guildhall becomes the headquarters, every research counts as done (a legacy colony keeps what it had built) and
  * every dispatch as already received. Version 2 predates airship trade. Version 3 predates day and night (40-second
  * months), petitions and disaster spacing. Version 4 predates soot and wind. Version 5 predates feedwater, conduit
- * grades and the food rework (see migrateV5). Version 6 predates the guilds, version 7 the Hollowmere chart.
+ * grades and the food rework (see migrateV5). Version 6 predates the guilds, version 7 the Hollowmere chart, version 9
+ * the monthly ledger.
  */
 function migrate(content: Content, s: ColonySnapshot): ColonySnapshot {
   if (s.v === SAVE_VERSION) return s
@@ -788,6 +796,12 @@ function migrate(content: Content, s: ColonySnapshot): ColonySnapshot {
   }
   // Version 8 predates jobs chosen by the player: everyone is left to the overseer.
   if (s.v === 8) s.v = 9
+  // Version 9 predates the monthly ledger: the books open on loading.
+  if (s.v === 9) {
+    s.stats.month = { made: {}, used: {} }
+    s.stats.ledger = []
+    s.v = 10
+  }
   if (s.v !== SAVE_VERSION) throw new Error(`Unsupported save version ${s.v}.`)
   return s
 }

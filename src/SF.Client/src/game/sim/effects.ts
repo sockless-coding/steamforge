@@ -176,10 +176,12 @@ registerEffect('equip', (sim, c) => {
   if (!c.carry) return false
   if (amount(c.carry, 'tools') >= 1) {
     addStock(c.carry, 'tools', -1)
+    sim.recordConsumed('tools', 1)
     c.tools = r.toolLifeMonths
   }
   if (amount(c.carry, 'coats') >= 1) {
     addStock(c.carry, 'coats', -1)
+    sim.recordConsumed('coats', 1)
     c.coat = r.coatLifeMonths
   }
   if (Object.keys(c.carry).length === 0) c.carry = null
