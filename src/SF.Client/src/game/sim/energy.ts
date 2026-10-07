@@ -1,3 +1,4 @@
+import { forgeWorksFactors } from './components/forgeworks'
 import { hqOutputFactor } from './saga'
 import type { ConduitDef, NetworkDef } from '../../api/types'
 import { amount } from './inventory'
@@ -339,7 +340,7 @@ export function solveEnergy(sim: Simulation, write: boolean): void {
       if (!b) continue
       const gen = generatorOf(sim, b)
       if (gen?.network === net.id && b.data.lit === true) {
-        // The Steamforge's output answers to its relics and, in the last act, to its creeping core.
+        // The Steamforge's output answers to its forge works, its relics and, in the last act, to its creeping core.
         const boost = sim.def(b).headquarters ? hqOutputFactor(sim) : 1
         status[grid].supply += gen.output * boost * inputSatisfaction(sim, b, satisfied)
       }
@@ -364,7 +365,9 @@ export function solveEnergy(sim: Simulation, write: boolean): void {
       const s = status[grid]
       const load = s.supply > 0 ? Math.min(1, s.demand / s.supply) : 0
       const res = b.data.fuel as string
-      const burn = ((gen.fuel[res] ?? 0) / sim.rules.secondsPerMonth) * Math.max(0.25, load)
+      // Forge works built against the Steamforge stoke it harder.
+      const stoke = sim.def(b).headquarters ? forgeWorksFactors(sim).fuel : 1
+      const burn = ((gen.fuel[res] ?? 0) / sim.rules.secondsPerMonth) * Math.max(0.25, load) * stoke
       const used = Math.min(amount(b.stock, res), burn)
       b.stock[res] = amount(b.stock, res) - used
       if (b.stock[res] <= 1e-6) delete b.stock[res]

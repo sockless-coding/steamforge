@@ -85,6 +85,10 @@ public sealed class ContentTests : IClassFixture<TestApp>
         var cottage = buildings.First(b => b!["id"]!.GetValue<string>() == "cottage")!;
         cottage["cost"]!["resources"]!["unobtainium"] = 5;
         cottage["components"]!["teleporter"] = new JsonObject();
+        var blower = buildings.First(b => b!["id"]!.GetValue<string>() == "draught-blower")!;
+        blower["placement"]!["adjoins"] = "cottage";
+        var firebox = buildings.First(b => b!["id"]!.GetValue<string>() == "auxiliary-firebox")!;
+        firebox["placement"]!["adjoins"] = "orrery";
         docs["buildings"] = buildings.ToJsonString();
 
         var difficulty = JsonNode.Parse(docs["difficulty"])!;
@@ -95,6 +99,8 @@ public sealed class ContentTests : IClassFixture<TestApp>
         Assert.Contains(errors, e => e.Contains("unobtainium"));
         Assert.Contains(errors, e => e.Contains("teleporter"));
         Assert.Contains(errors, e => e.Contains("default preset"));
+        Assert.Contains(errors, e => e.Contains("draught-blower: forge works must adjoin the headquarters"));
+        Assert.Contains(errors, e => e.Contains("orrery"));
     }
 
     [Fact]

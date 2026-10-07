@@ -2,11 +2,11 @@
   {
     "id": "masonry",
     "name": "Masonry & Setts",
-    "description": "Dressed granite for cobbled streets and the solid brick rowhouses that hold their heat.",
+    "description": "Dressed granite for cobbled streets, the solid brick rowhouses that hold their heat, and a firebrick grate for the Steamforge.",
     "tier": 1,
     "points": 15,
     "requires": [],
-    "unlocks": { "roads": ["cobble"], "buildings": ["rowhouse", "guild-hall"] }
+    "unlocks": { "roads": ["cobble"], "buildings": ["rowhouse", "guild-hall", "auxiliary-firebox"] }
   },
   {
     "id": "mining",
@@ -56,11 +56,11 @@
   {
     "id": "piping",
     "name": "Pressure Piping",
-    "description": "Riveted iron mains that carry steam much farther than brick ducts, and the steam trawler that drinks it.",
+    "description": "Riveted iron mains that carry steam much farther than brick ducts, the steam trawler that drinks it, and an economiser that wrings more steam from the Steamforge.",
     "tier": 2,
     "points": 30,
     "requires": ["metallurgy"],
-    "unlocks": { "conduits": ["iron-main"], "buildings": ["steam-trawler"] }
+    "unlocks": { "conduits": ["iron-main"], "buildings": ["steam-trawler", "feedwater-economiser"] }
   },
   {
     "id": "hydraulics",

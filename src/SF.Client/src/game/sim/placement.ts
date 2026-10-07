@@ -93,6 +93,20 @@ export function canPlace(sim: Simulation, def: BuildingDef, x: number, y: number
     if (count < adjacent.min) return fail(`Must be built beside ${adjacent.id}.`)
   }
 
+  const adjoins = def.placement?.adjoins
+  if (adjoins) {
+    let touches = false
+    for (let ty = y - 1; ty <= y + fh && !touches; ty++) {
+      for (let tx = x - 1; tx <= x + fw && !touches; tx++) {
+        // Sharing a wall, not just a corner.
+        const side = (tx === x - 1 || tx === x + fw) !== (ty === y - 1 || ty === y + fh)
+        const other = side && world.inBounds(tx, ty) ? sim.buildings.get(world.building[world.index(tx, ty)]) : undefined
+        touches = other?.def === adjoins
+      }
+    }
+    if (!touches) return fail(`Must be built against the ${sim.content.buildings.get(adjoins)?.name ?? adjoins}'s walls.`)
+  }
+
   if (!def.walkable) {
     const door = doorTile(world, def, x, y, fw, fh, rot)
     const dx = world.xOf(door)

@@ -1,6 +1,7 @@
 // Test-only scripted player: an opening build order around the Steamforge that then adds homes, food and fuel as
 // the colony grows, laying brick steam ducts to its homes and workshops. Shared by the soak test and the balance
 // report so both measure the same play.
+import { networkIndex } from './energy'
 import { footprintSize, findSpot } from './placement'
 import { isResearched } from './research'
 import type { Simulation } from './simulation'
@@ -90,6 +91,11 @@ function planYear(sim: Simulation, hall: [number, number]): void {
   const families = Math.ceil(pop / 4)
   for (let i = houses; i < families + 1; i++) place(sim, 'cottage', hall)
   if (count(sim, 'crop-field') < Math.ceil(pop / 10)) place(sim, 'crop-field', [hall[0] + 14, hall[1] + 6], 8, 8)
+  // Forge works once the Steamforge is overloaded: before that they only take stone and builders from homes.
+  const steam = sim.energy.totals[networkIndex(sim, 'steam')]
+  for (const works of ['draught-blower', 'auxiliary-firebox', 'feedwater-economiser']) {
+    if (steam && steam.demand > steam.supply * 1.2 && sim.unlocked(works) && count(sim, works) === 0) besideForge(sim, works, hall)
+  }
   if (count(sim, 'steam-glasshouse') < Math.ceil(pop / 20)) besideForge(sim, 'steam-glasshouse', hall)
   if (count(sim, 'fishing-dock') === 0) place(sim, 'fishing-dock', hall)
   if (count(sim, 'woodcutters-shed') < Math.ceil(pop / 25)) place(sim, 'woodcutters-shed', hall)

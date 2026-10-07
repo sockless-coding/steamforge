@@ -77,7 +77,7 @@ public sealed record TerrainRule(string Id, int Min);
 
 public sealed record VariableSize(IReadOnlyList<int> Min, IReadOnlyList<int> Max);
 
-public sealed record PlacementRules(TerrainRule? Terrain, TerrainRule? Adjacent, VariableSize? VariableSize);
+public sealed record PlacementRules(TerrainRule? Terrain, TerrainRule? Adjacent, VariableSize? VariableSize, string? Adjoins = null);
 
 public sealed record BuildingCost(Dictionary<string, double> Resources, double Work);
 

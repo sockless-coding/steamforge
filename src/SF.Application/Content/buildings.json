@@ -80,6 +80,99 @@
     }
   },
   {
+    "id": "draught-blower",
+    "name": "Forced-Draught Blower",
+    "category": "power",
+    "description": "A steam-driven fan that roars air into the Steamforge's grate. Built against the forge's walls: +30% steam for a little more fuel.",
+    "size": [2, 2],
+    "cost": { "resources": { "logs": 20, "stone": 15, "iron": 6 }, "work": 150 },
+    "limit": 1,
+    "placement": { "adjoins": "steamforge" },
+    "components": { "forgeWorks": { "output": 0.3, "fuel": 0.15 } },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.85, 0.2, 1.85] },
+        { "shape": "box", "mat": "brick", "pos": [0.35, 0.2, -0.4], "size": [1.1, 0.55, 0.95] },
+        { "shape": "box", "mat": "darkiron", "pos": [-0.3, 0.2, 0.15], "size": [0.8, 0.2, 0.45] },
+        { "shape": "cylinder", "mat": "plate", "pos": [-0.3, 0.95, 0.15], "size": [1.2, 0.55, 1.2], "axis": "z" },
+        { "shape": "torus", "mat": "brass", "pos": [-0.3, 0.95, 0.43], "size": [1.22, 0.08, 0], "axis": "z" },
+        { "shape": "gear", "mat": "brass", "pos": [-0.3, 0.95, 0.47], "size": [0.92, 0.05, 0.92], "axis": "z", "spin": 7 },
+        { "shape": "sphere", "mat": "brass", "pos": [-0.3, 0.95, 0.51], "size": [0.2, 0.2, 0.12] },
+        { "shape": "pipe", "mat": "copper", "pos": [-0.3, 0.95, -0.6], "size": [0.42, 0.75, 0.42], "axis": "z" },
+        { "shape": "torus", "mat": "brass", "pos": [-0.3, 0.95, -0.42], "size": [0.5, 0.06, 0], "axis": "z" },
+        { "shape": "cylinder", "mat": "iron", "pos": [0.55, 0.2, 0.45], "size": [0.38, 0.55, 0.38] },
+        { "shape": "box", "mat": "brass", "pos": [0.55, 0.75, 0.45], "size": [0.08, 0.3, 0.08], "bob": 0.1, "spin": 4 },
+        { "shape": "gear", "mat": "darkiron", "pos": [0.84, 0.75, 0.05], "size": [0.62, 0.06, 0.62], "axis": "x", "spin": 4 },
+        { "shape": "pipe", "mat": "brass", "pos": [0.6, 0.75, -0.6], "size": [0.07, 0.8, 0.07], "emit": "steam" },
+        { "shape": "cylinder", "mat": "brass", "pos": [0.3, 0.5, 0.09], "size": [0.22, 0.04, 0.22], "axis": "z" },
+        { "shape": "cylinder", "mat": "dial", "pos": [0.3, 0.5, 0.11], "size": [0.17, 0.02, 0.17], "axis": "z" }
+      ]
+    }
+  },
+  {
+    "id": "auxiliary-firebox",
+    "name": "Auxiliary Firebox",
+    "category": "power",
+    "description": "A second firebrick grate bricked onto the Steamforge's flank, firing straight into its flues. Built against the forge's walls: +35% steam, burning as much more fuel.",
+    "size": [2, 2],
+    "cost": { "resources": { "stone": 40, "logs": 10, "iron": 8 }, "work": 200 },
+    "limit": 1,
+    "placement": { "adjoins": "steamforge" },
+    "components": { "forgeWorks": { "output": 0.35, "fuel": 0.35 } },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.85, 0.25, 1.85] },
+        { "shape": "box", "mat": "brick", "pos": [0, 0.25, -0.15], "size": [1.7, 1.0, 1.4] },
+        { "shape": "gable", "mat": "slate", "pos": [0, 1.25, -0.15], "size": [1.8, 0.4, 1.5] },
+        { "shape": "box", "mat": "darkiron", "pos": [0, 0.95, 0.56], "size": [1.72, 0.06, 0.04] },
+        { "shape": "box", "mat": "darkiron", "pos": [0, 0.28, 0.56], "size": [0.72, 0.58, 0.06] },
+        { "shape": "box", "mat": "glow", "pos": [0, 0.34, 0.6], "size": [0.52, 0.36, 0.04], "glow": true },
+        { "shape": "cylinder", "mat": "brass", "pos": [-0.55, 0.72, 0.57], "size": [0.24, 0.04, 0.24], "axis": "z" },
+        { "shape": "cylinder", "mat": "dial", "pos": [-0.55, 0.72, 0.59], "size": [0.18, 0.02, 0.18], "axis": "z" },
+        { "shape": "box", "mat": "darkiron", "pos": [0.58, 0.25, 0.76], "size": [0.52, 0.3, 0.34] },
+        { "shape": "dome", "mat": "coal", "pos": [0.58, 0.55, 0.76], "size": [0.44, 0.12, 0.28] },
+        { "shape": "stack", "mat": "brick", "pos": [-0.5, 1.1, -0.5], "size": [0.42, 1.9, 0.42] },
+        { "shape": "torus", "mat": "brass", "pos": [-0.5, 2.6, -0.5], "size": [0.4, 0.05, 0], "axis": "y" },
+        { "shape": "pipe", "mat": "iron", "pos": [0.4, 0.9, -0.92], "size": [0.3, 0.2, 0.3], "axis": "z" }
+      ]
+    }
+  },
+  {
+    "id": "feedwater-economiser",
+    "name": "Feedwater Economiser",
+    "category": "power",
+    "description": "Finned iron flues and copper drums that warm the Steamforge's feedwater with its own waste heat. Built against the forge's walls: +40% steam for no extra fuel.",
+    "size": [2, 2],
+    "cost": { "resources": { "iron": 16, "stone": 12 }, "work": 220 },
+    "limit": 1,
+    "placement": { "adjoins": "steamforge" },
+    "components": { "forgeWorks": { "output": 0.4 } },
+    "model": {
+      "parts": [
+        { "shape": "box", "mat": "stone", "pos": [0, 0, 0], "size": [1.85, 0.2, 1.85] },
+        { "shape": "tank", "mat": "copperplate", "pos": [-0.45, 0.2, -0.3], "size": [0.7, 1.5, 0.7] },
+        { "shape": "tank", "mat": "copperplate", "pos": [0.45, 0.2, -0.3], "size": [0.7, 1.5, 0.7] },
+        { "shape": "torus", "mat": "brass", "pos": [-0.45, 0.7, -0.3], "size": [0.76, 0.06, 0], "axis": "y" },
+        { "shape": "torus", "mat": "brass", "pos": [-0.45, 1.25, -0.3], "size": [0.76, 0.06, 0], "axis": "y" },
+        { "shape": "torus", "mat": "brass", "pos": [0.45, 0.7, -0.3], "size": [0.76, 0.06, 0], "axis": "y" },
+        { "shape": "torus", "mat": "brass", "pos": [0.45, 1.25, -0.3], "size": [0.76, 0.06, 0], "axis": "y" },
+        { "shape": "pipe", "mat": "copper", "pos": [0, 1.5, -0.3], "size": [0.12, 0.9, 0.12], "axis": "x" },
+        { "shape": "pipe", "mat": "brass", "pos": [0.45, 1.68, -0.3], "size": [0.06, 0.32, 0.06], "emit": "steam" },
+        { "shape": "box", "mat": "darkiron", "pos": [0, 0.2, 0.5], "size": [1.5, 0.45, 0.6] },
+        { "shape": "box", "mat": "iron", "pos": [-0.6, 0.65, 0.5], "size": [0.05, 0.25, 0.6] },
+        { "shape": "box", "mat": "iron", "pos": [-0.3, 0.65, 0.5], "size": [0.05, 0.25, 0.6] },
+        { "shape": "box", "mat": "iron", "pos": [0, 0.65, 0.5], "size": [0.05, 0.25, 0.6] },
+        { "shape": "box", "mat": "iron", "pos": [0.3, 0.65, 0.5], "size": [0.05, 0.25, 0.6] },
+        { "shape": "box", "mat": "iron", "pos": [0.6, 0.65, 0.5], "size": [0.05, 0.25, 0.6] },
+        { "shape": "box", "mat": "glow", "pos": [0, 0.3, 0.81], "size": [0.9, 0.12, 0.02], "glow": true },
+        { "shape": "pipe", "mat": "copper", "pos": [0, 0.55, -0.85], "size": [0.14, 0.3, 0.14], "axis": "z" },
+        { "shape": "cylinder", "mat": "brass", "pos": [-0.45, 1.0, 0.06], "size": [0.22, 0.04, 0.22], "axis": "z" },
+        { "shape": "cylinder", "mat": "dial", "pos": [-0.45, 1.0, 0.08], "size": [0.17, 0.02, 0.17], "axis": "z" },
+        { "shape": "torus", "mat": "redpaint", "pos": [0.45, 0.95, 0.07], "size": [0.24, 0.04, 0], "axis": "z" }
+      ]
+    }
+  },
+  {
     "id": "cottage",
     "name": "Settler's Cottage",
     "category": "housing",

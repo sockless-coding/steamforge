@@ -153,7 +153,7 @@ All values live in content JSON.
 | Stone / ore / coal | Quarry, Coal Pit (from the founding; a coal outcrop always lies near the founding site), Iron Mine and Copper Mine, each placed over a matching seam |
 | Metal → tools / cogs | Smelter (ore + coal → iron or copper), Arc Furnace (ore → twice the metal; needs power), Toolworks (iron + logs), Machine Works (iron → cogs; needs steam) |
 | Leather → coats | Hunter's Lodge byproduct → Tailor's Shop |
-| Energy | Steamforge, Boiler House, Galvanic Dynamo, Pump House and Windpump Well (feedwater), Booster Pump (see below) |
+| Energy | Steamforge and its forge works (see The Steamforge), Boiler House, Galvanic Dynamo, Pump House and Windpump Well (feedwater), Booster Pump (see below) |
 | Research | Drafting Office, Analytical Engine (needs power) |
 | Storage | Steamforge (all goods, 500), Stockyard (materials, fuel), Warehouse (food, goods). Starting supplies fill the specialised stores first (the Steamforge keeps a firebox of fuel); when a general store is over 80% full, laborers move goods to a narrower store with room. A workplace whose goods no store has room for stands idle, says so in the inspector, and is warned of (food workplaces every month) |
 | Housing | Settler's Cottage, Brick Rowhouse, Steam Tenement. All have radiators: on a steam grid they burn firewood only for the share of heat the steam does not supply |
@@ -210,6 +210,21 @@ demolished nor burn. It stores all goods, shelters the homeless and is a small s
 firewood if it has no coal, from its own stores, and laborers top it up from other storage. Homes and workshops built
 against its walls get its steam without any pipes. It holds its own cistern, so it needs no feedwater.
 
+**Forge works** (`forgeWorks` component) are add-ons built against the Steamforge's walls (`placement.adjoins`; a
+corner does not count). Each is limited to one, takes builders and materials like any site, and raises the forge's
+output once finished and not burning. They add together, and relics and the finale multiply the total. Fuel burn
+(and the soot from the forge's stacks) scales with the works' `fuel`, so at full load the firebox costs fuel while the
+economiser does not.
+
+| Works | Steam | Fuel | Cost | Unlocked by |
+|---|---|---|---|---|
+| Forced-Draught Blower | +30% | +15% | 20 logs, 15 stone, 6 iron | founding |
+| Auxiliary Firebox | +35% | +35% | 40 stone, 10 logs, 8 iron | Masonry |
+| Feedwater Economiser | +40% | none | 16 iron, 12 stone | Pressure Piping |
+
+All three take the Steamforge from 12 to about 25 psi, a bridge to the boiler houses of Steam Engines. The
+Steamforge's inspector lists the works it has and those it could still take.
+
 ## Energy networks and pressure
 
 Networks are data (`rules.json` → `networks`), solved in this order:
@@ -241,7 +256,7 @@ banks its fire to a quarter.
 
 | Generator | Output | Needs |
 |---|---|---|
-| Steamforge | 12 psi | Its own cistern |
+| Steamforge | 12 psi (about 25 with all its forge works) | Its own cistern |
 | Boiler House | 40 psi | Coal, a stoker, and 12 gallons of feedwater |
 | Galvanic Dynamo | 30 volts | 20 psi of steam |
 | Pump House | 40 gallons | A shore and coal |
@@ -283,8 +298,8 @@ faster with galvanic lamps) and the Analytical Engine (4 points) work on the fir
 plans its unfinished requirements first, and progress is kept when the plan changes. Presets may start with research
 done (`startingResearch`). The tree runs:
 
-- Masonry, Deep Mining (iron), Tailoring and Steam Baking
-- Metallurgy, Sanitary Science, Pressure Piping (riveted mains, the trawler) and Copper
+- Masonry (with the Auxiliary Firebox), Deep Mining (iron), Tailoring and Steam Baking
+- Metallurgy, Sanitary Science, Pressure Piping (riveted mains, the trawler, the Feedwater Economiser) and Copper
 - Hydraulics (water, pump houses, windpumps) and Steam Canning
 - Steam Engines (boilers, booster pumps, tractor sheds), Lagged Mains, Galvanism and Analytical Engines
 

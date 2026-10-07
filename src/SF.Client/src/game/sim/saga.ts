@@ -1,5 +1,6 @@
 import type { Content } from '../../api/content'
 import type { ForgeDef, ForgeFateDef, RelicEffect } from '../../api/types'
+import { forgeWorksFactors } from './components/forgeworks'
 import { energyBlocked, networkIndex } from './energy'
 import { ignite } from './events'
 import { guildState } from './guilds'
@@ -464,11 +465,11 @@ export function relicFactor(sim: Simulation, kind: RelicEffect['kind']): number 
   return f
 }
 
-/** The Steamforge's output multiplier: relics, the creep's free steam, and the finale. */
+/** The Steamforge's output multiplier: its forge works, relics, the creep's free steam, and the finale. */
 export function hqOutputFactor(sim: Simulation): number {
   const saga = sim.saga
   const c = rules(sim)?.saga.creep
-  let f = relicFactor(sim, 'hqOutput')
+  let f = relicFactor(sim, 'hqOutput') * forgeWorksFactors(sim).output
   if (saga.finale === 'pending' && c) f *= 1 + saga.creep * c.outputBonus
   else if (saga.finale === 'retrofitted' && c) f *= c.retrofitOutput
   else if (saga.finale === 'retrofitting' || saga.finale === 'decommissioned' || saga.finale === 'ruptured') f = 0

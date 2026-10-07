@@ -12,7 +12,7 @@ public static class ContentValidator
     public static readonly HashSet<string> ComponentKinds =
         ["storage", "housing", "shelter", "workplace", "firefighting", "gatherer", "producer", "field", "generator", "consumer", "research",
          "amenity", "lighting", "airship", "assembler", "tramDepot", "pneumatic", "valve", "emitter", "scrubber", "clinic",
-         "booster", "tractor", "guildHall", "airshipYard", "telegraph"];
+         "booster", "tractor", "guildHall", "airshipYard", "telegraph", "forgeWorks"];
 
     /// <summary>Components that are worked by a building's staff; they need a workplace component.</summary>
     public static readonly HashSet<string> StaffedComponents = ["gatherer", "producer", "field", "research", "assembler"];
@@ -195,6 +195,11 @@ public static class ContentValidator
                 Check(Terrains.Contains(adjacent.Id), $"{where} requires unknown adjacent terrain '{adjacent.Id}'.");
             }
 
+            if (b.Placement?.Adjoins is { } adjoins)
+            {
+                Check(buildings.Contains(adjoins) && adjoins != b.Id, $"{where} must adjoin unknown building '{adjoins}'.");
+            }
+
             foreach (var part in b.Model.Parts)
             {
                 Check(Shapes.Contains(part.Shape), $"{where} model uses unknown shape '{part.Shape}'.");
@@ -206,6 +211,11 @@ public static class ContentValidator
             {
                 Check(ComponentKinds.Contains(kind), $"{where} has unknown component '{kind}'.");
                 ValidateComponent(where, kind, cfg);
+            }
+
+            if (b.Components.ContainsKey("forgeWorks"))
+            {
+                Check(c.Buildings.Any(h => h.Headquarters == true && h.Id == b.Placement?.Adjoins), $"{where}: forge works must adjoin the headquarters (placement.adjoins).");
             }
 
             // A converter (a generator that also consumes) draws on a network solved before the one it feeds.
@@ -299,6 +309,10 @@ public static class ContentValidator
                 case "booster":
                     Check(networks.Contains(Str("network") ?? string.Empty), $"{where} booster drives an unknown network.");
                     Check(cfg.TryGetProperty("head", out var head) && head.GetDouble() is > 0 and <= 1, $"{where} booster head must be in (0, 1].");
+                    break;
+                case "forgeWorks":
+                    Check(cfg.TryGetProperty("output", out var fwOut) && fwOut.GetDouble() > 0, $"{where} forge works needs a positive output.");
+                    Check(!cfg.TryGetProperty("fuel", out var fwFuel) || fwFuel.GetDouble() >= 0, $"{where} forge works fuel must be 0 or more.");
                     break;
                 case "tractor":
                     Check(cfg.TryGetProperty("radius", out var tr) && tr.GetDouble() > 0, $"{where} tractor needs a positive radius.");

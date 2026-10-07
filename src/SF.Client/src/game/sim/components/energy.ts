@@ -5,6 +5,7 @@ import type { Simulation } from '../simulation'
 import { gotoBuilding, reserveIncoming, reserveStock, task } from '../tasks'
 import type { Building, Citizen, Task } from '../types'
 import { onHand } from '../work'
+import { forgeWorks } from './forgeworks'
 import { registerComponent } from './registry'
 
 function network(sim: Simulation, id: string) {
@@ -73,9 +74,11 @@ registerComponent<GeneratorConfig>({
     const unit = net?.unit ?? ''
     const lines: string[] = []
     const grid = gridOf(sim, b, cfg.network)
+    const hq = !!sim.def(b).headquarters
     if (b.data.lit) {
       const load = grid && grid.supply > 0 ? Math.min(1, grid.demand / grid.supply) : 0
-      lines.push(`${net?.name ?? cfg.network}: up to ${cfg.output} ${unit}, grid load ${Math.round(load * 100)}%`)
+      const output = Math.round(cfg.output * (hq ? hqOutputFactor(sim) : 1) * 10) / 10
+      lines.push(`${net?.name ?? cfg.network}: up to ${output} ${unit}, grid load ${Math.round(load * 100)}%`)
     } else if (sim.def(b).components.workplace && b.workers.length === 0) {
       lines.push('Cold: needs a worker on the payroll')
     } else if (cfg.fuel && b.data.lit === false) {
@@ -86,9 +89,20 @@ registerComponent<GeneratorConfig>({
       lines.push(`Fuel on hand: ${fuels.join(', ')}`)
     }
     if (grid) lines.push(`Grid: ${Math.round(grid.supply)} ${unit} supplied, ${Math.round(grid.demand)} ${unit} drawn`)
+    if (hq) lines.push(...forgeWorksLines(sim))
     return lines
   },
 })
+
+/** The Steamforge's forge works: those in service, and the next ones its walls could take. */
+function forgeWorksLines(sim: Simulation): string[] {
+  const built = forgeWorks(sim).map(([w]) => sim.def(w).name)
+  const lines = built.length ? [`Forge works: ${built.join(', ')}`] : []
+  const placed = new Set([...sim.buildings.values()].map((b) => b.def))
+  const open = [...sim.content.buildings.values()].filter((d) => d.components.forgeWorks && !placed.has(d.id) && sim.unlocked(d.id))
+  if (open.length) lines.push(`Build against its walls for more steam: ${open.map((d) => d.name).join(', ')}`)
+  return lines
+}
 
 /** Draws energy from the networks the building is connected to. The energy system writes `data.power`. */
 registerComponent<ConsumerConfig>({

@@ -244,6 +244,8 @@ export interface ModelSpec {
 export interface PlacementRules {
   terrain?: { id: string; min: number }
   adjacent?: { id: string; min: number }
+  /** Must share a wall with a building of this id (forge works against the Steamforge). */
+  adjoins?: string
   variableSize?: { min: [number, number]; max: [number, number] }
 }
 

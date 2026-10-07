@@ -1,3 +1,4 @@
+import { forgeWorksFactors } from './components/forgeworks'
 import { relicFactor } from './saga'
 import { decodeArray, encodeArray } from './codec'
 import { gridOf, generatorOf } from './energy'
@@ -186,7 +187,8 @@ export function emitterLoad(sim: Simulation, b: Building): number {
     if (b.data.lit !== true) return 0
     const grid = gridOf(sim, b, gen.network)
     const load = grid && grid.supply > 0 ? Math.min(1, grid.demand / grid.supply) : 0
-    return Math.max(0.25, load)
+    // Smoke follows the fuel: forge works that stoke the Steamforge harder blacken its stacks too.
+    return Math.max(0.25, load) * (sim.def(b).headquarters ? forgeWorksFactors(sim).fuel : 1)
   }
   return sim.second - b.activeAt <= 1 ? 1 : 0
 }
