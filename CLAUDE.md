@@ -31,7 +31,7 @@ Victorian-steampunk survival city builder in the spirit of Banished, rendered in
 
 ## Stack
 
-- Backend: ASP.NET Core 10, C#, EF Core (PostgreSQL in production, SQLite for local dev), OpenTelemetry.
+- Backend: ASP.NET Core 11, C#, EF Core (PostgreSQL in production, SQLite for local dev), OpenTelemetry.
 - Frontend: TypeScript, React 19, Vite 8, Three.js (WebGL, PCF shadows, bloom on high tiers), zustand, TanStack Query, vite-plugin-pwa.
 
 ## Layout

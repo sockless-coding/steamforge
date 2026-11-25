@@ -8,14 +8,14 @@ COPY src/SF.Client/ ./
 # Vite writes to ../SF.Application/wwwroot.
 RUN npm run build
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS server
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS server
 WORKDIR /src
 COPY SF.slnx ./
 COPY src/SF.Application/ src/SF.Application/
 COPY --from=client /src/src/SF.Application/wwwroot src/SF.Application/wwwroot
 RUN dotnet publish src/SF.Application/SF.Application.csproj -c Release -o /app --nologo
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0
+FROM mcr.microsoft.com/dotnet/aspnet:11.0
 WORKDIR /app
 COPY --from=server /app ./
 ENV ASPNETCORE_URLS=http://+:8080 \

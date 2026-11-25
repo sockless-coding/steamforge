@@ -16,8 +16,8 @@ echo.
 
 echo [1/4] Pulling latest base images...
 docker pull node:22-alpine || goto :pull_fail
-docker pull mcr.microsoft.com/dotnet/sdk:10.0 || goto :pull_fail
-docker pull mcr.microsoft.com/dotnet/aspnet:10.0 || goto :pull_fail
+docker pull mcr.microsoft.com/dotnet/sdk:11.0 || goto :pull_fail
+docker pull mcr.microsoft.com/dotnet/aspnet:11.0 || goto :pull_fail
 
 echo.
 echo [2/4] Building Docker image...
